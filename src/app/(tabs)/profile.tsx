@@ -76,12 +76,24 @@ export default function ProfileScreen() {
                 {t('settings.signedInAs', { email: session?.user.email ?? '' })}
               </ThemedText>
               <View style={[styles.list, { borderColor: theme.border }]}>
+                <Link href="/blocked-users" asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={({ pressed }) => [
+                      styles.row,
+                      { backgroundColor: theme.backgroundElement },
+                      pressed && styles.pressed,
+                    ]}>
+                    <ThemedText>{t('blocked.title')}</ThemedText>
+                    <ThemedText themeColor="textSecondary">›</ThemedText>
+                  </Pressable>
+                </Link>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => supabase.auth.signOut()}
                   style={({ pressed }) => [
                     styles.row,
-                    { backgroundColor: theme.backgroundElement },
+                    { backgroundColor: theme.backgroundElement, borderTopWidth: 1, borderTopColor: theme.border },
                     pressed && styles.pressed,
                   ]}>
                   <ThemedText style={{ color: theme.danger }}>{t('settings.signOut')}</ThemedText>

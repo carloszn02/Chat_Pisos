@@ -5,8 +5,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { BlocksProvider } from '@/hooks/use-blocks';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
+import { UnreadProvider } from '@/hooks/use-unread';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,8 +35,12 @@ export default function RootLayout() {
     <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
       <SessionProvider>
         <ProfileProvider>
-          <SplashScreenController />
-          <RootNavigator />
+          <BlocksProvider>
+            <UnreadProvider>
+              <SplashScreenController />
+              <RootNavigator />
+            </UnreadProvider>
+          </BlocksProvider>
         </ProfileProvider>
       </SessionProvider>
     </ThemeProvider>
@@ -66,6 +72,8 @@ function RootNavigator() {
         <Stack.Screen name="message-requests" options={{ headerShown: true, headerBackTitle: '' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
         <Stack.Screen name="user/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="report" options={{ headerShown: true, headerBackTitle: '', presentation: 'modal' }} />
+        <Stack.Screen name="blocked-users" options={{ headerShown: true, headerBackTitle: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={loggedIn && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

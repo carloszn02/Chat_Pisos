@@ -13,9 +13,12 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { useUnreadCount } from '@/hooks/use-unread';
 
 export default function AppTabs() {
   const { t } = useTranslation();
+  const unread = useUnreadCount();
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
@@ -25,7 +28,7 @@ export default function AppTabs() {
             <TabButton>{t('tabs.chats')}</TabButton>
           </TabTrigger>
           <TabTrigger name="messages" href="/messages" asChild>
-            <TabButton>{t('tabs.messages')}</TabButton>
+            <TabButton badge={unread}>{t('tabs.messages')}</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton>{t('tabs.profile')}</TabButton>
@@ -36,7 +39,13 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+export function TabButton({
+  children,
+  isFocused,
+  badge = 0,
+  ...props
+}: TabTriggerSlotProps & { badge?: number }) {
+  const theme = useTheme();
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
@@ -45,6 +54,13 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
+        {badge > 0 && (
+          <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+            <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+              {badge > 99 ? '99+' : badge}
+            </ThemedText>
+          </View>
+        )}
       </ThemedView>
     </Pressable>
   );
@@ -93,5 +109,21 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: 700,
   },
 });

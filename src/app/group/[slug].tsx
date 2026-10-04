@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useBlocks } from '@/hooks/use-blocks';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -51,6 +53,7 @@ export default function GroupChatScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
   const userId = session?.user.id;
+  const { blockedIds, block } = useBlocks();
 
   const [group, setGroup] = useState<ChatGroup | null>(null);
   const [isMember, setIsMember] = useState(false);
@@ -64,6 +67,8 @@ export default function GroupChatScreen() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [selected, setSelected] = useState<GroupMessage | null>(null);
+  const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
 
   const addAuthors = useCallback(async (newMessages: GroupMessage[]) => {
     try {
@@ -182,6 +187,31 @@ export default function GroupChatScreen() {
     router.push({ pathname: '/user/[id]', params: { id: authorId } });
   }
 
+  function reportMessage(message: GroupMessage) {
+    router.push({
+      pathname: '/report',
+      params: {
+        userId: message.user_id,
+        name: authors.get(message.user_id)?.first_name ?? '',
+        groupMessageId: message.id,
+        snapshot: message.body.slice(0, 500),
+      },
+    });
+  }
+
+  async function blockAuthor(authorId: string) {
+    try {
+      await block(authorId);
+    } catch {
+      setSendError(true);
+    }
+  }
+
+  // Messages from people you blocked disappear straight away (the database also stops sending them).
+  const visibleMessages = messages.filter((m) => !blockedIds.has(m.user_id));
+  const selectedAuthor = selected ? authors.get(selected.user_id) : undefined;
+  const blockTarget = confirmBlockId ? authors.get(confirmBlockId) : undefined;
+
   function renderMessage({ item, index }: { item: GroupMessage; index: number }) {
     const isMine = item.user_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
@@ -196,7 +226,7 @@ export default function GroupChatScreen() {
     }
 
     // The list is newest-first, so the message shown just above this one is index + 1.
-    const previous = messages[index + 1];
+    const previous = visibleMessages[index + 1];
     const continuesPrevious =
       previous?.user_id === item.user_id &&
       new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() < GROUPING_WINDOW_MS;
@@ -215,7 +245,11 @@ export default function GroupChatScreen() {
             </Pressable>
           )}
         </View>
-        <View style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
+        <Pressable
+          onLongPress={() => setSelected(item)}
+          delayLongPress={350}
+          accessibilityHint={t('chats.messageOptionsHint')}
+          style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
           {!continuesPrevious && (
             <Pressable accessibilityRole="link" onPress={() => openProfile(item.user_id)} hitSlop={6}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
@@ -227,7 +261,7 @@ export default function GroupChatScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
             {time}
           </ThemedText>
-        </View>
+        </Pressable>
       </View>
     );
   }
@@ -274,14 +308,14 @@ export default function GroupChatScreen() {
           </ThemedText>
         </View>
 
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <View style={[styles.screen, styles.centered]}>
             <ThemedText themeColor="textSecondary">{t('chats.emptyChat')}</ThemedText>
           </View>
         ) : (
           <FlatList
             inverted
-            data={messages}
+            data={visibleMessages}
             keyExtractor={(m) => m.id}
             renderItem={renderMessage}
             contentContainerStyle={styles.messageList}
@@ -324,6 +358,36 @@ export default function GroupChatScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={!!selected}
+        title={selectedAuthor?.first_name}
+        options={
+          selected
+            ? [
+                { label: t('messages.viewProfile'), onPress: () => openProfile(selected.user_id) },
+                { label: t('report.reportMessage'), destructive: true, onPress: () => reportMessage(selected) },
+                {
+                  label: t('blocked.blockName', { name: selectedAuthor?.first_name ?? '' }),
+                  destructive: true,
+                  onPress: () => setConfirmBlockId(selected.user_id),
+                },
+              ]
+            : []
+        }
+        onClose={() => setSelected(null)}
+      />
+      <ActionSheet
+        visible={!!confirmBlockId}
+        title={t('blocked.confirmTitle', { name: blockTarget?.first_name ?? '' })}
+        message={t('blocked.confirmBody')}
+        options={
+          confirmBlockId
+            ? [{ label: t('blocked.block'), destructive: true, onPress: () => blockAuthor(confirmBlockId) }]
+            : []
+        }
+        onClose={() => setConfirmBlockId(null)}
+      />
     </ThemedView>
   );
 }
