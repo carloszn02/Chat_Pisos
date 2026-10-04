@@ -2,16 +2,29 @@ import type es from './es';
 
 const en: typeof es = {
   tabs: {
-    home: 'Home',
+    chats: 'Chats',
     profile: 'Profile',
   },
-  home: {
-    title: 'Chat Pisos',
-    subtitle: 'Find a flat or flatmates in Madrid',
-    districtChats: 'District chats',
-    listings: 'Listings',
-    privateMessages: 'Private messages',
-    comingSoon: 'Coming soon',
+  chats: {
+    title: 'Chats',
+    city: 'Madrid',
+    yourGroups: 'Your groups',
+    popularDistricts: 'Popular districts',
+    noGroupsYet: "You haven't joined any groups yet. Join the districts you're interested in.",
+    join: 'Join',
+    cityWide: 'Whole city',
+    districtGroup: 'District group',
+    noMessagesYet: 'No messages yet',
+    loadError: "The chats couldn't be loaded.",
+    retry: 'Try again',
+    safetyTip: 'Never pay a deposit before seeing the flat in person.',
+    emptyChat: 'Be the first to write in this group.',
+    messagePlaceholder: 'Message {{name}}…',
+    send: 'Send',
+    joinToWrite: 'Join this group to write',
+    leave: 'Leave group',
+    sendError: "Your message couldn't be sent.",
+    you: 'You',
   },
   settings: {
     title: 'Settings',

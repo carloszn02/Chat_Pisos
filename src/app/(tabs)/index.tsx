@@ -1,38 +1,183 @@
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GroupTile } from '@/components/group-tile';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSession } from '@/hooks/use-session';
+import { useTheme } from '@/hooks/use-theme';
+import { fetchAuthors, fetchGroups, fetchLastMessages, fetchMyGroupIds, joinGroup } from '@/lib/chat';
+import { formatShortTime } from '@/lib/format';
+import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
 
-export default function HomeScreen() {
-  const { t } = useTranslation();
+type ChatsData = {
+  groups: ChatGroup[];
+  myGroupIds: Set<string>;
+  lastMessages: Map<string, GroupMessage>;
+  authors: Map<string, PublicProfile>;
+};
 
-  const sections = [t('home.districtChats'), t('home.listings'), t('home.privateMessages')];
+export default function ChatsScreen() {
+  const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const { session } = useSession();
+  const userId = session?.user.id;
+
+  const [data, setData] = useState<ChatsData | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [joining, setJoining] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const [groups, myGroupIds] = await Promise.all([fetchGroups(), fetchMyGroupIds(userId)]);
+      const lastMessages = await fetchLastMessages([...myGroupIds]);
+      const authors = await fetchAuthors([...lastMessages.values()].map((m) => m.user_id));
+      setData({ groups, myGroupIds, lastMessages, authors });
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
+  }, [userId]);
+
+  // Reload every time the tab is shown, so previews are fresh after visiting a chat.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  async function join(group: ChatGroup) {
+    setJoining(group.id);
+    try {
+      await joinGroup(group.id);
+      await load();
+    } catch {
+      setLoadError(true);
+    } finally {
+      setJoining(null);
+    }
+  }
+
+  const myGroups = data?.groups.filter((g) => data.myGroupIds.has(g.id)) ?? [];
+  const otherGroups = data?.groups.filter((g) => !data.myGroupIds.has(g.id)) ?? [];
+
+  function preview(group: ChatGroup): string {
+    const last = data?.lastMessages.get(group.id);
+    if (!last) return t('chats.noMessagesYet');
+    const author =
+      last.user_id === userId ? t('chats.you') : (data?.authors.get(last.user_id)?.first_name ?? '');
+    return author ? `${author}: ${last.body}` : last.body;
+  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <ThemedText type="title" style={styles.centered}>
-            {t('home.title')}
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.centered}>
-            {t('home.subtitle')}
-          </ThemedText>
-        </ThemedView>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <ThemedText type="subtitle">{t('chats.title')}</ThemedText>
+              <View style={[styles.cityPill, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="smallBold">{t('chats.city')}</ThemedText>
+              </View>
+            </View>
 
-        <ThemedView style={styles.sectionList}>
-          {sections.map((label) => (
-            <ThemedView key={label} type="backgroundElement" style={styles.sectionCard}>
-              <ThemedText>{label}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('home.comingSoon')}
-              </ThemedText>
-            </ThemedView>
-          ))}
-        </ThemedView>
+            {!data && !loadError && <ActivityIndicator color={theme.primary} style={styles.loader} />}
+
+            {loadError && (
+              <View style={styles.errorBox}>
+                <ThemedText type="small" style={{ color: theme.danger }}>
+                  {t('chats.loadError')}
+                </ThemedText>
+                <Pressable accessibilityRole="button" onPress={load} hitSlop={12}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {t('chats.retry')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            )}
+
+            {data && (
+              <>
+                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+                  {t('chats.yourGroups')}
+                </ThemedText>
+                {myGroups.length === 0 ? (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('chats.noGroupsYet')}
+                  </ThemedText>
+                ) : (
+                  <View style={styles.list}>
+                    {myGroups.map((group) => {
+                      const last = data.lastMessages.get(group.id);
+                      return (
+                        <Link key={group.id} href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
+                          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                            <GroupTile group={group} />
+                            <View style={styles.rowText}>
+                              <ThemedText style={styles.groupName}>{group.name}</ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                                {preview(group)}
+                              </ThemedText>
+                            </View>
+                            {last && (
+                              <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
+                                {formatShortTime(last.created_at, i18n.language)}
+                              </ThemedText>
+                            )}
+                          </Pressable>
+                        </Link>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {otherGroups.length > 0 && (
+                  <>
+                    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+                      {t('chats.popularDistricts')}
+                    </ThemedText>
+                    <View style={styles.list}>
+                      {otherGroups.map((group) => (
+                        <View key={group.id} style={styles.row}>
+                          <Link href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
+                            <Pressable accessibilityRole="link" style={({ pressed }) => [styles.rowLink, pressed && styles.pressed]}>
+                              <GroupTile group={group} />
+                              <View style={styles.rowText}>
+                                <ThemedText style={styles.groupName}>{group.name}</ThemedText>
+                                <ThemedText type="small" themeColor="textSecondary">
+                                  {group.is_city_wide ? t('chats.cityWide') : t('chats.districtGroup')}
+                                </ThemedText>
+                              </View>
+                            </Pressable>
+                          </Link>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t('chats.join')} ${group.name}`}
+                            disabled={joining === group.id}
+                            onPress={() => join(group)}
+                            style={({ pressed }) => [
+                              styles.joinButton,
+                              { borderColor: theme.primary },
+                              (pressed || joining === group.id) && styles.pressed,
+                            ]}>
+                            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                              {t('chats.join')}
+                            </ThemedText>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -41,37 +186,82 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
+  },
+  scroll: {
+    paddingBottom: BottomTabInset + Spacing.four,
+  },
+  content: {
+    width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.six,
+    gap: Spacing.two,
   },
-  heroSection: {
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.two,
+  },
+  cityPill: {
+    height: 36,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 999,
+    borderWidth: 1,
     justifyContent: 'center',
+  },
+  loader: {
+    marginTop: Spacing.five,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    marginTop: Spacing.three,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontSize: 12,
+  },
+  list: {
+    gap: Spacing.one,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  rowLink: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.three,
   },
-  centered: {
-    textAlign: 'center',
+  rowText: {
+    flex: 1,
+    minWidth: 0,
   },
-  sectionList: {
-    alignSelf: 'stretch',
-    gap: Spacing.two,
-    paddingBottom: Spacing.four,
+  groupName: {
+    fontWeight: 700,
   },
-  sectionCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  time: {
+    alignSelf: 'flex-start',
+    paddingTop: 2,
+  },
+  joinButton: {
+    height: 36,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

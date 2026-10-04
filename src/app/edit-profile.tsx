@@ -6,6 +6,7 @@ import { ProfileForm } from '@/components/profile-form';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
+import { forgetAuthor } from '@/lib/chat';
 import { updateProfile, type ProfileFormValues } from '@/lib/profiles';
 
 export default function EditProfileScreen() {
@@ -16,6 +17,7 @@ export default function EditProfileScreen() {
     if (!profile) return 'generic' as const;
     const error = await updateProfile(profile, values);
     if (!error) {
+      forgetAuthor(profile.id); // so chats show the new name and photo
       await refresh();
       if (router.canGoBack()) router.back();
       else router.replace('/profile');

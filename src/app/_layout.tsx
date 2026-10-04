@@ -62,6 +62,7 @@ function RootNavigator() {
       <Stack.Protected guard={loggedIn && (hasProfile || isLoading)}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="edit-profile" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="group/[slug]" options={{ headerShown: true, headerBackTitle: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={loggedIn && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />
