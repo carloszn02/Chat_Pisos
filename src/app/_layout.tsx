@@ -1,18 +1,36 @@
 import '@/i18n';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
 
 SplashScreen.preventAutoHideAsync();
 
+// Navigation colors (headers, screen backgrounds) taken from our own palette.
+function navigationTheme(scheme: 'light' | 'dark'): Theme {
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const colors = Colors[scheme];
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.background,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
       <SessionProvider>
         <ProfileProvider>
           <SplashScreenController />
@@ -43,6 +61,7 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={loggedIn && (hasProfile || isLoading)}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="edit-profile" options={{ headerShown: true, headerBackTitle: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={loggedIn && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

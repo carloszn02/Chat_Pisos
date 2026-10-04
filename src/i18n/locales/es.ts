@@ -1,7 +1,7 @@
 const es = {
   tabs: {
     home: 'Inicio',
-    settings: 'Ajustes',
+    profile: 'Perfil',
   },
   home: {
     title: 'Chat Pisos',
@@ -17,6 +17,13 @@ const es = {
     account: 'Cuenta',
     signedInAs: 'Has iniciado sesión como {{email}}',
     signOut: 'Cerrar sesión',
+  },
+  profileTab: {
+    editProfile: 'Editar perfil',
+  },
+  editProfile: {
+    title: 'Editar perfil',
+    save: 'Guardar cambios',
   },
   auth: {
     tagline: 'Encuentra habitación, piso o compañeros de piso en Madrid, organizado por barrios.',
@@ -58,6 +65,7 @@ const es = {
     photoHint: 'Añade una foto clara de tu cara. Los perfiles con foto reciben muchas más respuestas.',
     firstName: 'Nombre',
     birthDate: 'Fecha de nacimiento',
+    birthDateLocked: 'La fecha de nacimiento no se puede cambiar. Los demás solo ven tu edad.',
     day: 'Día',
     month: 'Mes',
     year: 'Año',

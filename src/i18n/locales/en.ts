@@ -3,7 +3,7 @@ import type es from './es';
 const en: typeof es = {
   tabs: {
     home: 'Home',
-    settings: 'Settings',
+    profile: 'Profile',
   },
   home: {
     title: 'Chat Pisos',
@@ -19,6 +19,13 @@ const en: typeof es = {
     account: 'Account',
     signedInAs: 'Signed in as {{email}}',
     signOut: 'Log out',
+  },
+  profileTab: {
+    editProfile: 'Edit profile',
+  },
+  editProfile: {
+    title: 'Edit profile',
+    save: 'Save changes',
   },
   auth: {
     tagline: 'Find a room, a flat or flatmates in Madrid, organised by district.',
@@ -60,6 +67,7 @@ const en: typeof es = {
     photoHint: 'Add a clear photo of your face. Profiles with photos get far more replies.',
     firstName: 'First name',
     birthDate: 'Date of birth',
+    birthDateLocked: "Your date of birth can't be changed. Others only see your age.",
     day: 'Day',
     month: 'Month',
     year: 'Year',
