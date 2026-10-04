@@ -1,6 +1,6 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * App colors (mocha / beige palette) for light and dark mode.
+ * `primary` is for main buttons and accents; `onPrimary` is the text on top of it.
  */
 
 import '@/global.css';
@@ -9,18 +9,26 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#2A211C',
+    background: '#F7F3EE',
+    backgroundElement: '#FFFFFF',
+    backgroundSelected: '#F3EAE3',
+    textSecondary: '#6E6158',
+    border: '#DCD1C4',
+    primary: '#7A5642',
+    onPrimary: '#FFFFFF',
+    danger: '#B3261E',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#F7F3EE',
+    background: '#1A1512',
+    backgroundElement: '#2A221D',
+    backgroundSelected: '#3A2F28',
+    textSecondary: '#BFB1A6',
+    border: '#4A3D34',
+    primary: '#C9A188',
+    onPrimary: '#1A1512',
+    danger: '#F2B8B5',
   },
 } as const;
 

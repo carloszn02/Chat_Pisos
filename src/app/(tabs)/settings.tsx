@@ -5,10 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSession } from '@/hooks/use-session';
+import { useTheme } from '@/hooks/use-theme';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
+import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
+  const { session } = useSession();
+  const theme = useTheme();
 
   return (
     <ThemedView style={styles.container}>
@@ -36,6 +41,21 @@ export default function SettingsScreen() {
             );
           })}
         </ThemedView>
+
+        <ThemedText type="smallBold" themeColor="textSecondary">
+          {t('settings.account')}
+        </ThemedText>
+        <ThemedText type="small">
+          {t('settings.signedInAs', { email: session?.user.email ?? '' })}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => supabase.auth.signOut()}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <ThemedView type="backgroundElement" style={styles.option}>
+            <ThemedText style={{ color: theme.danger }}>{t('settings.signOut')}</ThemedText>
+          </ThemedView>
+        </Pressable>
       </SafeAreaView>
     </ThemedView>
   );

@@ -1,0 +1,40 @@
+/**
+ * Keeps track of who is logged in. Wrap the app in <SessionProvider> and call
+ * useSession() anywhere to get the current Supabase session (null = logged out).
+ */
+
+import type { Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+
+import { supabase } from '@/lib/supabase';
+
+type SessionState = {
+  session: Session | null;
+  isLoading: boolean;
+};
+
+const SessionContext = createContext<SessionState>({ session: null, isLoading: true });
+
+export function SessionProvider({ children }: PropsWithChildren) {
+  const [state, setState] = useState<SessionState>({ session: null, isLoading: true });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setState({ session: data.session, isLoading: false });
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setState({ session, isLoading: false });
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>;
+}
+
+export function useSession() {
+  return useContext(SessionContext);
+}
