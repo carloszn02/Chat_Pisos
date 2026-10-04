@@ -28,12 +28,18 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#7A5642",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chat Pisos needs access to your photos so you can add a profile picture and photos of your flat."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
