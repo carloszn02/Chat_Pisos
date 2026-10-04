@@ -63,6 +63,9 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="edit-profile" options={{ headerShown: true, headerBackTitle: '' }} />
         <Stack.Screen name="group/[slug]" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="message-requests" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="conversation/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="user/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={loggedIn && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

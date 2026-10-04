@@ -5,6 +5,9 @@ import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
 
 export const MESSAGES_PAGE_SIZE = 50;
 
+const PUBLIC_PROFILE_COLUMNS =
+  'id, first_name, age, occupation, languages, about, avatar_url, schedule, tidiness, smoking, pets';
+
 export async function fetchGroups(): Promise<ChatGroup[]> {
   const { data, error } = await supabase
     .from('chat_groups')
@@ -101,12 +104,17 @@ export async function fetchAuthors(userIds: string[]): Promise<Map<string, Publi
   if (missing.length > 0) {
     const { data, error } = await supabase
       .from('public_profiles')
-      .select('id, first_name, age, occupation, languages, avatar_url')
+      .select(PUBLIC_PROFILE_COLUMNS)
       .in('id', missing);
     if (error) throw error;
     for (const profile of data as PublicProfile[]) authorCache.set(profile.id, profile);
   }
   return new Map(userIds.flatMap((id) => (authorCache.has(id) ? [[id, authorCache.get(id)!]] : [])));
+}
+
+export async function fetchPublicProfile(userId: string): Promise<PublicProfile | null> {
+  const authors = await fetchAuthors([userId]);
+  return authors.get(userId) ?? null;
 }
 
 /** Forget a cached author, e.g. after the user edits their own profile. */

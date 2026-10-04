@@ -8,12 +8,12 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { ChatComposer } from '@/components/chat-composer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -178,6 +178,10 @@ export default function GroupChatScreen() {
     }
   }
 
+  function openProfile(authorId: string) {
+    router.push({ pathname: '/user/[id]', params: { id: authorId } });
+  }
+
   function renderMessage({ item, index }: { item: GroupMessage; index: number }) {
     const isMine = item.user_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
@@ -201,13 +205,23 @@ export default function GroupChatScreen() {
     return (
       <View style={styles.theirRow}>
         <View style={styles.avatarSlot}>
-          {!continuesPrevious && <Avatar uri={author?.avatar_url ?? null} name={author?.first_name ?? '?'} size={32} />}
+          {!continuesPrevious && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={author?.first_name}
+              onPress={() => openProfile(item.user_id)}
+              hitSlop={6}>
+              <Avatar uri={author?.avatar_url ?? null} name={author?.first_name ?? '?'} size={32} />
+            </Pressable>
+          )}
         </View>
         <View style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
           {!continuesPrevious && (
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              {author ? `${author.first_name}, ${author.age}` : '…'}
-            </ThemedText>
+            <Pressable accessibilityRole="link" onPress={() => openProfile(item.user_id)} hitSlop={6}>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                {author ? `${author.first_name}, ${author.age}` : '…'}
+              </ThemedText>
+            </Pressable>
           )}
           <ThemedText style={styles.body}>{item.body}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
@@ -288,34 +302,13 @@ export default function GroupChatScreen() {
             </ThemedText>
           )}
           {isMember ? (
-            <View style={styles.composerRow}>
-              <TextInput
-                style={[styles.input, { borderColor: theme.border, backgroundColor: theme.background, color: theme.text }]}
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={t('chats.messagePlaceholder', { name: group.name })}
-                placeholderTextColor={theme.textSecondary}
-                multiline
-                maxLength={2000}
-                accessibilityLabel={t('chats.messagePlaceholder', { name: group.name })}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('chats.send')}
-                disabled={sending || !draft.trim()}
-                onPress={send}
-                style={({ pressed }) => [
-                  styles.sendButton,
-                  { backgroundColor: theme.primary },
-                  (pressed || sending || !draft.trim()) && styles.pressed,
-                ]}>
-                {sending ? (
-                  <ActivityIndicator color={theme.onPrimary} />
-                ) : (
-                  <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>➤</ThemedText>
-                )}
-              </Pressable>
-            </View>
+            <ChatComposer
+              value={draft}
+              onChangeText={setDraft}
+              onSend={send}
+              sending={sending}
+              placeholder={t('chats.messagePlaceholder', { name: group.name })}
+            />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -397,29 +390,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     gap: Spacing.one,
-  },
-  composerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.two,
-  },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    borderWidth: 1,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingTop: 11,
-    paddingBottom: 11,
-    fontSize: 15,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   joinButton: {
     height: 48,

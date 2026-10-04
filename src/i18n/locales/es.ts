@@ -1,6 +1,7 @@
 const es = {
   tabs: {
     chats: 'Chats',
+    messages: 'Mensajes',
     profile: 'Perfil',
   },
   chats: {
@@ -23,6 +24,27 @@ const es = {
     leave: 'Salir del grupo',
     sendError: 'No se ha podido enviar el mensaje.',
     you: 'Tú',
+  },
+  messages: {
+    title: 'Mensajes',
+    requests: 'Solicitudes de mensaje',
+    requestsHint: 'De personas con las que aún no has hablado',
+    requestsIntro: 'Aquí llegan los mensajes de personas con las que aún no has hablado. Solo verán tus respuestas si aceptas.',
+    noRequests: 'No tienes solicitudes pendientes.',
+    empty: 'Aún no tienes conversaciones. Toca el nombre de alguien en un chat de barrio para ver su perfil y escribirle.',
+    loadError: 'No se han podido cargar los mensajes.',
+    requestSent: 'Solicitud enviada',
+    safetyTip: 'Consejo: visita el piso y conoce a la persona antes de pagar nada.',
+    firstMessageHint: 'Preséntate a {{name}}: quién eres y qué estás buscando.',
+    placeholder: 'Escribe a {{name}}…',
+    incomingRequest: '{{name}} quiere hablar contigo. Si aceptas, podréis escribiros.',
+    accept: 'Aceptar',
+    decline: 'Rechazar',
+    waitingForAnswer: '{{name}} todavía no ha aceptado tu solicitud.',
+    actionError: 'Algo ha fallado. Inténtalo de nuevo.',
+    viewProfile: 'Ver perfil',
+    sendMessage: 'Escribir a {{name}}',
+    userNotFound: 'No se ha encontrado este perfil.',
   },
   settings: {
     title: 'Ajustes',

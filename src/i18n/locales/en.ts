@@ -3,6 +3,7 @@ import type es from './es';
 const en: typeof es = {
   tabs: {
     chats: 'Chats',
+    messages: 'Messages',
     profile: 'Profile',
   },
   chats: {
@@ -25,6 +26,27 @@ const en: typeof es = {
     leave: 'Leave group',
     sendError: "Your message couldn't be sent.",
     you: 'You',
+  },
+  messages: {
+    title: 'Messages',
+    requests: 'Message requests',
+    requestsHint: "From people you haven't talked to yet",
+    requestsIntro: "Messages from people you haven't talked to yet arrive here. They'll only see your replies if you accept.",
+    noRequests: 'You have no pending requests.',
+    empty: "You don't have any conversations yet. Tap someone's name in a district chat to see their profile and message them.",
+    loadError: "Your messages couldn't be loaded.",
+    requestSent: 'Request sent',
+    safetyTip: 'Tip: visit the flat and meet the person before paying anything.',
+    firstMessageHint: "Introduce yourself to {{name}}: who you are and what you're looking for.",
+    placeholder: 'Message {{name}}…',
+    incomingRequest: '{{name}} wants to talk to you. If you accept, you can message each other.',
+    accept: 'Accept',
+    decline: 'Decline',
+    waitingForAnswer: "{{name}} hasn't accepted your request yet.",
+    actionError: 'Something went wrong. Please try again.',
+    viewProfile: 'View profile',
+    sendMessage: 'Message {{name}}',
+    userNotFound: "This profile couldn't be found.",
   },
   settings: {
     title: 'Settings',
