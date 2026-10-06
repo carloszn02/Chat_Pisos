@@ -19,6 +19,7 @@ export type ReportInput = {
   details: string;
   groupMessageId?: string;
   directMessageId?: string;
+  listingId?: string;
   messageSnapshot?: string;
 };
 
@@ -53,6 +54,7 @@ export async function submitReport(input: ReportInput): Promise<void> {
     details: input.details.trim() || null,
     group_message_id: input.groupMessageId ?? null,
     direct_message_id: input.directMessageId ?? null,
+    listing_id: input.listingId ?? null,
     message_snapshot: input.messageSnapshot ?? null,
   });
   if (error) throw error;

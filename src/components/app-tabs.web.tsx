@@ -27,6 +27,12 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton>{t('tabs.chats')}</TabButton>
           </TabTrigger>
+          <TabTrigger name="listings" href="/listings" asChild>
+            <TabButton>{t('tabs.listings')}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="publish" href="/publish" asChild>
+            <TabButton highlight>+ {t('tabs.publish')}</TabButton>
+          </TabTrigger>
           <TabTrigger name="messages" href="/messages" asChild>
             <TabButton badge={unread}>{t('tabs.messages')}</TabButton>
           </TabTrigger>
@@ -43,15 +49,19 @@ export function TabButton({
   children,
   isFocused,
   badge = 0,
+  highlight = false,
   ...props
-}: TabTriggerSlotProps & { badge?: number }) {
+}: TabTriggerSlotProps & { badge?: number; highlight?: boolean }) {
   const theme = useTheme();
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        style={[styles.tabButtonView, highlight && { backgroundColor: theme.primary }]}>
+        <ThemedText
+          type={highlight ? 'smallBold' : 'small'}
+          themeColor={isFocused ? 'text' : 'textSecondary'}
+          style={highlight && { color: theme.onPrimary }}>
           {children}
         </ThemedText>
         {badge > 0 && (

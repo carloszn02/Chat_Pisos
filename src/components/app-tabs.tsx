@@ -1,8 +1,8 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTranslation } from 'react-i18next';
-import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUnreadCount } from '@/hooks/use-unread';
 
 // Icons: Apple's SF Symbols on iPhone (filled when selected), Google's Material icons on Android.
@@ -24,6 +24,16 @@ export default function AppTabs() {
           sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
           md="forum"
         />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="listings">
+        <NativeTabs.Trigger.Label>{t('tabs.listings')}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="publish">
+        <NativeTabs.Trigger.Label>{t('tabs.publish')}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'plus.square', selected: 'plus.square.fill' }} md="add_box" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="messages">

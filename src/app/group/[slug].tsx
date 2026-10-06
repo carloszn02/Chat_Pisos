@@ -15,10 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
+import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useDistricts } from '@/hooks/use-districts';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -32,8 +34,10 @@ import {
   sendMessage,
 } from '@/lib/chat';
 import { formatMessageTime } from '@/lib/format';
+import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
 import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
+import type { Listing } from '@/types/listing';
 
 // Messages from the same person within this time are grouped (name and photo shown once).
 const GROUPING_WINDOW_MS = 5 * 60 * 1000;
@@ -54,11 +58,13 @@ export default function GroupChatScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { blockedIds, block } = useBlocks();
+  const districts = useDistricts();
 
   const [group, setGroup] = useState<ChatGroup | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [messages, setMessages] = useState<GroupMessage[]>([]); // newest first
   const [authors, setAuthors] = useState<Map<string, PublicProfile>>(new Map());
+  const [listings, setListings] = useState<Map<string, Listing>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
@@ -70,12 +76,18 @@ export default function GroupChatScreen() {
   const [selected, setSelected] = useState<GroupMessage | null>(null);
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
 
+  // Loads the authors' names and photos, and the listings shared as cards.
   const addAuthors = useCallback(async (newMessages: GroupMessage[]) => {
     try {
-      const found = await fetchAuthors(newMessages.map((m) => m.user_id));
-      setAuthors((current) => new Map([...current, ...found]));
+      const listingIds = newMessages.flatMap((m) => (m.listing_id ? [m.listing_id] : []));
+      const [foundAuthors, foundListings] = await Promise.all([
+        fetchAuthors(newMessages.map((m) => m.user_id)),
+        fetchListingsByIds(listingIds),
+      ]);
+      setAuthors((current) => new Map([...current, ...foundAuthors]));
+      setListings((current) => new Map([...current, ...foundListings]));
     } catch {
-      // Names are a nice-to-have; messages still show without them.
+      // Names and cards are a nice-to-have; messages still show without them.
     }
   }, []);
 
@@ -215,11 +227,14 @@ export default function GroupChatScreen() {
   function renderMessage({ item, index }: { item: GroupMessage; index: number }) {
     const isMine = item.user_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
+    const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
+    // A shared listing shows as a card instead of the plain text.
+    const listingCard = sharedListing ? <ListingCard listing={sharedListing} districts={districts} compact /> : null;
 
     if (isMine) {
       return (
         <View style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
-          <ThemedText style={[styles.body, { color: theme.onPrimary }]}>{item.body}</ThemedText>
+          {listingCard ?? <ThemedText style={[styles.body, { color: theme.onPrimary }]}>{item.body}</ThemedText>}
           <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>{time}</ThemedText>
         </View>
       );
@@ -257,7 +272,7 @@ export default function GroupChatScreen() {
               </ThemedText>
             </Pressable>
           )}
-          <ThemedText style={styles.body}>{item.body}</ThemedText>
+          {listingCard ?? <ThemedText style={styles.body}>{item.body}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
             {time}
           </ThemedText>

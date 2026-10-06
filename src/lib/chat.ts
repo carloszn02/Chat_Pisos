@@ -56,7 +56,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 export async function fetchMessages(groupId: string, before?: string): Promise<GroupMessage[]> {
   let query = supabase
     .from('group_messages')
-    .select('id, group_id, user_id, body, created_at')
+    .select('id, group_id, user_id, body, listing_id, created_at')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .limit(MESSAGES_PAGE_SIZE);
@@ -72,7 +72,7 @@ export async function fetchLastMessages(groupIds: string[]): Promise<Map<string,
     groupIds.map((id) =>
       supabase
         .from('group_messages')
-        .select('id, group_id, user_id, body, created_at')
+        .select('id, group_id, user_id, body, listing_id, created_at')
         .eq('group_id', id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -90,7 +90,7 @@ export async function sendMessage(groupId: string, body: string): Promise<GroupM
   const { data, error } = await supabase
     .from('group_messages')
     .insert({ group_id: groupId, body: body.trim() })
-    .select('id, group_id, user_id, body, created_at')
+    .select('id, group_id, user_id, body, listing_id, created_at')
     .single();
   if (error) throw error;
   return data;

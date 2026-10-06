@@ -23,3 +23,22 @@ export function formatMessageTime(iso: string, language: string): string {
   if (isToday(date)) return time;
   return `${date.toLocaleDateString(language, { day: 'numeric', month: 'numeric' })} ${time}`;
 }
+
+/** "€620" in the user's language. */
+export function formatPrice(euros: number, language: string): string {
+  return new Intl.NumberFormat(language, {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(euros);
+}
+
+/** "1 Nov 2026" (or "1 nov 2026" in Spanish) from a YYYY-MM-DD date. */
+export function formatDate(isoDate: string, language: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(language, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}

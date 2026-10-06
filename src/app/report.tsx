@@ -25,6 +25,7 @@ type ReportParams = {
   name?: string;
   groupMessageId?: string;
   directMessageId?: string;
+  listingId?: string;
   snapshot?: string;
 };
 
@@ -56,6 +57,7 @@ export default function ReportScreen() {
         details,
         groupMessageId: params.groupMessageId,
         directMessageId: params.directMessageId,
+        listingId: params.listingId,
         messageSnapshot: params.snapshot,
       });
       if (alsoBlock && !blockedIds.has(params.userId)) await block(params.userId);
@@ -79,7 +81,15 @@ export default function ReportScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <Stack.Screen options={{ title: isMessageReport ? t('report.titleMessage') : t('report.titleUser') }} />
+      <Stack.Screen
+        options={{
+          title: params.listingId
+            ? t('report.titleListing')
+            : isMessageReport
+              ? t('report.titleMessage')
+              : t('report.titleUser'),
+        }}
+      />
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.content}>

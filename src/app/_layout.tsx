@@ -2,9 +2,9 @@ import '@/i18n';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
@@ -74,6 +74,8 @@ function RootNavigator() {
         <Stack.Screen name="user/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
         <Stack.Screen name="report" options={{ headerShown: true, headerBackTitle: '', presentation: 'modal' }} />
         <Stack.Screen name="blocked-users" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="listing/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
+        <Stack.Screen name="edit-listing/[id]" options={{ headerShown: true, headerBackTitle: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={loggedIn && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

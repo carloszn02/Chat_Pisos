@@ -1,5 +1,6 @@
 /**
- * App colors (mocha / beige palette) for light and dark mode.
+ * App colors (soft mocha / cream palette). The app always uses the light palette;
+ * the dark one is kept in case we offer dark mode as an option later.
  * `primary` is for main buttons and accents; `onPrimary` is the text on top of it.
  */
 
@@ -9,13 +10,13 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#2A211C',
-    background: '#F7F3EE',
+    text: '#2E2620',
+    background: '#FBF8F4',
     backgroundElement: '#FFFFFF',
-    backgroundSelected: '#F3EAE3',
-    textSecondary: '#6E6158',
-    border: '#DCD1C4',
-    primary: '#7A5642',
+    backgroundSelected: '#F4ECE4',
+    textSecondary: '#75685F',
+    border: '#E6DDD2',
+    primary: '#8E6A52',
     onPrimary: '#FFFFFF',
     danger: '#B3261E',
   },

@@ -1,24 +1,48 @@
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ListingCard } from '@/components/listing-card';
 import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useDistricts } from '@/hooks/use-districts';
 import { useProfile } from '@/hooks/use-profile';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { ageFromBirthDate } from '@/lib/age';
+import { fetchMyListings } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
+import type { Listing } from '@/types/listing';
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { session } = useSession();
   const { profile } = useProfile();
+  const districts = useDistricts();
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const userId = profile?.id;
+
+  // Refresh every time the tab is shown (e.g. after creating or editing a listing).
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      let cancelled = false;
+      fetchMyListings(userId)
+        .then((found) => {
+          if (!cancelled) setMyListings(found);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [userId])
+  );
 
   if (!profile) return null;
 
@@ -40,6 +64,28 @@ export default function ProfileScreen() {
                 <ThemedText type="smallBold">{t('profileTab.editProfile')}</ThemedText>
               </Pressable>
             </Link>
+
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {t('listings.mine')}
+                </ThemedText>
+                <Link href="/publish" asChild>
+                  <Pressable accessibilityRole="button" hitSlop={8}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      + {t('listings.new')}
+                    </ThemedText>
+                  </Pressable>
+                </Link>
+              </View>
+              {myListings.length === 0 ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('listings.mineEmpty')}
+                </ThemedText>
+              ) : (
+                myListings.map((listing) => <ListingCard key={listing.id} listing={listing} districts={districts} />)
+              )}
+            </View>
 
             <View style={styles.section}>
               <ThemedText type="smallBold" themeColor="textSecondary">
@@ -131,6 +177,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   section: {
     gap: Spacing.two,

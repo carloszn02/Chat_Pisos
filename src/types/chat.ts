@@ -14,6 +14,8 @@ export type GroupMessage = {
   group_id: string;
   user_id: string;
   body: string;
+  /** Set when the message is a shared listing (shown as a card). */
+  listing_id: string | null;
   created_at: string;
 };
 
