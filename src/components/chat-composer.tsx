@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
+import { AppFonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from '@/components/themed-text';
 
@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   input: {
+    fontFamily: AppFonts.regular,
     flex: 1,
     minHeight: 44,
     maxHeight: 120,

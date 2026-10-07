@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { AppFonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { isAdult, parseBirthDate } from '@/lib/age';
 import type { ProfileErrorKey, ProfileFormValues } from '@/lib/profiles';
@@ -352,6 +352,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   input: {
+    fontFamily: AppFonts.regular,
     height: 48,
     borderWidth: 1,
     borderRadius: 12,

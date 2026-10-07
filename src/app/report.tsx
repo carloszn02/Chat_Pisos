@@ -15,7 +15,7 @@ import {
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useTheme } from '@/hooks/use-theme';
 import { REPORT_REASONS, submitReport, type ReportReason } from '@/lib/moderation';
@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   input: {
+    fontFamily: AppFonts.regular,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,

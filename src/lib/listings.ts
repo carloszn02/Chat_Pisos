@@ -85,7 +85,8 @@ async function uploadPhoto(userId: string, asset: ImagePickerAsset, index: numbe
   return supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-async function deletePhotos(urls: string[]): Promise<void> {
+/** Removes listing photos from storage (used when editing, deleting or closing an account). */
+export async function deleteListingPhotos(urls: string[]): Promise<void> {
   const paths = urls
     .map((url) => {
       const index = url.indexOf(PUBLIC_PATH_MARKER);
@@ -109,7 +110,7 @@ export async function createListing(
     .select(LISTING_COLUMNS)
     .single();
   if (error) {
-    await deletePhotos(photoUrls);
+    await deleteListingPhotos(photoUrls);
     throw error;
   }
   return data as unknown as Listing;
@@ -127,11 +128,11 @@ export async function updateListing(
     .update({ ...values, photo_urls: [...keptPhotoUrls, ...uploaded] })
     .eq('id', listing.id);
   if (error) {
-    await deletePhotos(uploaded);
+    await deleteListingPhotos(uploaded);
     throw error;
   }
   // Remove photos the user took out, only after the listing no longer points to them.
-  await deletePhotos(listing.photo_urls.filter((url) => !keptPhotoUrls.includes(url)));
+  await deleteListingPhotos(listing.photo_urls.filter((url) => !keptPhotoUrls.includes(url)));
 }
 
 export async function setListingStatus(id: string, status: Listing['status']): Promise<void> {
@@ -142,7 +143,7 @@ export async function setListingStatus(id: string, status: Listing['status']): P
 export async function deleteListing(listing: Listing): Promise<void> {
   const { error } = await supabase.from('listings').delete().eq('id', listing.id);
   if (error) throw error;
-  await deletePhotos(listing.photo_urls);
+  await deleteListingPhotos(listing.photo_urls);
 }
 
 /** Posts the listing as a card in each of its district groups (joining them if needed). */

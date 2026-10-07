@@ -4,35 +4,62 @@
  */
 
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 
-import { supabase } from '@/lib/supabase';
+import { openedFromPasswordReset, supabase } from '@/lib/supabase';
 
 type SessionState = {
   session: Session | null;
   isLoading: boolean;
+  /** True after opening a "reset your password" link, until a new password is set. */
+  isRecoveringPassword: boolean;
+  finishPasswordRecovery: () => void;
 };
 
-const SessionContext = createContext<SessionState>({ session: null, isLoading: true });
+const SessionContext = createContext<SessionState>({
+  session: null,
+  isLoading: true,
+  isRecoveringPassword: false,
+  finishPasswordRecovery: () => {},
+});
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  const [state, setState] = useState<SessionState>({ session: null, isLoading: true });
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState(openedFromPasswordReset);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setState({ session: data.session, isLoading: false });
+      setSession(data.session);
+      setIsLoading(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ session, isLoading: false });
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      setSession(newSession);
+      setIsLoading(false);
+      if (event === 'PASSWORD_RECOVERY') setIsRecoveringPassword(true);
+      if (event === 'SIGNED_OUT') setIsRecoveringPassword(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>;
+  const finishPasswordRecovery = useCallback(() => setIsRecoveringPassword(false), []);
+
+  return (
+    <SessionContext.Provider value={{ session, isLoading, isRecoveringPassword, finishPasswordRecovery }}>
+      {children}
+    </SessionContext.Provider>
+  );
 }
 
 export function useSession() {

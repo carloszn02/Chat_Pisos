@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDistricts } from '@/hooks/use-districts';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
@@ -201,6 +201,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   priceInput: {
+    fontFamily: AppFonts.regular,
     width: 110,
     height: 40,
     borderWidth: 1,

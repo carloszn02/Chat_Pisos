@@ -1,6 +1,6 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
+import { AppFonts, bodyFontFor, Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -11,23 +11,32 @@ export type ThemedTextProps = TextProps & {
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
 
-  return (
-    <Text
-      style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  const flat: TextStyle = StyleSheet.flatten([
+    { color: theme[themeColor ?? 'text'] },
+    type === 'default' && styles.default,
+    type === 'title' && styles.title,
+    type === 'small' && styles.small,
+    type === 'smallBold' && styles.smallBold,
+    type === 'subtitle' && styles.subtitle,
+    type === 'link' && styles.link,
+    type === 'linkPrimary' && styles.linkPrimary,
+    type === 'code' && styles.code,
+    style,
+  ]);
+
+  // Headings use Bricolage Grotesque, everything else DM Sans in the matching weight.
+  // fontWeight is reset because each weight is its own font file.
+  const isHeading = type === 'title' || type === 'subtitle';
+  const fontFamily =
+    type === 'code'
+      ? flat.fontFamily
+      : isHeading
+        ? Number(flat.fontWeight ?? 600) >= 700
+          ? AppFonts.heading
+          : AppFonts.headingSemiBold
+        : bodyFontFor(flat.fontWeight);
+
+  return <Text style={[flat, type !== 'code' && { fontFamily, fontWeight: 'normal' }]} {...rest} />;
 }
 
 const styles = StyleSheet.create({
@@ -47,14 +56,14 @@ const styles = StyleSheet.create({
     fontWeight: 500,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontSize: 44,
+    fontWeight: 700,
+    lineHeight: 50,
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontSize: 30,
+    lineHeight: 38,
+    fontWeight: 700,
   },
   link: {
     lineHeight: 30,

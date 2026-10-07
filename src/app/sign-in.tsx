@@ -14,13 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AppFonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import type es from '@/i18n/locales/es';
 import { supabase } from '@/lib/supabase';
 
-type Mode = 'signUp' | 'signIn';
+type Mode = 'signUp' | 'signIn' | 'forgot';
 type ErrorKey = keyof typeof es.auth.errors;
 
 // Supabase error codes -> our translated messages.
@@ -56,12 +56,16 @@ export default function SignInScreen() {
   const [error, setError] = useState<ErrorKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentKind, setSentKind] = useState<'confirm' | 'reset'>('confirm');
 
   const isSignUp = mode === 'signUp';
+  const isForgot = mode === 'forgot';
+  const redirectTo = Platform.OS === 'web' ? window.location.origin : undefined;
 
   async function submit() {
     const trimmedEmail = email.trim();
     if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) return setError('invalidEmail');
+    if (isForgot) return sendResetLink(trimmedEmail);
     if (password.length < 8) return setError('shortPassword');
     if (isSignUp && !accepted) return setError('mustAcceptTerms');
 
@@ -72,12 +76,13 @@ export default function SignInScreen() {
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
-          options: {
-            emailRedirectTo: Platform.OS === 'web' ? window.location.origin : undefined,
-          },
+          options: { emailRedirectTo: redirectTo },
         });
         if (error) setError(errorKeyFromCode(error.code));
-        else if (!data.session) setSentTo(trimmedEmail);
+        else if (!data.session) {
+          setSentKind('confirm');
+          setSentTo(trimmedEmail);
+        }
       } else {
         // On success the session changes and the app switches screens by itself.
         const { error } = await supabase.auth.signInWithPassword({
@@ -93,9 +98,32 @@ export default function SignInScreen() {
     }
   }
 
-  function switchMode() {
-    setMode(isSignUp ? 'signIn' : 'signUp');
+  // Sends a "reset your password" email. For privacy, Supabase answers the same way
+  // whether or not an account exists for that email.
+  async function sendResetLink(trimmedEmail: string) {
     setError(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, { redirectTo });
+      if (error) setError(errorKeyFromCode(error.code));
+      else {
+        setSentKind('reset');
+        setSentTo(trimmedEmail);
+      }
+    } catch {
+      setError('generic');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function changeMode(next: Mode) {
+    setMode(next);
+    setError(null);
+  }
+
+  function switchMode() {
+    changeMode(isSignUp ? 'signIn' : 'signUp');
   }
 
   const inputStyle = [
@@ -110,7 +138,9 @@ export default function SignInScreen() {
           <View style={[styles.content, styles.centered]}>
             <ThemedText type="subtitle">{t('auth.checkEmailTitle')}</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.bodyText}>
-              {t('auth.checkEmailBody', { email: sentTo })}
+              {sentKind === 'reset'
+                ? t('auth.resetEmailBody', { email: sentTo })
+                : t('auth.checkEmailBody', { email: sentTo })}
             </ThemedText>
             <Pressable
               accessibilityRole="button"
@@ -176,8 +206,14 @@ export default function SignInScreen() {
               </View>
 
               <ThemedText type="subtitle" style={styles.formTitle}>
-                {isSignUp ? t('auth.signUpTitle') : t('auth.signInTitle')}
+                {isSignUp ? t('auth.signUpTitle') : isForgot ? t('auth.forgotTitle') : t('auth.signInTitle')}
               </ThemedText>
+
+              {isForgot && (
+                <ThemedText themeColor="textSecondary" style={styles.bodyText}>
+                  {t('auth.forgotIntro')}
+                </ThemedText>
+              )}
 
               <View style={styles.field}>
                 <ThemedText type="smallBold">{t('auth.email')}</ThemedText>
@@ -195,6 +231,7 @@ export default function SignInScreen() {
                 />
               </View>
 
+              {!isForgot && (
               <View style={styles.field}>
                 <ThemedText type="smallBold">{t('auth.password')}</ThemedText>
                 <TextInput
@@ -208,7 +245,19 @@ export default function SignInScreen() {
                   accessibilityLabel={t('auth.password')}
                   onSubmitEditing={submit}
                 />
+                {mode === 'signIn' && (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => changeMode('forgot')}
+                    hitSlop={8}
+                    style={styles.forgotLink}>
+                    <ThemedText type="small" style={{ color: theme.primary }}>
+                      {t('auth.forgotLink')}
+                    </ThemedText>
+                  </Pressable>
+                )}
               </View>
+              )}
 
               {isSignUp && (
                 <Pressable
@@ -253,11 +302,22 @@ export default function SignInScreen() {
                   <ActivityIndicator color={theme.onPrimary} />
                 ) : (
                   <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                    {isSignUp ? t('auth.signUpButton') : t('auth.signInButton')}
+                    {isSignUp ? t('auth.signUpButton') : isForgot ? t('auth.sendResetLink') : t('auth.signInButton')}
                   </ThemedText>
                 )}
               </Pressable>
 
+              {isForgot ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => changeMode('signIn')}
+                  hitSlop={12}
+                  style={styles.switchRow}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {t('auth.backToSignIn')}
+                  </ThemedText>
+                </Pressable>
+              ) : (
               <View style={styles.switchRow}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {isSignUp ? t('auth.haveAccount') : t('auth.noAccount')}
@@ -268,6 +328,7 @@ export default function SignInScreen() {
                   </ThemedText>
                 </Pressable>
               </View>
+              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -332,11 +393,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   input: {
+    fontFamily: AppFonts.regular,
     height: 48,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 16,
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    paddingTop: Spacing.one,
   },
   checkboxRow: {
     flexDirection: 'row',

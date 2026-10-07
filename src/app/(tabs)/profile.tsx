@@ -145,6 +145,13 @@ export default function ProfileScreen() {
                   <ThemedText style={{ color: theme.danger }}>{t('settings.signOut')}</ThemedText>
                 </Pressable>
               </View>
+              <Link href="/delete-account" asChild>
+                <Pressable accessibilityRole="link" hitSlop={8} style={styles.deleteLink}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('deleteAccount.title')}
+                  </ThemedText>
+                </Pressable>
+              </Link>
             </View>
           </View>
         </ScrollView>
@@ -197,6 +204,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  deleteLink: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

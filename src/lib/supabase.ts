@@ -19,6 +19,13 @@ if (!supabaseUrl || !supabaseKey) {
 // During web static rendering there is no browser, so there is nowhere to keep a session.
 const isServer = typeof window === 'undefined';
 
+/**
+ * True when the app was opened from a "reset your password" email link. Read before the
+ * client is created, because the client removes the link details from the address bar.
+ */
+export const openedFromPasswordReset =
+  Platform.OS === 'web' && !isServer && window.location.hash.includes('type=recovery');
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     storage: isServer ? undefined : AsyncStorage,

@@ -60,6 +60,26 @@ export const Fonts = Platform.select({
   },
 });
 
+/**
+ * The app's own fonts (loaded in the root layout). Each weight is a separate font
+ * on phones, so pick the family that matches the weight instead of using fontWeight.
+ */
+export const AppFonts = {
+  regular: 'DMSans_400Regular',
+  medium: 'DMSans_500Medium',
+  bold: 'DMSans_700Bold',
+  headingSemiBold: 'BricolageGrotesque_600SemiBold',
+  heading: 'BricolageGrotesque_700Bold',
+} as const;
+
+/** The body font for a given weight (400, 500 or 700 and up). */
+export function bodyFontFor(weight: string | number | undefined): string {
+  const value = Number(weight ?? 400);
+  if (value >= 700) return AppFonts.bold;
+  if (value >= 500) return AppFonts.medium;
+  return AppFonts.regular;
+}
+
 export const Spacing = {
   half: 2,
   one: 4,

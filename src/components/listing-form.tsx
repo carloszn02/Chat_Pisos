@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { ChoiceChips } from '@/components/choice-chips';
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { AppFonts, Spacing } from '@/constants/theme';
 import { useDistricts } from '@/hooks/use-districts';
 import { useTheme } from '@/hooks/use-theme';
 import type es from '@/i18n/locales/es';
@@ -656,6 +656,7 @@ const styles = StyleSheet.create({
     flex: 1.5,
   },
   input: {
+    fontFamily: AppFonts.regular,
     height: 48,
     borderWidth: 1,
     borderRadius: 12,
