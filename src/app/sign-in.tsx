@@ -117,6 +117,29 @@ export default function SignInScreen() {
     }
   }
 
+  // For people who lost (or never got) the confirmation email after signing up.
+  async function resendConfirmation() {
+    const trimmedEmail = email.trim();
+    setError(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: trimmedEmail,
+        options: { emailRedirectTo: redirectTo },
+      });
+      if (error) setError(errorKeyFromCode(error.code));
+      else {
+        setSentKind('confirm');
+        setSentTo(trimmedEmail);
+      }
+    } catch {
+      setError('generic');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function changeMode(next: Mode) {
     setMode(next);
     setError(null);
@@ -287,6 +310,14 @@ export default function SignInScreen() {
                 <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
                   {t(`auth.errors.${error}`)}
                 </ThemedText>
+              )}
+
+              {error === 'emailNotConfirmed' && (
+                <Pressable accessibilityRole="button" disabled={busy} onPress={resendConfirmation} hitSlop={8}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {t('auth.resendConfirmation')}
+                  </ThemedText>
+                </Pressable>
               )}
 
               <Pressable

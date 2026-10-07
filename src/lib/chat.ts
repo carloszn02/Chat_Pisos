@@ -121,3 +121,16 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfile 
 export function forgetAuthor(userId: string) {
   authorCache.delete(userId);
 }
+
+/** Unread messages per joined group (messages from blocked users aren't counted). */
+export async function fetchGroupUnreadCounts(): Promise<Map<string, number>> {
+  const { data, error } = await supabase.rpc('my_group_unread_counts');
+  if (error) throw error;
+  return new Map((data as { group_id: string; unread_count: number }[]).map((row) => [row.group_id, row.unread_count]));
+}
+
+/** Marks a group as read for the current user. Failures only affect the counter. */
+export async function markGroupRead(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_group_read', { target_group: groupId });
+  if (error) console.warn('Could not mark group as read', error.message);
+}

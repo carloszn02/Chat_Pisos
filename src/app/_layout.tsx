@@ -8,6 +8,7 @@ import { DMSans_500Medium } from '@expo-google-fonts/dm-sans/500Medium';
 import { DMSans_700Bold } from '@expo-google-fonts/dm-sans/700Bold';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { useFonts } from 'expo-font';
+import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AppFonts, Colors } from '@/constants/theme';
@@ -60,9 +61,15 @@ export default function RootLayout() {
   });
 
   // Keep the splash screen until the fonts are ready (or failed: then system fonts are used).
-  if (!fontsLoaded && !fontError) return null;
+  const ready = fontsLoaded || !!fontError;
 
   return (
+    <>
+      {/* Browser tab title on the web (ignored on phones). */}
+      <Head>
+        <title>Chat Pisos · Habitaciones y compañeros de piso en Madrid</title>
+      </Head>
+      {ready && (
     <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
       <SessionProvider>
         <ProfileProvider>
@@ -75,6 +82,8 @@ export default function RootLayout() {
         </ProfileProvider>
       </SessionProvider>
     </ThemeProvider>
+      )}
+    </>
   );
 }
 

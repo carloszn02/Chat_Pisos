@@ -30,6 +30,7 @@ import {
   fetchMyGroupIds,
   joinGroup,
   leaveGroup,
+  markGroupRead,
   MESSAGES_PAGE_SIZE,
   sendMessage,
 } from '@/lib/chat';
@@ -75,6 +76,7 @@ export default function GroupChatScreen() {
   const [joining, setJoining] = useState(false);
   const [selected, setSelected] = useState<GroupMessage | null>(null);
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   // Loads the authors' names and photos, and the listings shared as cards.
   const addAuthors = useCallback(async (newMessages: GroupMessage[]) => {
@@ -106,6 +108,7 @@ export default function GroupChatScreen() {
         if (cancelled) return;
         setGroup(found);
         setIsMember(myGroupIds.has(found.id));
+        if (myGroupIds.has(found.id)) markGroupRead(found.id);
         setMessages((current) => mergeMessages(current, latest));
         setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
         addAuthors(latest);
@@ -133,6 +136,8 @@ export default function GroupChatScreen() {
           const message = payload.new as GroupMessage;
           setMessages((current) => mergeMessages(current, [message]));
           addAuthors([message]);
+          // The chat is open, so this message counts as read.
+          markGroupRead(groupId);
         }
       )
       .subscribe();
@@ -140,6 +145,14 @@ export default function GroupChatScreen() {
       supabase.removeChannel(channel);
     };
   }, [groupId, addAuthors]);
+
+  // Leaving the screen also counts as having read everything so far.
+  useEffect(() => {
+    if (!groupId) return;
+    return () => {
+      markGroupRead(groupId);
+    };
+  }, [groupId]);
 
   async function loadOlder() {
     if (!group || !hasOlder || loadingOlder || messages.length === 0) return;
@@ -287,7 +300,7 @@ export default function GroupChatScreen() {
         title: group?.name ?? '',
         headerRight: () =>
           isMember ? (
-            <Pressable accessibilityRole="button" onPress={leave} hitSlop={12} style={styles.headerButton}>
+            <Pressable accessibilityRole="button" onPress={() => setConfirmLeave(true)} hitSlop={12} style={styles.headerButton}>
               <ThemedText type="small" themeColor="textSecondary">
                 {t('chats.leave')}
               </ThemedText>
@@ -402,6 +415,13 @@ export default function GroupChatScreen() {
             : []
         }
         onClose={() => setConfirmBlockId(null)}
+      />
+      <ActionSheet
+        visible={confirmLeave}
+        title={t('chats.leaveConfirmTitle', { name: group.name })}
+        message={t('chats.leaveConfirmBody')}
+        options={[{ label: t('chats.leave'), destructive: true, onPress: leave }]}
+        onClose={() => setConfirmLeave(false)}
       />
     </ThemedView>
   );

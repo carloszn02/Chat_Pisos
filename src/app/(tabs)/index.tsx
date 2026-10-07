@@ -1,7 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GroupTile } from '@/components/group-tile';
@@ -10,7 +10,14 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchAuthors, fetchGroups, fetchLastMessages, fetchMyGroupIds, joinGroup } from '@/lib/chat';
+import {
+  fetchAuthors,
+  fetchGroups,
+  fetchGroupUnreadCounts,
+  fetchLastMessages,
+  fetchMyGroupIds,
+  joinGroup,
+} from '@/lib/chat';
 import { formatShortTime } from '@/lib/format';
 import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
 
@@ -19,6 +26,7 @@ type ChatsData = {
   myGroupIds: Set<string>;
   lastMessages: Map<string, GroupMessage>;
   authors: Map<string, PublicProfile>;
+  unread: Map<string, number>;
 };
 
 export default function ChatsScreen() {
@@ -30,14 +38,19 @@ export default function ChatsScreen() {
   const [data, setData] = useState<ChatsData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const [groups, myGroupIds] = await Promise.all([fetchGroups(), fetchMyGroupIds(userId)]);
+      const [groups, myGroupIds, unread] = await Promise.all([
+        fetchGroups(),
+        fetchMyGroupIds(userId),
+        fetchGroupUnreadCounts(),
+      ]);
       const lastMessages = await fetchLastMessages([...myGroupIds]);
       const authors = await fetchAuthors([...lastMessages.values()].map((m) => m.user_id));
-      setData({ groups, myGroupIds, lastMessages, authors });
+      setData({ groups, myGroupIds, lastMessages, authors, unread });
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -50,6 +63,12 @@ export default function ChatsScreen() {
       load();
     }, [load])
   );
+
+  async function refresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   async function join(group: ChatGroup) {
     setJoining(group.id);
@@ -77,7 +96,9 @@ export default function ChatsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('chats.title')}</ThemedText>
@@ -114,21 +135,34 @@ export default function ChatsScreen() {
                   <View style={styles.list}>
                     {myGroups.map((group) => {
                       const last = data.lastMessages.get(group.id);
+                      const unread = data.unread.get(group.id) ?? 0;
                       return (
                         <Link key={group.id} href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
                           <Pressable accessibilityRole="link" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                             <GroupTile group={group} />
                             <View style={styles.rowText}>
                               <ThemedText style={styles.groupName}>{group.name}</ThemedText>
-                              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                              <ThemedText
+                                type={unread > 0 ? 'smallBold' : 'small'}
+                                themeColor={unread > 0 ? 'text' : 'textSecondary'}
+                                numberOfLines={1}>
                                 {preview(group)}
                               </ThemedText>
                             </View>
-                            {last && (
-                              <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
-                                {formatShortTime(last.created_at, i18n.language)}
-                              </ThemedText>
-                            )}
+                            <View style={styles.meta}>
+                              {last && (
+                                <ThemedText type="small" themeColor="textSecondary">
+                                  {formatShortTime(last.created_at, i18n.language)}
+                                </ThemedText>
+                              )}
+                              {unread > 0 && (
+                                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                                  <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+                                    {unread > 99 ? '99+' : unread}
+                                  </ThemedText>
+                                </View>
+                              )}
+                            </View>
                           </Pressable>
                         </Link>
                       );
@@ -250,9 +284,24 @@ const styles = StyleSheet.create({
   groupName: {
     fontWeight: 700,
   },
-  time: {
+  meta: {
     alignSelf: 'flex-start',
+    alignItems: 'flex-end',
+    gap: Spacing.one,
     paddingTop: 2,
+  },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: 700,
   },
   joinButton: {
     height: 36,

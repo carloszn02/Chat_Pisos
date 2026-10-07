@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConversationRow } from '@/components/conversation-row';
@@ -17,6 +18,13 @@ export default function MessagesScreen() {
   const { session } = useSession();
   const { data, loadError, reload } = useInbox();
   const myUserId = session?.user.id ?? '';
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function refresh() {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  }
 
   const requests = data?.items.filter((item) => item.is_incoming_request) ?? [];
   const conversations = data?.items.filter((item) => !item.is_incoming_request) ?? [];
@@ -24,7 +32,9 @@ export default function MessagesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
           <View style={styles.content}>
             <ThemedText type="subtitle" style={styles.title}>
               {t('messages.title')}

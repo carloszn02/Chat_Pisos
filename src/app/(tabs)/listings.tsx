@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ListingCard } from '@/components/listing-card';
@@ -56,6 +56,7 @@ export default function ListingsScreen() {
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [owners, setOwners] = useState<Map<string, PublicProfile>>(new Map());
   const [loadError, setLoadError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (filters: ListingFilters) => {
     try {
@@ -75,6 +76,12 @@ export default function ListingsScreen() {
       load({ type, districtId, maxPrice });
     }, [load, type, districtId, maxPrice])
   );
+
+  async function refresh() {
+    setRefreshing(true);
+    await load({ type, districtId, maxPrice });
+    setRefreshing(false);
+  }
 
   function applyMaxPrice() {
     const value = Number(maxPriceText.trim());
@@ -109,7 +116,10 @@ export default function ListingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('listings.title')}</ThemedText>
