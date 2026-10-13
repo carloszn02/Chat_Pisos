@@ -15,7 +15,13 @@ export type LocationMapProps = {
 };
 
 /** A map with a pin (exact) or a circle (approximate). Phone version; see location-map.web.tsx. */
-export function LocationMap({ center, exact, editable = false, height = 220, onMove }: LocationMapProps) {
+export function LocationMap({
+  center,
+  exact,
+  editable = false,
+  height = 220,
+  onMove,
+}: LocationMapProps) {
   const theme = useTheme();
   const html = useMemo(
     () => buildMapHtml({ center, exact, editable, color: theme.primary }),

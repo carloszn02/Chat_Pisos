@@ -20,7 +20,13 @@ export function Avatar({ uri, name, size }: AvatarProps) {
   }
   return (
     <View style={[styles.fallback, shape, { backgroundColor: theme.primary }]}>
-      <ThemedText style={{ color: theme.onPrimary, fontSize: size * 0.4, lineHeight: size * 0.5, fontWeight: 700 }}>
+      <ThemedText
+        style={{
+          color: theme.onPrimary,
+          fontSize: size * 0.4,
+          lineHeight: size * 0.5,
+          fontWeight: 700,
+        }}>
         {name.trim().charAt(0).toUpperCase()}
       </ThemedText>
     </View>

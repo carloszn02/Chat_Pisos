@@ -41,8 +41,12 @@ export function useInbox() {
     // Unique name: the Messages tab and the requests screen can both be open at once.
     const channel = supabase
       .channel(`inbox:${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => load())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () =>
+        load()
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () =>
+        load()
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

@@ -17,7 +17,9 @@ export function ListingTypeTag({ type }: { type: ListingType }) {
   const colors = LISTING_TYPE_COLORS[type];
   return (
     <View style={[styles.tag, { backgroundColor: colors.background }]}>
-      <ThemedText style={[styles.tagText, { color: colors.text }]}>{t(`listings.types.${type}`)}</ThemedText>
+      <ThemedText style={[styles.tagText, { color: colors.text }]}>
+        {t(`listings.types.${type}`)}
+      </ThemedText>
     </View>
   );
 }
@@ -69,16 +71,27 @@ export function ListingCard({ listing, districts, owner, compact = false }: List
         style={({ pressed }) => [
           styles.card,
           compact && styles.compactCard,
-          { borderColor: theme.border, backgroundColor: compact ? theme.background : theme.backgroundElement },
+          {
+            borderColor: theme.border,
+            backgroundColor: compact ? theme.background : theme.backgroundElement,
+          },
           pressed && styles.pressed,
         ]}>
-        {!compact && photo && <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />}
+        {!compact && photo && (
+          <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+        )}
         <View style={styles.headerRow}>
           <ListingTypeTag type={listing.type} />
-          {listing.status === 'closed' && (
+          {listing.status === 'closed' ? (
             <ThemedText type="small" themeColor="textSecondary">
               {t('listings.closed')}
             </ThemedText>
+          ) : (
+            new Date(listing.expires_at) <= new Date() && (
+              <ThemedText type="small" style={{ color: theme.danger }}>
+                {t('listings.expired')}
+              </ThemedText>
+            )
           )}
         </View>
         <ThemedText style={styles.title} numberOfLines={2}>

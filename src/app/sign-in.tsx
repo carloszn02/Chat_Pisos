@@ -209,7 +209,10 @@ export default function SignInScreen() {
                         accessibilityLabel={t(`languages.${lang}`)}
                         accessibilityState={{ selected }}
                         onPress={() => i18n.changeLanguage(lang)}
-                        style={[styles.languageOption, selected && { backgroundColor: theme.primary }]}>
+                        style={[
+                          styles.languageOption,
+                          selected && { backgroundColor: theme.primary },
+                        ]}>
                         <ThemedText
                           type="smallBold"
                           style={{ color: selected ? theme.onPrimary : theme.textSecondary }}>
@@ -229,7 +232,11 @@ export default function SignInScreen() {
               </View>
 
               <ThemedText type="subtitle" style={styles.formTitle}>
-                {isSignUp ? t('auth.signUpTitle') : isForgot ? t('auth.forgotTitle') : t('auth.signInTitle')}
+                {isSignUp
+                  ? t('auth.signUpTitle')
+                  : isForgot
+                    ? t('auth.forgotTitle')
+                    : t('auth.signInTitle')}
               </ThemedText>
 
               {isForgot && (
@@ -255,31 +262,31 @@ export default function SignInScreen() {
               </View>
 
               {!isForgot && (
-              <View style={styles.field}>
-                <ThemedText type="smallBold">{t('auth.password')}</ThemedText>
-                <TextInput
-                  style={inputStyle}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder={t('auth.passwordPlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  secureTextEntry
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  accessibilityLabel={t('auth.password')}
-                  onSubmitEditing={submit}
-                />
-                {mode === 'signIn' && (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => changeMode('forgot')}
-                    hitSlop={8}
-                    style={styles.forgotLink}>
-                    <ThemedText type="small" style={{ color: theme.primary }}>
-                      {t('auth.forgotLink')}
-                    </ThemedText>
-                  </Pressable>
-                )}
-              </View>
+                <View style={styles.field}>
+                  <ThemedText type="smallBold">{t('auth.password')}</ThemedText>
+                  <TextInput
+                    style={inputStyle}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={t('auth.passwordPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    secureTextEntry
+                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                    accessibilityLabel={t('auth.password')}
+                    onSubmitEditing={submit}
+                  />
+                  {mode === 'signIn' && (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => changeMode('forgot')}
+                      hitSlop={8}
+                      style={styles.forgotLink}>
+                      <ThemedText type="small" style={{ color: theme.primary }}>
+                        {t('auth.forgotLink')}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
               )}
 
               {isSignUp && (
@@ -307,13 +314,20 @@ export default function SignInScreen() {
               )}
 
               {error && (
-                <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
                   {t(`auth.errors.${error}`)}
                 </ThemedText>
               )}
 
               {error === 'emailNotConfirmed' && (
-                <Pressable accessibilityRole="button" disabled={busy} onPress={resendConfirmation} hitSlop={8}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={busy}
+                  onPress={resendConfirmation}
+                  hitSlop={8}>
                   <ThemedText type="smallBold" style={{ color: theme.primary }}>
                     {t('auth.resendConfirmation')}
                   </ThemedText>
@@ -333,7 +347,11 @@ export default function SignInScreen() {
                   <ActivityIndicator color={theme.onPrimary} />
                 ) : (
                   <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                    {isSignUp ? t('auth.signUpButton') : isForgot ? t('auth.sendResetLink') : t('auth.signInButton')}
+                    {isSignUp
+                      ? t('auth.signUpButton')
+                      : isForgot
+                        ? t('auth.sendResetLink')
+                        : t('auth.signInButton')}
                   </ThemedText>
                 )}
               </Pressable>
@@ -349,16 +367,16 @@ export default function SignInScreen() {
                   </ThemedText>
                 </Pressable>
               ) : (
-              <View style={styles.switchRow}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {isSignUp ? t('auth.haveAccount') : t('auth.noAccount')}
-                </ThemedText>
-                <Pressable accessibilityRole="button" onPress={switchMode} hitSlop={12}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    {isSignUp ? t('auth.switchToSignIn') : t('auth.switchToSignUp')}
+                <View style={styles.switchRow}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {isSignUp ? t('auth.haveAccount') : t('auth.noAccount')}
                   </ThemedText>
-                </Pressable>
-              </View>
+                  <Pressable accessibilityRole="button" onPress={switchMode} hitSlop={12}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {isSignUp ? t('auth.switchToSignIn') : t('auth.switchToSignUp')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               )}
             </View>
           </ScrollView>

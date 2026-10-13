@@ -26,17 +26,25 @@ const es = {
     joinToWrite: 'Únete a este grupo para escribir',
     leave: 'Salir del grupo',
     leaveConfirmTitle: '¿Salir de {{name}}?',
-    leaveConfirmBody: 'Dejarás de poder escribir en el grupo. Puedes volver a unirte cuando quieras.',
+    leaveConfirmBody:
+      'Dejarás de poder escribir en el grupo. Puedes volver a unirte cuando quieras.',
     sendError: 'No se ha podido enviar el mensaje.',
     you: 'Tú',
+    rateLimit: 'Estás enviando mensajes muy rápido. Espera un momento y vuelve a intentarlo.',
+    messageDeleted: 'Mensaje eliminado',
+    deleteMessage: 'Eliminar mensaje',
+    deleteConfirmTitle: '¿Eliminar este mensaje?',
+    deleteConfirmBody: 'Desaparecerá para todos y se verá «Mensaje eliminado».',
   },
   messages: {
     title: 'Mensajes',
     requests: 'Solicitudes de mensaje',
     requestsHint: 'De personas con las que aún no has hablado',
-    requestsIntro: 'Aquí llegan los mensajes de personas con las que aún no has hablado. Solo verán tus respuestas si aceptas.',
+    requestsIntro:
+      'Aquí llegan los mensajes de personas con las que aún no has hablado. Solo verán tus respuestas si aceptas.',
     noRequests: 'No tienes solicitudes pendientes.',
-    empty: 'Aún no tienes conversaciones. Toca el nombre de alguien en un chat de barrio para ver su perfil y escribirle.',
+    empty:
+      'Aún no tienes conversaciones. Toca el nombre de alguien en un chat de barrio para ver su perfil y escribirle.',
     loadError: 'No se han podido cargar los mensajes.',
     requestSent: 'Solicitud enviada',
     safetyTip: 'Consejo: visita el piso y conoce a la persona antes de pagar nada.',
@@ -48,6 +56,8 @@ const es = {
     waitingForAnswer: '{{name}} todavía no ha aceptado tu solicitud.',
     actionError: 'Algo ha fallado. Inténtalo de nuevo.',
     viewProfile: 'Ver perfil',
+    talkingAbout: 'Sobre este anuncio',
+    removeListing: 'Quitar anuncio',
     options: 'Opciones',
     sendMessage: 'Escribir a {{name}}',
     userNotFound: 'No se ha encontrado este perfil.',
@@ -61,7 +71,8 @@ const es = {
     titleUser: 'Denunciar perfil',
     titleMessage: 'Denunciar mensaje',
     titleListing: 'Denunciar anuncio',
-    intro: 'Cuéntanos qué ha pasado con {{name}}. Tu denuncia es anónima: no le diremos quién la ha enviado.',
+    intro:
+      'Cuéntanos qué ha pasado con {{name}}. Tu denuncia es anónima: no le diremos quién la ha enviado.',
     reasonLabel: 'Motivo',
     reasons: {
       scam: 'Posible estafa',
@@ -77,27 +88,32 @@ const es = {
     alsoBlockHint: 'No verás sus mensajes y no podrá escribirte.',
     submit: 'Enviar denuncia',
     thanksTitle: 'Gracias por avisarnos',
-    thanksBody: 'Revisaremos la denuncia lo antes posible. Si crees que estás en peligro, llama al 112.',
+    thanksBody:
+      'Revisaremos la denuncia lo antes posible. Si crees que estás en peligro, llama al 112.',
     done: 'Hecho',
     errors: {
       reasonRequired: 'Elige un motivo.',
+      rateLimit: 'Has enviado muchas denuncias hoy. Si es urgente, escríbenos.',
       generic: 'No se ha podido enviar la denuncia. Inténtalo de nuevo.',
     },
   },
   blocked: {
     title: 'Usuarios bloqueados',
-    intro: 'No ves los mensajes de estas personas en los grupos, y no podéis escribiros en privado. No saben que las has bloqueado.',
+    intro:
+      'No ves los mensajes de estas personas en los grupos, y no podéis escribiros en privado. No saben que las has bloqueado.',
     empty: 'No has bloqueado a nadie.',
     block: 'Bloquear',
     blockName: 'Bloquear a {{name}}',
     unblock: 'Desbloquear',
     confirmTitle: '¿Bloquear a {{name}}?',
-    confirmBody: 'No verás sus mensajes en los grupos y no podréis escribiros en privado. No se lo notificaremos.',
+    confirmBody:
+      'No verás sus mensajes en los grupos y no podréis escribiros en privado. No se lo notificaremos.',
     youBlocked: 'Has bloqueado a {{name}}.',
   },
   publish: {
     title: 'Publicar anuncio',
-    intro: 'Ofrece tu habitación o tu piso, o cuenta qué estás buscando. Puedes tener varios anuncios a la vez.',
+    intro:
+      'Ofrece tu habitación o tu piso, o cuenta qué estás buscando. Puedes tener varios anuncios a la vez.',
   },
   listings: {
     location: 'Ubicación',
@@ -107,7 +123,8 @@ const es = {
     new: 'Nuevo anuncio',
     edit: 'Editar anuncio',
     mine: 'Mis anuncios',
-    mineEmpty: 'Aún no tienes anuncios. Puedes tener varios a la vez: por ejemplo, ofrecer tu habitación y buscar otra.',
+    mineEmpty:
+      'Aún no tienes anuncios. Puedes tener varios a la vez: por ejemplo, ofrecer tu habitación y buscar otra.',
     types: {
       offering_room: 'Ofrezco habitación',
       seeking_room: 'Busco habitación',
@@ -117,6 +134,11 @@ const es = {
     budgetUpTo: 'Hasta {{price}}',
     fromDate: 'Desde el {{date}}',
     closed: 'Cerrado',
+    expired: 'Caducado',
+    expiresIn_one: 'Visible {{count}} día más.',
+    expiresIn_other: 'Visible {{count}} días más.',
+    expiredNote: 'Ha caducado y ya no lo ve nadie.',
+    renew: 'Renovar',
     yes: 'Sí',
     no: 'No',
     months_one: '{{count}} mes',
@@ -188,7 +210,8 @@ const es = {
       location: 'Ubicación',
       addressPlaceholder: 'Ej.: Calle del Pez 12, Madrid',
       searchAddress: 'Buscar',
-      searchNotFound: 'No hemos encontrado esa dirección en Madrid. Prueba a escribirla de otra forma o coloca el punto a mano.',
+      searchNotFound:
+        'No hemos encontrado esa dirección en Madrid. Prueba a escribirla de otra forma o coloca el punto a mano.',
       searchFailed: 'No se ha podido buscar la dirección. Inténtalo de nuevo.',
       placeManually: 'Colocar el punto en el mapa a mano',
       pinHint: 'Arrastra el punto o toca el mapa para ajustar la ubicación.',
@@ -198,7 +221,8 @@ const es = {
         exact: 'Dirección exacta',
       },
       visibilityHints: {
-        approximate: 'Recomendado: se muestra un círculo de unos 300 m y nunca guardamos la dirección exacta.',
+        approximate:
+          'Recomendado: se muestra un círculo de unos 300 m y nunca guardamos la dirección exacta.',
         exact: 'Se mostrará el punto exacto y la dirección que has escrito a cualquier usuario.',
       },
       removeLocation: 'Quitar ubicación',
@@ -217,7 +241,9 @@ const es = {
       invalidPrice: 'Introduce un precio válido en euros.',
       invalidDate: 'Introduce una fecha válida.',
       invalidNumber: 'Revisa los números: solo cifras enteras.',
-      confirmPin: 'Para mostrar la dirección exacta, busca la dirección o mueve el punto a su sitio exacto.',
+      confirmPin:
+        'Para mostrar la dirección exacta, busca la dirección o mueve el punto a su sitio exacto.',
+      rateLimit: 'Has publicado muchos anuncios hoy. Podrás publicar más mañana.',
       generic: 'No se ha podido guardar el anuncio. Inténtalo de nuevo.',
     },
   },
@@ -231,10 +257,16 @@ const es = {
       messages: 'Tus conversaciones y mensajes privados',
       groups: 'Tus mensajes en los chats de barrio',
     },
-    reportsNote: 'Las denuncias que hayas enviado se borran también. Si quieres volver, tendrás que crear una cuenta nueva.',
+    reportsNote:
+      'Por seguridad, las denuncias que existan se conservan sin tus datos de perfil. Si quieres volver, tendrás que crear una cuenta nueva.',
     confirmCheckbox: 'Entiendo que esto no se puede deshacer.',
     button: 'Eliminar mi cuenta',
     error: 'No se ha podido eliminar la cuenta. Inténtalo de nuevo.',
+  },
+  connection: {
+    title: 'Sin conexión',
+    body: 'No hemos podido conectar con Chat Pisos. Revisa tu conexión a internet y vuelve a intentarlo.',
+    retry: 'Reintentar',
   },
   settings: {
     title: 'Ajustes',
@@ -266,14 +298,16 @@ const es = {
     switchToSignIn: 'Inicia sesión',
     switchToSignUp: 'Regístrate',
     checkEmailTitle: 'Revisa tu email',
-    checkEmailBody: 'Te hemos enviado un enlace a {{email}}. Ábrelo para confirmar tu cuenta y luego inicia sesión.',
+    checkEmailBody:
+      'Te hemos enviado un enlace a {{email}}. Ábrelo para confirmar tu cuenta y luego inicia sesión.',
     backToSignIn: 'Volver a iniciar sesión',
     resendConfirmation: 'Reenviar el email de confirmación',
     forgotLink: '¿Has olvidado tu contraseña?',
     forgotTitle: 'Recupera tu contraseña',
     forgotIntro: 'Escribe tu email y te enviaremos un enlace para crear una contraseña nueva.',
     sendResetLink: 'Enviar enlace',
-    resetEmailBody: 'Si existe una cuenta con {{email}}, te hemos enviado un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.',
+    resetEmailBody:
+      'Si existe una cuenta con {{email}}, te hemos enviado un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.',
     newPasswordTitle: 'Crea una contraseña nueva',
     newPasswordIntro: 'Elige una contraseña que no uses en otros sitios.',
     newPassword: 'Contraseña nueva',
@@ -283,7 +317,8 @@ const es = {
       shortPassword: 'La contraseña debe tener al menos 8 caracteres.',
       mismatch: 'Las contraseñas no coinciden.',
       samePassword: 'La contraseña nueva debe ser distinta de la anterior.',
-      generic: 'No se ha podido cambiar la contraseña. El enlace puede haber caducado: pide uno nuevo.',
+      generic:
+        'No se ha podido cambiar la contraseña. El enlace puede haber caducado: pide uno nuevo.',
     },
     errors: {
       invalidEmail: 'Introduce un email válido.',
@@ -301,12 +336,17 @@ const es = {
     progress: 'Tu perfil',
     duration: 'Te llevará unos 2 minutos',
     title: 'Cuéntanos sobre ti',
-    intro: 'Así los demás pueden ver si seríais buenos compañeros de piso. Después podrás publicar todos los anuncios que quieras.',
+    intro:
+      'Así los demás pueden ver si seríais buenos compañeros de piso. Después podrás publicar todos los anuncios que quieras.',
     addPhoto: 'Añadir foto',
     changePhoto: 'Cambiar foto',
-    photoHint: 'Añade una foto clara de tu cara. Los perfiles con foto reciben muchas más respuestas.',
+    photoHint:
+      'Añade una foto clara de tu cara. Los perfiles con foto reciben muchas más respuestas.',
     firstName: 'Nombre',
     birthDate: 'Fecha de nacimiento',
+    districts: '¿Qué barrios te interesan?',
+    districtsHint:
+      'Te uniremos a sus chats y al general de Madrid. Puedes cambiarlo cuando quieras.',
     birthDateLocked: 'La fecha de nacimiento no se puede cambiar. Los demás solo ven tu edad.',
     day: 'Día',
     month: 'Mes',
@@ -314,7 +354,8 @@ const es = {
     occupation: '¿A qué te dedicas?',
     languages: 'Idiomas que hablas',
     about: 'Sobre ti',
-    aboutPlaceholder: 'Ej.: Estudiante de máster, de Valencia. Me encanta cocinar y entre semana soy tranquilo/a.',
+    aboutPlaceholder:
+      'Ej.: Estudiante de máster, de Valencia. Me encanta cocinar y entre semana soy tranquilo/a.',
     habits: 'Tus hábitos',
     schedule: 'Horario',
     tidiness: 'Orden',

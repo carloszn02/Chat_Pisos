@@ -1,17 +1,22 @@
 import type { ImagePickerAsset } from 'expo-image-picker';
 
+import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 
 const PUBLIC_PATH_MARKER = '/storage/v1/object/public/avatars/';
 
+/** Profile photos are shown small, so 800 px is plenty. */
+const AVATAR_MAX_SIDE = 800;
+
 /** Uploads a profile photo to the user's own folder and returns its public URL. */
 export async function uploadAvatar(userId: string, asset: ImagePickerAsset): Promise<string> {
-  const contentType = asset.mimeType ?? 'image/jpeg';
+  const image = await shrinkImage(asset, AVATAR_MAX_SIDE);
+  const contentType = image.mimeType;
   const extension = contentType.split('/')[1] ?? 'jpg';
   // A new file name each time, so phones and browsers never show an old cached photo.
   const path = `${userId}/avatar-${Date.now()}.${extension}`;
 
-  const body = await (await fetch(asset.uri)).arrayBuffer();
+  const body = await (await fetch(image.uri)).arrayBuffer();
   const { error } = await supabase.storage.from('avatars').upload(path, body, { contentType });
   if (error) throw error;
 

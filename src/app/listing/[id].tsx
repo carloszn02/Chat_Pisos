@@ -2,7 +2,14 @@ import { Image } from 'expo-image';
 import { Link, router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
@@ -17,7 +24,13 @@ import { useTheme } from '@/hooks/use-theme';
 import { fetchPublicProfile } from '@/lib/chat';
 import { startConversation } from '@/lib/direct-messages';
 import { formatDate } from '@/lib/format';
-import { deleteListing, fetchListing, setListingStatus } from '@/lib/listings';
+import {
+  daysUntilExpiry,
+  deleteListing,
+  fetchListing,
+  renewListing,
+  setListingStatus,
+} from '@/lib/listings';
 import type { PublicProfile } from '@/types/chat';
 import type { Listing } from '@/types/listing';
 import { SPOKEN_LANGUAGES } from '@/types/profile';
@@ -69,7 +82,11 @@ export default function ListingDetailScreen() {
     setActionError(false);
     try {
       const conversationId = await startConversation(listing.user_id);
-      router.push({ pathname: '/conversation/[id]', params: { id: conversationId } });
+      // Opening the chat with the listing attached shows "Talking about: …" above the message box.
+      router.push({
+        pathname: '/conversation/[id]',
+        params: { id: conversationId, listingId: listing.id },
+      });
     } catch {
       setActionError(true);
     } finally {
@@ -85,6 +102,21 @@ export default function ListingDetailScreen() {
     try {
       await setListingStatus(listing.id, status);
       setListing({ ...listing, status });
+    } catch {
+      setActionError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function renew() {
+    if (!listing) return;
+    setBusy(true);
+    setActionError(false);
+    try {
+      await renewListing(listing.id);
+      const updated = await fetchListing(listing.id);
+      if (updated) setListing(updated);
     } catch {
       setActionError(true);
     } finally {
@@ -110,7 +142,12 @@ export default function ListingDetailScreen() {
     if (!listing) return;
     router.push({
       pathname: '/report',
-      params: { userId: listing.user_id, name: owner?.first_name ?? '', listingId: listing.id, snapshot: listing.title },
+      params: {
+        userId: listing.user_id,
+        name: owner?.first_name ?? '',
+        listingId: listing.id,
+        snapshot: listing.title,
+      },
     });
   }
 
@@ -127,10 +164,14 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const yesNo = (value: boolean | null) => (value === null ? null : t(value ? 'listings.yes' : 'listings.no'));
+  const yesNo = (value: boolean | null) =>
+    value === null ? null : t(value ? 'listings.yes' : 'listings.no');
   const facts = [
     [t('listings.facts.availableFrom'), formatDate(listing.available_from, i18n.language)],
-    [t('listings.facts.minStay'), listing.min_stay_months && t('listings.months', { count: listing.min_stay_months })],
+    [
+      t('listings.facts.minStay'),
+      listing.min_stay_months && t('listings.months', { count: listing.min_stay_months }),
+    ],
     [t('listings.facts.billsIncluded'), yesNo(listing.bills_included)],
     [t('listings.facts.furnished'), yesNo(listing.furnished)],
     [t('listings.facts.roomSize'), listing.room_size_m2 && `${listing.room_size_m2} m²`],
@@ -162,9 +203,18 @@ export default function ListingDetailScreen() {
       <Stack.Screen options={{ title: t(`listings.types.${listing.type}`) }} />
       <ScrollView>
         {listing.photo_urls.length > 0 && (
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.gallery}>
             {listing.photo_urls.map((url) => (
-              <Image key={url} source={{ uri: url }} style={{ width: photoWidth, height: photoWidth * 0.66 }} contentFit="cover" />
+              <Image
+                key={url}
+                source={{ uri: url }}
+                style={{ width: photoWidth, height: photoWidth * 0.66 }}
+                contentFit="cover"
+              />
             ))}
           </ScrollView>
         )}
@@ -189,7 +239,12 @@ export default function ListingDetailScreen() {
           {facts.length > 0 && (
             <View style={styles.facts}>
               {facts.map(([label, value]) => (
-                <View key={label} style={[styles.fact, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+                <View
+                  key={label}
+                  style={[
+                    styles.fact,
+                    { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                  ]}>
                   <ThemedText type="small" themeColor="textSecondary">
                     {label}
                   </ThemedText>
@@ -199,7 +254,9 @@ export default function ListingDetailScreen() {
             </View>
           )}
 
-          {listing.description ? <ThemedText style={styles.description}>{listing.description}</ThemedText> : null}
+          {listing.description ? (
+            <ThemedText style={styles.description}>{listing.description}</ThemedText>
+          ) : null}
 
           {listing.latitude != null && listing.longitude != null && (
             <View style={styles.locationSection}>
@@ -215,9 +272,15 @@ export default function ListingDetailScreen() {
           )}
 
           {owner && (
-            <View style={[styles.ownerCard, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+            <View
+              style={[
+                styles.ownerCard,
+                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              ]}>
               <Link href={{ pathname: '/user/[id]', params: { id: owner.id } }} asChild>
-                <Pressable accessibilityRole="link" style={({ pressed }) => [styles.ownerRow, pressed && styles.pressed]}>
+                <Pressable
+                  accessibilityRole="link"
+                  style={({ pressed }) => [styles.ownerRow, pressed && styles.pressed]}>
                   <Avatar uri={owner.avatar_url} name={owner.first_name} size={48} />
                   <View style={styles.flex}>
                     <ThemedText style={styles.bold}>
@@ -225,7 +288,8 @@ export default function ListingDetailScreen() {
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
                       {[
-                        owner.occupation && t(`profileSetup.options.occupation.${owner.occupation}`),
+                        owner.occupation &&
+                          t(`profileSetup.options.occupation.${owner.occupation}`),
                         owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
                       ]
                         .filter(Boolean)
@@ -242,7 +306,9 @@ export default function ListingDetailScreen() {
                   </ThemedText>
                   <View style={styles.pills}>
                     {inCommon.map((habit) => (
-                      <View key={habit} style={[styles.pill, { backgroundColor: theme.backgroundSelected }]}>
+                      <View
+                        key={habit}
+                        style={[styles.pill, { backgroundColor: theme.backgroundSelected }]}>
                         <ThemedText type="small">{habit}</ThemedText>
                       </View>
                     ))}
@@ -260,11 +326,42 @@ export default function ListingDetailScreen() {
 
           {isOwner ? (
             <View style={styles.actions}>
+              {listing.status === 'active' && (
+                <View
+                  style={[
+                    styles.expiryBox,
+                    { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+                  ]}>
+                  <ThemedText type="small" style={styles.flex}>
+                    {daysUntilExpiry(listing) > 0
+                      ? t('listings.expiresIn', { count: daysUntilExpiry(listing) })
+                      : t('listings.expiredNote')}
+                  </ThemedText>
+                  {daysUntilExpiry(listing) <= 14 && (
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={busy}
+                      onPress={renew}
+                      hitSlop={8}
+                      style={({ pressed }) => (pressed || busy) && styles.pressed}>
+                      <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                        {t('listings.renew')}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
+              )}
               <Link href={{ pathname: '/edit-listing/[id]', params: { id: listing.id } }} asChild>
                 <Pressable
                   accessibilityRole="button"
-                  style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
-                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>{t('listings.edit')}</ThemedText>
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    { backgroundColor: theme.primary },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                    {t('listings.edit')}
+                  </ThemedText>
                 </Pressable>
               </Link>
               <View style={styles.row}>
@@ -272,7 +369,11 @@ export default function ListingDetailScreen() {
                   accessibilityRole="button"
                   disabled={busy}
                   onPress={toggleClosed}
-                  style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.border }, (pressed || busy) && styles.pressed]}>
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    { borderColor: theme.border },
+                    (pressed || busy) && styles.pressed,
+                  ]}>
                   <ThemedText type="smallBold">
                     {listing.status === 'active' ? t('listings.markClosed') : t('listings.reopen')}
                   </ThemedText>
@@ -281,7 +382,11 @@ export default function ListingDetailScreen() {
                   accessibilityRole="button"
                   disabled={busy}
                   onPress={() => setConfirmDelete(true)}
-                  style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.border }, (pressed || busy) && styles.pressed]}>
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    { borderColor: theme.border },
+                    (pressed || busy) && styles.pressed,
+                  ]}>
                   <ThemedText type="smallBold" style={{ color: theme.danger }}>
                     {t('listings.delete')}
                   </ThemedText>
@@ -294,7 +399,11 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 disabled={busy}
                 onPress={message}
-                style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.primary }, (pressed || busy) && styles.pressed]}>
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary },
+                  (pressed || busy) && styles.pressed,
+                ]}>
                 {busy ? (
                   <ActivityIndicator color={theme.onPrimary} />
                 ) : (
@@ -303,7 +412,11 @@ export default function ListingDetailScreen() {
                   </ThemedText>
                 )}
               </Pressable>
-              <Pressable accessibilityRole="button" onPress={report} hitSlop={8} style={styles.reportLink}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={report}
+                hitSlop={8}
+                style={styles.reportLink}>
                 <ThemedText type="small" style={{ color: theme.danger }}>
                   {t('listings.report')}
                 </ThemedText>
@@ -421,6 +534,14 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontWeight: 700,
+  },
+  expiryBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: Spacing.three,
   },
   secondaryButton: {
     flex: 1,

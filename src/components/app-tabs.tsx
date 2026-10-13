@@ -17,11 +17,17 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundSelected}
       iconColor={{ default: colors.textSecondary, selected: colors.primary }}
-      labelStyle={{ default: { color: colors.textSecondary }, selected: { color: colors.primary } }}>
+      labelStyle={{
+        default: { color: colors.textSecondary },
+        selected: { color: colors.primary },
+      }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{t('tabs.chats')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
+          sf={{
+            default: 'bubble.left.and.bubble.right',
+            selected: 'bubble.left.and.bubble.right.fill',
+          }}
           md="forum"
         />
       </NativeTabs.Trigger>
@@ -33,12 +39,18 @@ export default function AppTabs() {
 
       <NativeTabs.Trigger name="publish">
         <NativeTabs.Trigger.Label>{t('tabs.publish')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'plus.square', selected: 'plus.square.fill' }} md="add_box" />
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'plus.square', selected: 'plus.square.fill' }}
+          md="add_box"
+        />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="messages">
         <NativeTabs.Trigger.Label>{t('tabs.messages')}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'envelope', selected: 'envelope.fill' }} md="mail" />
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'envelope', selected: 'envelope.fill' }}
+          md="mail"
+        />
         <NativeTabs.Trigger.Badge hidden={unread === 0}>
           {unread > 99 ? '99+' : String(unread)}
         </NativeTabs.Trigger.Badge>

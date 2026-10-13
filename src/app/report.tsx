@@ -18,6 +18,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useTheme } from '@/hooks/use-theme';
+import { isRateLimitError } from '@/lib/errors';
 import { REPORT_REASONS, submitReport, type ReportReason } from '@/lib/moderation';
 
 type ReportParams = {
@@ -40,7 +41,7 @@ export default function ReportScreen() {
   const [details, setDetails] = useState('');
   const [alsoBlock, setAlsoBlock] = useState(!blockedIds.has(params.userId));
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<'reasonRequired' | 'generic' | null>(null);
+  const [error, setError] = useState<'reasonRequired' | 'rateLimit' | 'generic' | null>(null);
   const [sent, setSent] = useState(false);
 
   const isMessageReport = !!(params.groupMessageId || params.directMessageId);
@@ -62,8 +63,8 @@ export default function ReportScreen() {
       });
       if (alsoBlock && !blockedIds.has(params.userId)) await block(params.userId);
       setSent(true);
-    } catch {
-      setError('generic');
+    } catch (submitError) {
+      setError(isRateLimitError(submitError) ? 'rateLimit' : 'generic');
     } finally {
       setBusy(false);
     }
@@ -90,7 +91,9 @@ export default function ReportScreen() {
               : t('report.titleUser'),
         }}
       />
-      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
             {sent ? (
@@ -104,8 +107,14 @@ export default function ReportScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={close}
-                  style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
-                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>{t('report.done')}</ThemedText>
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    { backgroundColor: theme.primary },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                    {t('report.done')}
+                  </ThemedText>
                 </Pressable>
               </>
             ) : (
@@ -115,7 +124,11 @@ export default function ReportScreen() {
                 </ThemedText>
 
                 {params.snapshot ? (
-                  <View style={[styles.quote, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+                  <View
+                    style={[
+                      styles.quote,
+                      { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                    ]}>
                     <ThemedText type="small" themeColor="textSecondary" numberOfLines={4}>
                       “{params.snapshot}”
                     </ThemedText>
@@ -178,7 +191,10 @@ export default function ReportScreen() {
                 )}
 
                 {error && (
-                  <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+                  <ThemedText
+                    type="small"
+                    style={{ color: theme.danger }}
+                    accessibilityLiveRegion="polite">
                     {t(`report.errors.${error}`)}
                   </ThemedText>
                 )}

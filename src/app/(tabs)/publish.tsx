@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
+import { isRateLimitError } from '@/lib/errors';
 import { createListing, shareListingInGroups } from '@/lib/listings';
 
 /** The Publish tab: a dedicated place to post a listing, like Instagram's "+" button. */
@@ -23,8 +24,8 @@ export default function PublishScreen() {
     let listing;
     try {
       listing = await createListing(session.user.id, values, newPhotos);
-    } catch {
-      return 'generic' as const;
+    } catch (error) {
+      return isRateLimitError(error) ? ('rateLimit' as const) : ('generic' as const);
     }
     if (shareInGroups) {
       try {
@@ -42,7 +43,9 @@ export default function PublishScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
               <View style={styles.header}>
@@ -51,7 +54,11 @@ export default function PublishScreen() {
                   {t('publish.intro')}
                 </ThemedText>
               </View>
-              <ListingForm key={formKey} submitLabel={t('listings.form.publish')} onSubmit={publish} />
+              <ListingForm
+                key={formKey}
+                submitLabel={t('listings.form.publish')}
+                onSubmit={publish}
+              />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

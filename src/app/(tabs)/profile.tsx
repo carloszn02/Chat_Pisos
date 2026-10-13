@@ -83,7 +83,9 @@ export default function ProfileScreen() {
                   {t('listings.mineEmpty')}
                 </ThemedText>
               ) : (
-                myListings.map((listing) => <ListingCard key={listing.id} listing={listing} districts={districts} />)
+                myListings.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} districts={districts} />
+                ))
               )}
             </View>
 
@@ -139,7 +141,11 @@ export default function ProfileScreen() {
                   onPress={() => supabase.auth.signOut()}
                   style={({ pressed }) => [
                     styles.row,
-                    { backgroundColor: theme.backgroundElement, borderTopWidth: 1, borderTopColor: theme.border },
+                    {
+                      backgroundColor: theme.backgroundElement,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.border,
+                    },
                     pressed && styles.pressed,
                   ]}>
                   <ThemedText style={{ color: theme.danger }}>{t('settings.signOut')}</ThemedText>

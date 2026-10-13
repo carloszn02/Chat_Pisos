@@ -1,7 +1,14 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConversationRow } from '@/components/conversation-row';
@@ -34,13 +41,17 @@ export default function MessagesScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
+          }>
           <View style={styles.content}>
             <ThemedText type="subtitle" style={styles.title}>
               {t('messages.title')}
             </ThemedText>
 
-            {!data && !loadError && <ActivityIndicator color={theme.primary} style={styles.loader} />}
+            {!data && !loadError && (
+              <ActivityIndicator color={theme.primary} style={styles.loader} />
+            )}
 
             {loadError && (
               <View style={styles.errorBox}>

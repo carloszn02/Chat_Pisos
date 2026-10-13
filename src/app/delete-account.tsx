@@ -52,7 +52,11 @@ export default function DeleteAccountScreen() {
             {t('deleteAccount.intro')}
           </ThemedText>
 
-          <View style={[styles.box, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+          <View
+            style={[
+              styles.box,
+              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+            ]}>
             {items.map((item) => (
               <ThemedText key={item} style={styles.bodyText}>
                 • {item}
@@ -85,7 +89,10 @@ export default function DeleteAccountScreen() {
           </Pressable>
 
           {error && (
-            <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
               {t('deleteAccount.error')}
             </ThemedText>
           )}

@@ -1,7 +1,14 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GroupTile } from '@/components/group-tile';
@@ -88,8 +95,11 @@ export default function ChatsScreen() {
   function preview(group: ChatGroup): string {
     const last = data?.lastMessages.get(group.id);
     if (!last) return t('chats.noMessagesYet');
+    if (last.deleted_at) return t('chats.messageDeleted');
     const author =
-      last.user_id === userId ? t('chats.you') : (data?.authors.get(last.user_id)?.first_name ?? '');
+      last.user_id === userId
+        ? t('chats.you')
+        : (data?.authors.get(last.user_id)?.first_name ?? '');
     return author ? `${author}: ${last.body}` : last.body;
   }
 
@@ -98,16 +108,24 @@ export default function ChatsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
+          }>
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('chats.title')}</ThemedText>
-              <View style={[styles.cityPill, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+              <View
+                style={[
+                  styles.cityPill,
+                  { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                ]}>
                 <ThemedText type="smallBold">{t('chats.city')}</ThemedText>
               </View>
             </View>
 
-            {!data && !loadError && <ActivityIndicator color={theme.primary} style={styles.loader} />}
+            {!data && !loadError && (
+              <ActivityIndicator color={theme.primary} style={styles.loader} />
+            )}
 
             {loadError && (
               <View style={styles.errorBox}>
@@ -137,8 +155,13 @@ export default function ChatsScreen() {
                       const last = data.lastMessages.get(group.id);
                       const unread = data.unread.get(group.id) ?? 0;
                       return (
-                        <Link key={group.id} href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
-                          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                        <Link
+                          key={group.id}
+                          href={{ pathname: '/group/[slug]', params: { slug: group.slug } }}
+                          asChild>
+                          <Pressable
+                            accessibilityRole="link"
+                            style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                             <GroupTile group={group} />
                             <View style={styles.rowText}>
                               <ThemedText style={styles.groupName}>{group.name}</ThemedText>
@@ -157,7 +180,8 @@ export default function ChatsScreen() {
                               )}
                               {unread > 0 && (
                                 <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-                                  <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+                                  <ThemedText
+                                    style={[styles.badgeText, { color: theme.onPrimary }]}>
                                     {unread > 99 ? '99+' : unread}
                                   </ThemedText>
                                 </View>
@@ -172,19 +196,28 @@ export default function ChatsScreen() {
 
                 {otherGroups.length > 0 && (
                   <>
-                    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+                    <ThemedText
+                      type="smallBold"
+                      themeColor="textSecondary"
+                      style={styles.sectionTitle}>
                       {t('chats.popularDistricts')}
                     </ThemedText>
                     <View style={styles.list}>
                       {otherGroups.map((group) => (
                         <View key={group.id} style={styles.row}>
-                          <Link href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
-                            <Pressable accessibilityRole="link" style={({ pressed }) => [styles.rowLink, pressed && styles.pressed]}>
+                          <Link
+                            href={{ pathname: '/group/[slug]', params: { slug: group.slug } }}
+                            asChild>
+                            <Pressable
+                              accessibilityRole="link"
+                              style={({ pressed }) => [styles.rowLink, pressed && styles.pressed]}>
                               <GroupTile group={group} />
                               <View style={styles.rowText}>
                                 <ThemedText style={styles.groupName}>{group.name}</ThemedText>
                                 <ThemedText type="small" themeColor="textSecondary">
-                                  {group.is_city_wide ? t('chats.cityWide') : t('chats.districtGroup')}
+                                  {group.is_city_wide
+                                    ? t('chats.cityWide')
+                                    : t('chats.districtGroup')}
                                 </ThemedText>
                               </View>
                             </Pressable>

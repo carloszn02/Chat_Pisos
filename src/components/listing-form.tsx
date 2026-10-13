@@ -82,12 +82,20 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
   const [day, setDay] = useState(initialDay);
   const [month, setMonth] = useState(initialMonth);
   const [year, setYear] = useState(initialYear);
-  const [minStay, setMinStay] = useState(initial?.min_stay_months ? String(initial.min_stay_months) : '');
-  const [roomSize, setRoomSize] = useState(initial?.room_size_m2 ? String(initial.room_size_m2) : '');
-  const [flatmates, setFlatmates] = useState(initial?.flatmates != null ? String(initial.flatmates) : '');
+  const [minStay, setMinStay] = useState(
+    initial?.min_stay_months ? String(initial.min_stay_months) : ''
+  );
+  const [roomSize, setRoomSize] = useState(
+    initial?.room_size_m2 ? String(initial.room_size_m2) : ''
+  );
+  const [flatmates, setFlatmates] = useState(
+    initial?.flatmates != null ? String(initial.flatmates) : ''
+  );
   const [bedrooms, setBedrooms] = useState(initial?.bedrooms ? String(initial.bedrooms) : '');
   const [furnished, setFurnished] = useState<YesNo | null>(toYesNo(initial?.furnished));
-  const [billsIncluded, setBillsIncluded] = useState<YesNo | null>(toYesNo(initial?.bills_included));
+  const [billsIncluded, setBillsIncluded] = useState<YesNo | null>(
+    toYesNo(initial?.bills_included)
+  );
   const [description, setDescription] = useState(initial?.description ?? '');
   const [keptPhotoUrls, setKeptPhotoUrls] = useState<string[]>(initial?.photo_urls ?? []);
   const [newPhotos, setNewPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -101,7 +109,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
   const [mapCenter, setMapCenter] = useState<Coordinates | null>(initialLocation);
   const [location, setLocation] = useState<Coordinates | null>(initialLocation);
   const [locationTouched, setLocationTouched] = useState(false);
-  const [visibility, setVisibility] = useState<Visibility>(initial?.location_exact ? 'exact' : 'approximate');
+  const [visibility, setVisibility] = useState<Visibility>(
+    initial?.location_exact ? 'exact' : 'approximate'
+  );
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState<'notFound' | 'failed' | null>(null);
   const [error, setError] = useState<ListingErrorKey | null>(null);
@@ -164,7 +174,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
       quality: 0.7,
     });
     if (!result.canceled) {
-      setNewPhotos((current) => [...current, ...result.assets].slice(0, MAX_LISTING_PHOTOS - keptPhotoUrls.length));
+      setNewPhotos((current) =>
+        [...current, ...result.assets].slice(0, MAX_LISTING_PHOTOS - keptPhotoUrls.length)
+      );
     }
   }
 
@@ -242,7 +254,12 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
     { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
-  function numberField(label: string, value: string, onChange: (text: string) => void, placeholder?: string) {
+  function numberField(
+    label: string,
+    value: string,
+    onChange: (text: string) => void,
+    placeholder?: string
+  ) {
     return (
       <View style={[styles.field, styles.half]}>
         <ThemedText type="smallBold">{label}</ThemedText>
@@ -281,11 +298,14 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
                 },
                 pressed && styles.pressed,
               ]}>
-              <View style={[styles.radio, { borderColor: selected ? theme.primary : theme.border }]}>
+              <View
+                style={[styles.radio, { borderColor: selected ? theme.primary : theme.border }]}>
                 {selected && <View style={[styles.radioDot, { backgroundColor: theme.primary }]} />}
               </View>
               <View style={styles.flex}>
-                <ThemedText style={styles.bold}>{t(`listings.form.typeOptions.${option}`)}</ThemedText>
+                <ThemedText style={styles.bold}>
+                  {t(`listings.form.typeOptions.${option}`)}
+                </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {t(`listings.form.typeHints.${option}`)}
                 </ThemedText>
@@ -319,8 +339,18 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
           </View>
 
           <View style={styles.row}>
-            {numberField(isSeeking ? t('listings.form.budget') : t('listings.form.rent'), price, setPrice, '€')}
-            {numberField(t('listings.form.minStay'), minStay, setMinStay, t('profileSetup.optional'))}
+            {numberField(
+              isSeeking ? t('listings.form.budget') : t('listings.form.rent'),
+              price,
+              setPrice,
+              '€'
+            )}
+            {numberField(
+              t('listings.form.minStay'),
+              minStay,
+              setMinStay,
+              t('profileSetup.optional')
+            )}
           </View>
 
           <View style={styles.field}>
@@ -364,14 +394,29 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
           {type === 'offering_room' && (
             <View style={styles.row}>
-              {numberField(t('listings.form.roomSize'), roomSize, setRoomSize, t('profileSetup.optional'))}
-              {numberField(t('listings.form.flatmates'), flatmates, setFlatmates, t('profileSetup.optional'))}
+              {numberField(
+                t('listings.form.roomSize'),
+                roomSize,
+                setRoomSize,
+                t('profileSetup.optional')
+              )}
+              {numberField(
+                t('listings.form.flatmates'),
+                flatmates,
+                setFlatmates,
+                t('profileSetup.optional')
+              )}
             </View>
           )}
 
           {type === 'whole_flat' && (
             <View style={styles.row}>
-              {numberField(t('listings.form.bedrooms'), bedrooms, setBedrooms, t('profileSetup.optional'))}
+              {numberField(
+                t('listings.form.bedrooms'),
+                bedrooms,
+                setBedrooms,
+                t('profileSetup.optional')
+              )}
               <View style={styles.half} />
             </View>
           )}
@@ -435,7 +480,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
               </View>
               {searchMessage && (
                 <ThemedText type="small" style={{ color: theme.danger }}>
-                  {searchMessage === 'notFound' ? t('listings.form.searchNotFound') : t('listings.form.searchFailed')}
+                  {searchMessage === 'notFound'
+                    ? t('listings.form.searchNotFound')
+                    : t('listings.form.searchFailed')}
                 </ThemedText>
               )}
 
@@ -455,7 +502,11 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
                   <ThemedText type="small" themeColor="textSecondary">
                     {t(`listings.form.visibilityHints.${visibility}`)}
                   </ThemedText>
-                  <Pressable accessibilityRole="button" onPress={removeLocation} hitSlop={8} style={styles.linkButton}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={removeLocation}
+                    hitSlop={8}
+                    style={styles.linkButton}>
                     <ThemedText type="small" style={{ color: theme.danger }}>
                       {t('listings.form.removeLocation')}
                     </ThemedText>
@@ -510,7 +561,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={t('listings.form.removePhoto')}
-                      onPress={() => setKeptPhotoUrls((current) => current.filter((u) => u !== url))}
+                      onPress={() =>
+                        setKeptPhotoUrls((current) => current.filter((u) => u !== url))
+                      }
                       style={styles.removePhoto}>
                       <ThemedText style={styles.removePhotoText}>×</ThemedText>
                     </Pressable>
@@ -522,7 +575,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={t('listings.form.removePhoto')}
-                      onPress={() => setNewPhotos((current) => current.filter((p) => p.uri !== photo.uri))}
+                      onPress={() =>
+                        setNewPhotos((current) => current.filter((p) => p.uri !== photo.uri))
+                      }
                       style={styles.removePhoto}>
                       <ThemedText style={styles.removePhotoText}>×</ThemedText>
                     </Pressable>
@@ -553,7 +608,10 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
               accessibilityRole="checkbox"
               accessibilityState={{ checked: shareInGroups }}
               onPress={() => setShareInGroups(!shareInGroups)}
-              style={[styles.checkboxRow, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+              style={[
+                styles.checkboxRow,
+                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              ]}>
               <View
                 style={[
                   styles.checkbox,
@@ -595,7 +653,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
         {busy ? (
           <ActivityIndicator color={theme.onPrimary} />
         ) : (
-          <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>{submitLabel}</ThemedText>
+          <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+            {submitLabel}
+          </ThemedText>
         )}
       </Pressable>
     </View>

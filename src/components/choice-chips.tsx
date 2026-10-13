@@ -25,7 +25,10 @@ export function ChoiceChips<T extends string>({
   const multiple = Array.isArray(value);
 
   return (
-    <View style={styles.group} accessibilityRole={multiple ? undefined : 'radiogroup'} accessibilityLabel={label}>
+    <View
+      style={styles.group}
+      accessibilityRole={multiple ? undefined : 'radiogroup'}
+      accessibilityLabel={label}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.chips}>
         {options.map((option) => {

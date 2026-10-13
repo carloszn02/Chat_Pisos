@@ -1,7 +1,15 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ListingCard } from '@/components/listing-card';
@@ -20,7 +28,10 @@ type Chip = { key: string; label: string; selected: boolean; onPress: () => void
 function ChipRow({ chips }: { chips: Chip[] }) {
   const theme = useTheme();
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chipRow}>
       {chips.map((chip) => (
         <Pressable
           key={chip.key}
@@ -89,7 +100,12 @@ export default function ListingsScreen() {
   }
 
   const typeChips: Chip[] = [
-    { key: 'all', label: t('listings.filters.all'), selected: type === null, onPress: () => setType(null) },
+    {
+      key: 'all',
+      label: t('listings.filters.all'),
+      selected: type === null,
+      onPress: () => setType(null),
+    },
     ...LISTING_TYPES.map((option) => ({
       key: option,
       label: t(`listings.filters.types.${option}`),
@@ -119,7 +135,9 @@ export default function ListingsScreen() {
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />}>
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
+          }>
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('listings.title')}</ThemedText>
@@ -133,7 +151,14 @@ export default function ListingsScreen() {
                 {t('listings.filters.maxPrice')}
               </ThemedText>
               <TextInput
-                style={[styles.priceInput, { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text }]}
+                style={[
+                  styles.priceInput,
+                  {
+                    borderColor: theme.border,
+                    backgroundColor: theme.backgroundElement,
+                    color: theme.text,
+                  },
+                ]}
                 value={maxPriceText}
                 onChangeText={setMaxPriceText}
                 onBlur={applyMaxPrice}
@@ -148,7 +173,9 @@ export default function ListingsScreen() {
               />
             </View>
 
-            {!listings && !loadError && <ActivityIndicator color={theme.primary} style={styles.loader} />}
+            {!listings && !loadError && (
+              <ActivityIndicator color={theme.primary} style={styles.loader} />
+            )}
 
             {loadError && (
               <ThemedText type="small" style={{ color: theme.danger }}>
@@ -163,7 +190,12 @@ export default function ListingsScreen() {
             )}
 
             {listings?.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} districts={districts} owner={owners.get(listing.user_id)} />
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                districts={districts}
+                owner={owners.get(listing.user_id)}
+              />
             ))}
           </View>
         </ScrollView>

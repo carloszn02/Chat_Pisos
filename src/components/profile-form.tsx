@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
+import { useDistricts } from '@/hooks/use-districts';
 import { useTheme } from '@/hooks/use-theme';
 import { isAdult, parseBirthDate } from '@/lib/age';
 import type { ProfileErrorKey, ProfileFormValues } from '@/lib/profiles';
@@ -65,6 +66,8 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
   const [tidiness, setTidiness] = useState<Tidiness | null>(initial?.tidiness ?? null);
   const [smoking, setSmoking] = useState<Smoking | null>(initial?.smoking ?? null);
   const [pets, setPets] = useState<Pets | null>(initial?.pets ?? null);
+  const [districtIds, setDistrictIds] = useState<string[]>([]);
+  const districts = useDistricts();
   const [error, setError] = useState<ProfileErrorKey | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -113,6 +116,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
         tidiness,
         smoking,
         pets,
+        districtIds,
       });
       setError(result);
     } catch {
@@ -254,6 +258,25 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
           accessibilityLabel={t('profileSetup.about')}
         />
       </View>
+
+      {!isEditing && districts.length > 0 && (
+        <View style={styles.field}>
+          <ChoiceChips
+            label={t('profileSetup.districts')}
+            options={districts.map((d) => d.id)}
+            getLabel={(id) => districts.find((d) => d.id === id)?.name ?? ''}
+            value={districtIds}
+            onChange={(id) =>
+              setDistrictIds((current) =>
+                current.includes(id) ? current.filter((d) => d !== id) : [...current, id]
+              )
+            }
+          />
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('profileSetup.districtsHint')}
+          </ThemedText>
+        </View>
+      )}
 
       <View style={styles.habits}>
         <ThemedText style={styles.sectionTitle}>

@@ -15,13 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
+import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useDistricts } from '@/hooks/use-districts';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchPublicProfile, MESSAGES_PAGE_SIZE } from '@/lib/chat';
+import { deleteMyMessage, fetchPublicProfile, MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import {
   fetchConversation,
   fetchDirectMessages,
@@ -29,9 +31,12 @@ import {
   respondToRequest,
   sendDirectMessage,
 } from '@/lib/direct-messages';
+import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime } from '@/lib/format';
+import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
 import type { Conversation, DirectMessage, PublicProfile } from '@/types/chat';
+import type { Listing } from '@/types/listing';
 
 /** Adds messages that aren't in the list yet, keeping newest first. */
 function mergeMessages(current: DirectMessage[], incoming: DirectMessage[]): DirectMessage[] {
@@ -41,14 +46,21 @@ function mergeMessages(current: DirectMessage[], incoming: DirectMessage[]): Dir
   return [...current, ...fresh].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
+/** Swaps in a newer version of a message (e.g. after it was deleted). */
+function replaceMessage(current: DirectMessage[], updated: DirectMessage): DirectMessage[] {
+  return current.map((m) => (m.id === updated.id ? updated : m));
+}
+
 export default function ConversationScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // listingId is set when the chat was opened from a listing's "Message" button.
+  const { id, listingId } = useLocalSearchParams<{ id: string; listingId?: string }>();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { session } = useSession();
   const userId = session?.user.id;
   const { blockedIds, block, unblock } = useBlocks();
+  const districts = useDistricts();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [otherUser, setOtherUser] = useState<PublicProfile | null>(null);
@@ -64,6 +76,23 @@ export default function ConversationScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [selected, setSelected] = useState<DirectMessage | null>(null);
+  const [toDelete, setToDelete] = useState<DirectMessage | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [listings, setListings] = useState<Map<string, Listing>>(new Map());
+  // The listing to attach to the next message ("Talking about…"), until it's sent or removed.
+  const [attachedListingId, setAttachedListingId] = useState<string | null>(listingId ?? null);
+
+  // Loads the listings shown as cards in this conversation.
+  const addListings = useCallback(async (ids: (string | null)[]) => {
+    const wanted = ids.filter((value): value is string => !!value);
+    if (wanted.length === 0) return;
+    try {
+      const found = await fetchListingsByIds(wanted);
+      setListings((current) => new Map([...current, ...found]));
+    } catch {
+      // Cards are a nice-to-have; the text still shows without them.
+    }
+  }, []);
 
   // First load: the conversation, the other person and the latest messages.
   useEffect(() => {
@@ -74,12 +103,16 @@ export default function ConversationScreen() {
         const found = await fetchConversation(id);
         if (!found) throw new Error('Conversation not found');
         const otherId = found.user_a === userId ? found.user_b : found.user_a;
-        const [profile, latest] = await Promise.all([fetchPublicProfile(otherId), fetchDirectMessages(id)]);
+        const [profile, latest] = await Promise.all([
+          fetchPublicProfile(otherId),
+          fetchDirectMessages(id),
+        ]);
         if (cancelled) return;
         setConversation(found);
         setOtherUser(profile);
         setMessages((current) => mergeMessages(current, latest));
         setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
+        addListings([...latest.map((m) => m.listing_id), listingId ?? null]);
         markConversationRead(id);
       } catch {
         if (!cancelled) setLoadError(true);
@@ -90,7 +123,7 @@ export default function ConversationScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id, userId]);
+  }, [id, userId, listingId, addListings]);
 
   const reloadConversation = useCallback(async () => {
     if (!id) return;
@@ -109,11 +142,28 @@ export default function ConversationScreen() {
       .channel(`conversation:${id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: `conversation_id=eq.${id}` },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `conversation_id=eq.${id}`,
+        },
         (payload) => {
-          setMessages((current) => mergeMessages(current, [payload.new as DirectMessage]));
+          const message = payload.new as DirectMessage;
+          setMessages((current) => mergeMessages(current, [message]));
+          addListings([message.listing_id]);
           markConversationRead(id);
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `conversation_id=eq.${id}`,
+        },
+        (payload) => setMessages((current) => replaceMessage(current, payload.new as DirectMessage))
       )
       .on(
         'postgres_changes',
@@ -124,7 +174,7 @@ export default function ConversationScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, reloadConversation]);
+  }, [id, reloadConversation, addListings]);
 
   async function loadOlder() {
     if (!id || !hasOlder || loadingOlder || messages.length === 0) return;
@@ -144,12 +194,15 @@ export default function ConversationScreen() {
     if (!id || !draft.trim() || sending) return;
     setSending(true);
     setActionError(false);
+    setRateLimited(false);
     try {
-      const message = await sendDirectMessage(id, draft);
+      const message = await sendDirectMessage(id, draft, attachedListingId ?? undefined);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
-    } catch {
-      setActionError(true);
+      setAttachedListingId(null);
+    } catch (error) {
+      if (isRateLimitError(error)) setRateLimited(true);
+      else setActionError(true);
     } finally {
       setSending(false);
     }
@@ -225,6 +278,22 @@ export default function ConversationScreen() {
     });
   }
 
+  async function deleteMessage(message: DirectMessage) {
+    try {
+      await deleteMyMessage('direct', message.id);
+      setMessages((current) =>
+        replaceMessage(current, {
+          ...message,
+          body: '',
+          listing_id: null,
+          deleted_at: new Date().toISOString(),
+        })
+      );
+    } catch {
+      setActionError(true);
+    }
+  }
+
   async function toggleBlock() {
     setActionError(false);
     try {
@@ -237,20 +306,36 @@ export default function ConversationScreen() {
 
   function renderMessage({ item }: { item: DirectMessage }) {
     const isMine = item.sender_id === userId;
+    const listing = item.listing_id ? listings.get(item.listing_id) : undefined;
+    const textColor = isMine ? theme.onPrimary : theme.text;
     return (
       <Pressable
-        onLongPress={isMine ? undefined : () => setSelected(item)}
+        onLongPress={
+          item.deleted_at ? undefined : () => (isMine ? setToDelete(item) : setSelected(item))
+        }
         delayLongPress={350}
-        accessibilityHint={isMine ? undefined : t('chats.messageOptionsHint')}
+        accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
         style={[
           styles.bubble,
           isMine
             ? [styles.myBubble, { backgroundColor: theme.primary }]
             : [styles.theirBubble, { backgroundColor: theme.backgroundElement }],
         ]}>
-        <ThemedText style={[styles.body, isMine && { color: theme.onPrimary }]}>{item.body}</ThemedText>
+        {item.deleted_at ? (
+          <ThemedText style={[styles.body, styles.deleted, { color: textColor }]}>
+            {t('chats.messageDeleted')}
+          </ThemedText>
+        ) : (
+          <>
+            {listing && <ListingCard listing={listing} districts={districts} compact />}
+            <ThemedText style={[styles.body, { color: textColor }]}>{item.body}</ThemedText>
+          </>
+        )}
         <ThemedText
-          style={[styles.time, isMine ? { color: theme.onPrimary, opacity: 0.75 } : { color: theme.textSecondary }]}>
+          style={[
+            styles.time,
+            isMine ? { color: theme.onPrimary, opacity: 0.75 } : { color: theme.textSecondary },
+          ]}>
           {formatMessageTime(item.created_at, i18n.language)}
         </ThemedText>
       </Pressable>
@@ -292,10 +377,17 @@ export default function ConversationScreen() {
         <View
           style={[
             styles.footer,
-            { borderTopColor: theme.border, backgroundColor: theme.backgroundElement, paddingBottom: Math.max(insets.bottom, Spacing.two) },
+            {
+              borderTopColor: theme.border,
+              backgroundColor: theme.backgroundElement,
+              paddingBottom: Math.max(insets.bottom, Spacing.two),
+            },
           ]}>
           {actionError && (
-            <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
               {t('messages.actionError')}
             </ThemedText>
           )}
@@ -308,7 +400,11 @@ export default function ConversationScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={toggleBlock}
-                style={({ pressed }) => [styles.requestButton, { borderColor: theme.border, borderWidth: 1 }, pressed && styles.pressed]}>
+                style={({ pressed }) => [
+                  styles.requestButton,
+                  { borderColor: theme.border, borderWidth: 1 },
+                  pressed && styles.pressed,
+                ]}>
                 <ThemedText style={styles.bold}>{t('blocked.unblock')}</ThemedText>
               </Pressable>
             </View>
@@ -338,7 +434,9 @@ export default function ConversationScreen() {
                     { backgroundColor: theme.primary },
                     (pressed || responding) && styles.pressed,
                   ]}>
-                  <ThemedText style={[styles.bold, { color: theme.onPrimary }]}>{t('messages.accept')}</ThemedText>
+                  <ThemedText style={[styles.bold, { color: theme.onPrimary }]}>
+                    {t('messages.accept')}
+                  </ThemedText>
                 </Pressable>
               </View>
             </View>
@@ -347,6 +445,35 @@ export default function ConversationScreen() {
               {isWaitingForAnswer && messages.length > 0 && (
                 <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
                   {t('messages.waitingForAnswer', { name })}
+                </ThemedText>
+              )}
+              {attachedListingId && listings.get(attachedListingId) && (
+                <View style={styles.attached}>
+                  <View style={styles.attachedHeader}>
+                    <ThemedText type="smallBold" themeColor="textSecondary">
+                      {t('messages.talkingAbout')}
+                    </ThemedText>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('messages.removeListing')}
+                      onPress={() => setAttachedListingId(null)}
+                      hitSlop={10}>
+                      <ThemedText themeColor="textSecondary">✕</ThemedText>
+                    </Pressable>
+                  </View>
+                  <ListingCard
+                    listing={listings.get(attachedListingId)!}
+                    districts={districts}
+                    compact
+                  />
+                </View>
+              )}
+              {rateLimited && (
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
+                  {t('chats.rateLimit')}
                 </ThemedText>
               )}
               <ChatComposer
@@ -369,14 +496,45 @@ export default function ConversationScreen() {
           { label: t('report.action'), destructive: true, onPress: () => report() },
           iBlockedThem
             ? { label: t('blocked.unblock'), onPress: toggleBlock }
-            : { label: t('blocked.blockName', { name }), destructive: true, onPress: () => setConfirmBlock(true) },
+            : {
+                label: t('blocked.blockName', { name }),
+                destructive: true,
+                onPress: () => setConfirmBlock(true),
+              },
         ]}
         onClose={() => setMenuOpen(false)}
       />
       <ActionSheet
         visible={!!selected}
-        options={selected ? [{ label: t('report.reportMessage'), destructive: true, onPress: () => report(selected) }] : []}
+        options={
+          selected
+            ? [
+                {
+                  label: t('report.reportMessage'),
+                  destructive: true,
+                  onPress: () => report(selected),
+                },
+              ]
+            : []
+        }
         onClose={() => setSelected(null)}
+      />
+      <ActionSheet
+        visible={!!toDelete}
+        title={t('chats.deleteConfirmTitle')}
+        message={t('chats.deleteConfirmBody')}
+        options={
+          toDelete
+            ? [
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => deleteMessage(toDelete),
+                },
+              ]
+            : []
+        }
+        onClose={() => setToDelete(null)}
       />
       <ActionSheet
         visible={confirmBlock}
@@ -436,6 +594,18 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 15,
     lineHeight: 21,
+  },
+  deleted: {
+    fontStyle: 'italic',
+    opacity: 0.8,
+  },
+  attached: {
+    gap: Spacing.one,
+  },
+  attachedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   time: {
     fontSize: 11,

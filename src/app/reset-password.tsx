@@ -60,7 +60,9 @@ export default function ResetPasswordScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen}>
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView
+          style={styles.screen}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
               <ThemedText type="subtitle">{t('auth.newPasswordTitle')}</ThemedText>
@@ -96,7 +98,10 @@ export default function ResetPasswordScreen() {
               </View>
 
               {error && (
-                <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
                   {t(`auth.resetErrors.${error}`)}
                 </ThemedText>
               )}

@@ -56,7 +56,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const finishPasswordRecovery = useCallback(() => setIsRecoveringPassword(false), []);
 
   return (
-    <SessionContext.Provider value={{ session, isLoading, isRecoveringPassword, finishPasswordRecovery }}>
+    <SessionContext.Provider
+      value={{ session, isLoading, isRecoveringPassword, finishPasswordRecovery }}>
       {children}
     </SessionContext.Provider>
   );

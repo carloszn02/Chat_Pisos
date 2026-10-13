@@ -128,7 +128,11 @@ export function parseMapMessage(data: unknown): MapMessage | null {
   if (typeof data !== 'string') return null;
   try {
     const message = JSON.parse(data);
-    if (message?.type === 'move' && typeof message.latitude === 'number' && typeof message.longitude === 'number') {
+    if (
+      message?.type === 'move' &&
+      typeof message.latitude === 'number' &&
+      typeof message.longitude === 'number'
+    ) {
       return message;
     }
   } catch {

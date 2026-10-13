@@ -74,7 +74,9 @@ export default function BlockedUsersScreen() {
               return (
                 <View key={id} style={styles.row}>
                   <Avatar uri={user?.avatar_url ?? null} name={user?.first_name ?? '?'} size={44} />
-                  <ThemedText style={styles.name}>{user ? `${user.first_name}, ${user.age}` : '…'}</ThemedText>
+                  <ThemedText style={styles.name}>
+                    {user ? `${user.first_name}, ${user.age}` : '…'}
+                  </ThemedText>
                   <Pressable
                     accessibilityRole="button"
                     disabled={busyId === id}

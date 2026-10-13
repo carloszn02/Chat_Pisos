@@ -38,10 +38,39 @@ The database lives in Supabase. Every change to its structure is a SQL file in `
 8. `20261007100000_listing_location.sql`
 9. `20261008100000_delete_account.sql`
 10. `20261009100000_group_unread_counts.sql`
+11. `20261011100000_launch_hardening.sql` — spam limits, photo checks, listing expiry, message deletion, moderation tools. **On a new Supabase project, change the address in `app_storage_url()` first.**
 
 In Supabase, also set **Authentication → URL Configuration → Site URL** (and Redirect URLs) to the app's address, e.g. `http://localhost:8081` while developing.
 
-Reports from users can be reviewed in **Table Editor → reports**.
+In **Authentication → Providers → Email**, set the minimum password length to **8** (the app asks for 8).
+
+## Moderation
+
+Run these in the Supabase dashboard (**SQL Editor**). The app itself can't use them.
+
+```sql
+-- Open reports, newest first (who was reported, why, and a copy of the message)
+select * from public.moderation_reports;
+
+-- Hide a message from a group chat (it shows as "Message deleted")
+select public.remove_group_message('MESSAGE-ID');
+
+-- Close a listing so nobody sees it
+select public.remove_listing('LISTING-ID');
+
+-- Ban someone: they can't log in any more and their listings are closed
+select public.ban_user('USER-ID');
+select public.unban_user('USER-ID');   -- undo
+
+-- Mark a report as handled
+update public.reports set status = 'reviewed' where id = 'REPORT-ID';
+```
+
+Reports are kept even if the reported person deletes their account.
+
+## Built-in limits
+
+To stop spam, the database refuses more than: 30 messages per minute (groups and private), 20 new private conversations per day, 5 new listings per day and 20 reports per day. Listings are hidden after 60 days unless their owner renews them.
 
 ## Project structure
 
@@ -60,6 +89,7 @@ Reports from users can be reviewed in **Table Editor → reports**.
 npx tsc --noEmit   # type check
 npm run lint       # code quality
 npx expo-doctor    # Expo project health
+npm run format     # tidy up code formatting
 ```
 
 ## Services used (free tiers)

@@ -14,7 +14,13 @@ export function parseCalendarDate(day: string, month: string, year: string): Dat
   const d = Number(day);
   const m = Number(month);
   const y = Number(year);
-  if (!Number.isInteger(d) || !Number.isInteger(m) || !Number.isInteger(y) || y < 1900 || y > 2100) {
+  if (
+    !Number.isInteger(d) ||
+    !Number.isInteger(m) ||
+    !Number.isInteger(y) ||
+    y < 1900 ||
+    y > 2100
+  ) {
     return null;
   }
   const date = new Date(Date.UTC(y, m - 1, d));

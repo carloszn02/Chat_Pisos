@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -70,18 +71,18 @@ export default function RootLayout() {
         <title>Chat Pisos · Habitaciones y compañeros de piso en Madrid</title>
       </Head>
       {ready && (
-    <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
-      <SessionProvider>
-        <ProfileProvider>
-          <BlocksProvider>
-            <UnreadProvider>
-              <SplashScreenController />
-              <RootNavigator />
-            </UnreadProvider>
-          </BlocksProvider>
-        </ProfileProvider>
-      </SessionProvider>
-    </ThemeProvider>
+        <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
+          <SessionProvider>
+            <ProfileProvider>
+              <BlocksProvider>
+                <UnreadProvider>
+                  <SplashScreenController />
+                  <RootNavigator />
+                </UnreadProvider>
+              </BlocksProvider>
+            </ProfileProvider>
+          </SessionProvider>
+        </ThemeProvider>
       )}
     </>
   );
@@ -100,10 +101,13 @@ function SplashScreenController() {
 // Logged in without a profile -> create-profile. Otherwise -> the app.
 function RootNavigator() {
   const { session, isRecoveringPassword } = useSession();
-  const { profile, isLoading } = useProfile();
+  const { profile, isLoading, loadFailed, refresh } = useProfile();
   const loggedIn = !!session;
   const hasProfile = !!profile;
   const inApp = loggedIn && !isRecoveringPassword;
+
+  // Couldn't reach the server: don't mistake that for "no profile yet".
+  if (inApp && loadFailed) return <ConnectionError onRetry={refresh} />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

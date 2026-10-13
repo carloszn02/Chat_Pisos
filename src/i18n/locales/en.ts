@@ -31,14 +31,21 @@ const en: typeof es = {
     leaveConfirmBody: "You won't be able to write in the group. You can join again any time.",
     sendError: "Your message couldn't be sent.",
     you: 'You',
+    rateLimit: "You're sending messages very fast. Wait a moment and try again.",
+    messageDeleted: 'Message deleted',
+    deleteMessage: 'Delete message',
+    deleteConfirmTitle: 'Delete this message?',
+    deleteConfirmBody: 'It will disappear for everyone and show "Message deleted".',
   },
   messages: {
     title: 'Messages',
     requests: 'Message requests',
     requestsHint: "From people you haven't talked to yet",
-    requestsIntro: "Messages from people you haven't talked to yet arrive here. They'll only see your replies if you accept.",
+    requestsIntro:
+      "Messages from people you haven't talked to yet arrive here. They'll only see your replies if you accept.",
     noRequests: 'You have no pending requests.',
-    empty: "You don't have any conversations yet. Tap someone's name in a district chat to see their profile and message them.",
+    empty:
+      "You don't have any conversations yet. Tap someone's name in a district chat to see their profile and message them.",
     loadError: "Your messages couldn't be loaded.",
     requestSent: 'Request sent',
     safetyTip: 'Tip: visit the flat and meet the person before paying anything.',
@@ -50,6 +57,8 @@ const en: typeof es = {
     waitingForAnswer: "{{name}} hasn't accepted your request yet.",
     actionError: 'Something went wrong. Please try again.',
     viewProfile: 'View profile',
+    talkingAbout: 'About this listing',
+    removeListing: 'Remove listing',
     options: 'Options',
     sendMessage: 'Message {{name}}',
     userNotFound: "This profile couldn't be found.",
@@ -63,7 +72,8 @@ const en: typeof es = {
     titleUser: 'Report profile',
     titleMessage: 'Report message',
     titleListing: 'Report listing',
-    intro: "Tell us what happened with {{name}}. Reports are anonymous: we won't tell them who sent it.",
+    intro:
+      "Tell us what happened with {{name}}. Reports are anonymous: we won't tell them who sent it.",
     reasonLabel: 'Reason',
     reasons: {
       scam: 'Possible scam',
@@ -74,32 +84,38 @@ const en: typeof es = {
       other: 'Something else',
     },
     detailsLabel: 'More details',
-    detailsPlaceholder: 'E.g. they asked for the deposit by bank transfer before showing me the flat.',
+    detailsPlaceholder:
+      'E.g. they asked for the deposit by bank transfer before showing me the flat.',
     alsoBlock: 'Also block {{name}}',
     alsoBlockHint: "You won't see their messages and they can't message you.",
     submit: 'Send report',
     thanksTitle: 'Thanks for letting us know',
-    thanksBody: "We'll review the report as soon as possible. If you feel you're in danger, call 112.",
+    thanksBody:
+      "We'll review the report as soon as possible. If you feel you're in danger, call 112.",
     done: 'Done',
     errors: {
       reasonRequired: 'Choose a reason.',
+      rateLimit: "You've sent a lot of reports today. If it's urgent, write to us.",
       generic: "Your report couldn't be sent. Please try again.",
     },
   },
   blocked: {
     title: 'Blocked users',
-    intro: "You don't see these people's messages in groups, and you can't message each other privately. They aren't told you blocked them.",
+    intro:
+      "You don't see these people's messages in groups, and you can't message each other privately. They aren't told you blocked them.",
     empty: "You haven't blocked anyone.",
     block: 'Block',
     blockName: 'Block {{name}}',
     unblock: 'Unblock',
     confirmTitle: 'Block {{name}}?',
-    confirmBody: "You won't see their messages in groups and you can't message each other privately. We won't tell them.",
+    confirmBody:
+      "You won't see their messages in groups and you can't message each other privately. We won't tell them.",
     youBlocked: 'You blocked {{name}}.',
   },
   publish: {
     title: 'Publish a listing',
-    intro: "Offer your room or flat, or tell people what you're looking for. You can have several listings at once.",
+    intro:
+      "Offer your room or flat, or tell people what you're looking for. You can have several listings at once.",
   },
   listings: {
     location: 'Location',
@@ -109,7 +125,8 @@ const en: typeof es = {
     new: 'New listing',
     edit: 'Edit listing',
     mine: 'My listings',
-    mineEmpty: "You don't have any listings yet. You can have several at once: for example, offer your room and look for another one.",
+    mineEmpty:
+      "You don't have any listings yet. You can have several at once: for example, offer your room and look for another one.",
     types: {
       offering_room: 'Offering room',
       seeking_room: 'Looking for room',
@@ -119,6 +136,11 @@ const en: typeof es = {
     budgetUpTo: 'Up to {{price}}',
     fromDate: 'From {{date}}',
     closed: 'Closed',
+    expired: 'Expired',
+    expiresIn_one: 'Visible for {{count}} more day.',
+    expiresIn_other: 'Visible for {{count}} more days.',
+    expiredNote: 'It has expired and nobody can see it.',
+    renew: 'Renew',
     yes: 'Yes',
     no: 'No',
     months_one: '{{count}} month',
@@ -190,7 +212,8 @@ const en: typeof es = {
       location: 'Location',
       addressPlaceholder: 'E.g. Calle del Pez 12, Madrid',
       searchAddress: 'Search',
-      searchNotFound: "We couldn't find that address in Madrid. Try writing it differently or place the pin by hand.",
+      searchNotFound:
+        "We couldn't find that address in Madrid. Try writing it differently or place the pin by hand.",
       searchFailed: "The address couldn't be searched. Please try again.",
       placeManually: 'Place the pin on the map by hand',
       pinHint: 'Drag the pin or tap the map to adjust the location.',
@@ -200,7 +223,8 @@ const en: typeof es = {
         exact: 'Exact address',
       },
       visibilityHints: {
-        approximate: 'Recommended: a circle of about 300 m is shown and we never store the exact address.',
+        approximate:
+          'Recommended: a circle of about 300 m is shown and we never store the exact address.',
         exact: 'The exact pin and the address you typed will be shown to any user.',
       },
       removeLocation: 'Remove location',
@@ -220,6 +244,7 @@ const en: typeof es = {
       invalidDate: 'Enter a valid date.',
       invalidNumber: 'Check the numbers: whole numbers only.',
       confirmPin: 'To show the exact address, search for it or move the pin to the exact spot.',
+      rateLimit: "You've published a lot of listings today. You can publish more tomorrow.",
       generic: "Your listing couldn't be saved. Please try again.",
     },
   },
@@ -233,10 +258,16 @@ const en: typeof es = {
       messages: 'Your private conversations and messages',
       groups: 'Your messages in district chats',
     },
-    reportsNote: "Reports you've sent are deleted too. If you want to come back, you'll need to create a new account.",
+    reportsNote:
+      "For safety, existing reports are kept without your profile details. If you want to come back, you'll need to create a new account.",
     confirmCheckbox: "I understand this can't be undone.",
     button: 'Delete my account',
     error: "Your account couldn't be deleted. Please try again.",
+  },
+  connection: {
+    title: 'No connection',
+    body: "We couldn't reach Chat Pisos. Check your internet connection and try again.",
+    retry: 'Try again',
   },
   settings: {
     title: 'Settings',
@@ -275,7 +306,8 @@ const en: typeof es = {
     forgotTitle: 'Reset your password',
     forgotIntro: "Enter your email and we'll send you a link to create a new password.",
     sendResetLink: 'Send link',
-    resetEmailBody: "If there's an account for {{email}}, we've sent it a link to create a new password. Check your spam folder too.",
+    resetEmailBody:
+      "If there's an account for {{email}}, we've sent it a link to create a new password. Check your spam folder too.",
     newPasswordTitle: 'Create a new password',
     newPasswordIntro: "Choose a password you don't use anywhere else.",
     newPassword: 'New password',
@@ -303,12 +335,16 @@ const en: typeof es = {
     progress: 'Your profile',
     duration: 'Takes about 2 minutes',
     title: 'Tell people about you',
-    intro: "This helps others decide if you'd be good flatmates. You can post as many listings as you like later.",
+    intro:
+      "This helps others decide if you'd be good flatmates. You can post as many listings as you like later.",
     addPhoto: 'Add photo',
     changePhoto: 'Change photo',
     photoHint: 'Add a clear photo of your face. Profiles with photos get far more replies.',
     firstName: 'First name',
     birthDate: 'Date of birth',
+    districts: 'Which districts are you interested in?',
+    districtsHint:
+      "We'll add you to their chats and to Madrid General. You can change this any time.",
     birthDateLocked: "Your date of birth can't be changed. Others only see your age.",
     day: 'Day',
     month: 'Month',
@@ -316,7 +352,8 @@ const en: typeof es = {
     occupation: 'What do you do?',
     languages: 'Languages you speak',
     about: 'About you',
-    aboutPlaceholder: "E.g. Master's student from Valencia. I love cooking and I'm quiet during the week.",
+    aboutPlaceholder:
+      "E.g. Master's student from Valencia. I love cooking and I'm quiet during the week.",
     habits: 'Your habits',
     schedule: 'Schedule',
     tidiness: 'Tidiness',

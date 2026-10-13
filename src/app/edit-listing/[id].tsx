@@ -1,7 +1,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
 import { ThemedText } from '@/components/themed-text';
@@ -63,7 +70,9 @@ export default function EditListingScreen() {
           <ThemedText themeColor="textSecondary">{t('listings.notFound')}</ThemedText>
         </View>
       ) : (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView
+          style={styles.screen}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
               <ListingForm initial={listing} submitLabel={t('editProfile.save')} onSubmit={save} />

@@ -7,8 +7,17 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 
 import type es from '@/i18n/locales/es';
 import { deleteAvatar, uploadAvatar } from '@/lib/avatars';
+import { fetchGroups, joinGroup } from '@/lib/chat';
 import { supabase } from '@/lib/supabase';
-import type { Occupation, Pets, Profile, Schedule, Smoking, SpokenLanguage, Tidiness } from '@/types/profile';
+import type {
+  Occupation,
+  Pets,
+  Profile,
+  Schedule,
+  Smoking,
+  SpokenLanguage,
+  Tidiness,
+} from '@/types/profile';
 
 export type ProfileErrorKey = keyof typeof es.profileSetup.errors;
 
@@ -25,6 +34,8 @@ export type ProfileFormValues = {
   tidiness: Tidiness | null;
   smoking: Smoking | null;
   pets: Pets | null;
+  /** Districts picked during sign-up; their chats (and Madrid General) are joined automatically. */
+  districtIds: string[];
 };
 
 function editableFields(values: ProfileFormValues) {
@@ -63,6 +74,17 @@ export async function createProfile(
   });
   // 23505 = a profile already exists (e.g. saved twice); treat it as done.
   if (error && error.code !== '23505') return 'generic';
+
+  // Join the Madrid-wide chat and the chosen districts, so the Chats tab isn't empty.
+  // A failure here isn't worth blocking sign-up for: they can join from the Chats tab.
+  try {
+    const cityWide = (await fetchGroups())
+      .filter((group) => group.is_city_wide)
+      .map((group) => group.id);
+    for (const groupId of [...cityWide, ...values.districtIds]) await joinGroup(groupId);
+  } catch (joinError) {
+    console.warn('Could not join the chosen groups', joinError);
+  }
   return null;
 }
 

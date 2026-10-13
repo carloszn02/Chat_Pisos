@@ -3,6 +3,7 @@
 import type { ImagePickerAsset } from 'expo-image-picker';
 
 import { fetchGroups, joinGroup } from '@/lib/chat';
+import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import type { ChatGroup } from '@/types/chat';
 import type { Listing, ListingType } from '@/types/listing';
@@ -10,12 +11,18 @@ import type { Listing, ListingType } from '@/types/listing';
 const LISTING_COLUMNS =
   'id, user_id, type, district_ids, title, description, price_eur, available_from, min_stay_months, ' +
   'bills_included, furnished, room_size_m2, flatmates, bedrooms, photo_urls, latitude, longitude, ' +
-  'location_exact, address, status, created_at';
+  'location_exact, address, status, expires_at, created_at';
 
 const PHOTOS_BUCKET = 'listing-photos';
 const PUBLIC_PATH_MARKER = `/storage/v1/object/public/${PHOTOS_BUCKET}/`;
 
 export const LISTINGS_PAGE_SIZE = 50;
+
+/** Listings stay visible this long unless renewed (the database enforces the same limit). */
+export const LISTING_LIFETIME_DAYS = 60;
+
+/** Photos are resized to this size on the phone before uploading. */
+const PHOTO_MAX_SIDE = 1600;
 
 export type ListingFilters = {
   type: ListingType | null;
@@ -24,7 +31,10 @@ export type ListingFilters = {
 };
 
 /** Everything a listing form saves, except photos. */
-export type ListingValues = Omit<Listing, 'id' | 'user_id' | 'photo_urls' | 'status' | 'created_at'>;
+export type ListingValues = Omit<
+  Listing,
+  'id' | 'user_id' | 'photo_urls' | 'status' | 'expires_at' | 'created_at'
+>;
 
 let districtCache: ChatGroup[] | null = null;
 
@@ -41,6 +51,8 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
     .from('listings')
     .select(LISTING_COLUMNS)
     .eq('status', 'active')
+    // Your own expired listings are still readable for you, but don't belong in the list.
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(LISTINGS_PAGE_SIZE);
   if (filters.type) query = query.eq('type', filters.type);
@@ -52,7 +64,11 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
 }
 
 export async function fetchListing(id: string): Promise<Listing | null> {
-  const { data, error } = await supabase.from('listings').select(LISTING_COLUMNS).eq('id', id).maybeSingle();
+  const { data, error } = await supabase
+    .from('listings')
+    .select(LISTING_COLUMNS)
+    .eq('id', id)
+    .maybeSingle();
   if (error) throw error;
   return data as unknown as Listing | null;
 }
@@ -75,11 +91,16 @@ export async function fetchListingsByIds(ids: string[]): Promise<Map<string, Lis
   return new Map((data as unknown as Listing[]).map((listing) => [listing.id, listing]));
 }
 
-async function uploadPhoto(userId: string, asset: ImagePickerAsset, index: number): Promise<string> {
-  const contentType = asset.mimeType ?? 'image/jpeg';
+async function uploadPhoto(
+  userId: string,
+  asset: ImagePickerAsset,
+  index: number
+): Promise<string> {
+  const image = await shrinkImage(asset, PHOTO_MAX_SIDE);
+  const contentType = image.mimeType;
   const extension = contentType.split('/')[1] ?? 'jpg';
   const path = `${userId}/${Date.now()}-${index}.${extension}`;
-  const body = await (await fetch(asset.uri)).arrayBuffer();
+  const body = await (await fetch(image.uri)).arrayBuffer();
   const { error } = await supabase.storage.from(PHOTOS_BUCKET).upload(path, body, { contentType });
   if (error) throw error;
   return supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -122,7 +143,9 @@ export async function updateListing(
   keptPhotoUrls: string[],
   newPhotos: ImagePickerAsset[]
 ): Promise<void> {
-  const uploaded = await Promise.all(newPhotos.map((photo, i) => uploadPhoto(listing.user_id, photo, i)));
+  const uploaded = await Promise.all(
+    newPhotos.map((photo, i) => uploadPhoto(listing.user_id, photo, i))
+  );
   const { error } = await supabase
     .from('listings')
     .update({ ...values, photo_urls: [...keptPhotoUrls, ...uploaded] })
@@ -138,6 +161,23 @@ export async function updateListing(
 export async function setListingStatus(id: string, status: Listing['status']): Promise<void> {
   const { error } = await supabase.from('listings').update({ status }).eq('id', id);
   if (error) throw error;
+}
+
+/** Keeps a listing visible for another 60 days (and reopens it if it was closed). */
+export async function renewListing(id: string): Promise<void> {
+  const expiresAt = new Date(
+    Date.now() + LISTING_LIFETIME_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const { error } = await supabase
+    .from('listings')
+    .update({ expires_at: expiresAt, status: 'active' })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Whole days left before a listing expires (0 or less = already expired). */
+export function daysUntilExpiry(listing: Listing): number {
+  return Math.ceil((new Date(listing.expires_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
 }
 
 export async function deleteListing(listing: Listing): Promise<void> {

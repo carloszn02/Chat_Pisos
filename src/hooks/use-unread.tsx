@@ -36,7 +36,11 @@ export function UnreadProvider({ children }: PropsWithChildren) {
     refresh();
     const channel = supabase
       .channel(`unread:${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, refresh)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'direct_messages' },
+        refresh
+      )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, refresh)
       .subscribe();
 

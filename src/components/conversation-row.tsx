@@ -22,14 +22,18 @@ export function ConversationRow({ item, otherUser, myUserId }: ConversationRowPr
   const name = otherUser?.first_name ?? '…';
   const unread = item.unread_count > 0;
 
-  let preview = item.last_message_body ?? '';
+  let preview = item.last_message_deleted
+    ? t('chats.messageDeleted')
+    : (item.last_message_body ?? '');
   if (item.last_message_sender_id === myUserId) preview = `${t('chats.you')}: ${preview}`;
 
   const isSentRequest = item.status === 'pending' && !item.is_incoming_request;
 
   return (
     <Link href={{ pathname: '/conversation/[id]', params: { id: item.id } }} asChild>
-      <Pressable accessibilityRole="link" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <Pressable
+        accessibilityRole="link"
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <Avatar uri={otherUser?.avatar_url ?? null} name={name} size={48} />
         <View style={styles.text}>
           <ThemedText style={styles.name}>
@@ -56,7 +60,9 @@ export function ConversationRow({ item, otherUser, myUserId }: ConversationRowPr
           )}
           {unread && (
             <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-              <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>{item.unread_count}</ThemedText>
+              <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+                {item.unread_count}
+              </ThemedText>
             </View>
           )}
         </View>

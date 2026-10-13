@@ -1,4 +1,11 @@
-import type { Occupation, Pets, Schedule, Smoking, SpokenLanguage, Tidiness } from '@/types/profile';
+import type {
+  Occupation,
+  Pets,
+  Schedule,
+  Smoking,
+  SpokenLanguage,
+  Tidiness,
+} from '@/types/profile';
 
 export type ChatGroup = {
   id: string;
@@ -16,6 +23,8 @@ export type GroupMessage = {
   body: string;
   /** Set when the message is a shared listing (shown as a card). */
   listing_id: string | null;
+  /** Set when the author deleted the message (its text is then empty). */
+  deleted_at: string | null;
   created_at: string;
 };
 
@@ -54,6 +63,7 @@ export type InboxItem = {
   last_message_sender_id: string | null;
   last_message_at: string | null;
   unread_count: number;
+  last_message_deleted: boolean;
 };
 
 export type DirectMessage = {
@@ -61,5 +71,9 @@ export type DirectMessage = {
   conversation_id: string;
   sender_id: string;
   body: string;
+  /** Set when the message is about a listing (shown as a card). */
+  listing_id: string | null;
+  /** Set when the sender deleted the message (its text is then empty). */
+  deleted_at: string | null;
   created_at: string;
 };

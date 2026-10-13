@@ -79,7 +79,9 @@ export function BlocksProvider({ children }: PropsWithChildren) {
   const blockedIds = loaded && loaded.userId === userId ? loaded.ids : NO_BLOCKS;
 
   return (
-    <BlocksContext.Provider value={{ blockedIds, block, unblock }}>{children}</BlocksContext.Provider>
+    <BlocksContext.Provider value={{ blockedIds, block, unblock }}>
+      {children}
+    </BlocksContext.Provider>
   );
 }
 

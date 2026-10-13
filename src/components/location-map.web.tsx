@@ -54,7 +54,8 @@ function loadMapLibre(): Promise<MapLibre> {
       script.src = MAPLIBRE_JS.url;
       script.integrity = MAPLIBRE_JS.integrity;
       script.crossOrigin = 'anonymous';
-      script.onload = () => (window.maplibregl ? resolve(window.maplibregl) : reject(new Error('MapLibre missing')));
+      script.onload = () =>
+        window.maplibregl ? resolve(window.maplibregl) : reject(new Error('MapLibre missing'));
       script.onerror = () => {
         loading = null; // allow a retry next time
         reject(new Error('MapLibre failed to load'));
@@ -66,7 +67,13 @@ function loadMapLibre(): Promise<MapLibre> {
 }
 
 /** Web version of LocationMap: draws the map straight into the page. */
-export function LocationMap({ center, exact, editable = false, height = 220, onMove }: LocationMapProps) {
+export function LocationMap({
+  center,
+  exact,
+  editable = false,
+  height = 220,
+  onMove,
+}: LocationMapProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +96,8 @@ export function LocationMap({ center, exact, editable = false, height = 220, onM
       .then((maplibregl) => {
         if (cancelled || !containerRef.current) return;
         const config = mapConfig({ center: { latitude, longitude }, exact, editable, color });
-        const send = (lat: number, lng: number) => onMoveRef.current?.({ latitude: lat, longitude: lng });
+        const send = (lat: number, lng: number) =>
+          onMoveRef.current?.({ latitude: lat, longitude: lng });
 
         map = new maplibregl.Map({
           container: containerRef.current,
@@ -101,7 +109,10 @@ export function LocationMap({ center, exact, editable = false, height = 220, onM
           cooperativeGestures: true,
         });
         const currentMap = map;
-        currentMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+        currentMap.addControl(
+          new maplibregl.NavigationControl({ showCompass: false }),
+          'top-right'
+        );
 
         if (config.showPin) {
           const marker = new maplibregl.Marker({ color, draggable: editable })
@@ -146,7 +157,11 @@ export function LocationMap({ center, exact, editable = false, height = 220, onM
   }, [latitude, longitude, exact, editable, color]);
 
   return (
-    <View style={[styles.container, { height, borderColor: theme.border, backgroundColor: theme.backgroundSelected }]}>
+    <View
+      style={[
+        styles.container,
+        { height, borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+      ]}>
       {failed ? (
         <View style={styles.failed}>
           <ThemedText type="small" themeColor="textSecondary">

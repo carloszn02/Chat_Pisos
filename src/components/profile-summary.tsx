@@ -70,7 +70,10 @@ export function ProfileSummary({ profile }: { profile: ProfileSummaryData }) {
           {habits.map((habit) => (
             <View
               key={habit}
-              style={[styles.pill, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+              style={[
+                styles.pill,
+                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              ]}>
               <ThemedText type="small">{habit}</ThemedText>
             </View>
           ))}

@@ -14,7 +14,13 @@ type ChatComposerProps = {
 };
 
 /** The text box and send button at the bottom of a chat. */
-export function ChatComposer({ value, onChangeText, onSend, sending, placeholder }: ChatComposerProps) {
+export function ChatComposer({
+  value,
+  onChangeText,
+  onSend,
+  sending,
+  placeholder,
+}: ChatComposerProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const canSend = !sending && value.trim().length > 0;
@@ -22,7 +28,10 @@ export function ChatComposer({ value, onChangeText, onSend, sending, placeholder
   return (
     <View style={styles.row}>
       <TextInput
-        style={[styles.input, { borderColor: theme.border, backgroundColor: theme.background, color: theme.text }]}
+        style={[
+          styles.input,
+          { borderColor: theme.border, backgroundColor: theme.background, color: theme.text },
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

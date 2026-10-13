@@ -19,12 +19,15 @@ import type { Profile } from '@/types/profile';
 type ProfileState = {
   profile: Profile | null;
   isLoading: boolean;
+  /** True when the profile couldn't be loaded (e.g. no internet), as opposed to not existing. */
+  loadFailed: boolean;
   refresh: () => Promise<void>;
 };
 
 const ProfileContext = createContext<ProfileState>({
   profile: null,
   isLoading: true,
+  loadFailed: false,
   refresh: async () => {},
 });
 
@@ -34,10 +37,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     .select('*')
     .eq('id', userId)
     .maybeSingle();
-  if (error) {
-    console.warn('Could not load profile', error.message);
-    return null;
-  }
+  if (error) throw error;
   return data as Profile | null;
 }
 
@@ -47,14 +47,23 @@ export function ProfileProvider({ children }: PropsWithChildren) {
 
   // Remember which user the loaded profile belongs to, so a logout or account
   // switch never shows someone else's profile.
-  const [loaded, setLoaded] = useState<{ userId: string; profile: Profile | null } | null>(null);
+  const [loaded, setLoaded] = useState<{
+    userId: string;
+    profile: Profile | null;
+    failed: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    fetchProfile(userId).then((profile) => {
-      if (!cancelled) setLoaded({ userId, profile });
-    });
+    fetchProfile(userId)
+      .then((profile) => {
+        if (!cancelled) setLoaded({ userId, profile, failed: false });
+      })
+      .catch((error) => {
+        console.warn('Could not load profile', error);
+        if (!cancelled) setLoaded({ userId, profile: null, failed: true });
+      });
     return () => {
       cancelled = true;
     };
@@ -62,14 +71,20 @@ export function ProfileProvider({ children }: PropsWithChildren) {
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    const profile = await fetchProfile(userId);
-    setLoaded({ userId, profile });
+    try {
+      const profile = await fetchProfile(userId);
+      setLoaded({ userId, profile, failed: false });
+    } catch (error) {
+      console.warn('Could not load profile', error);
+      setLoaded({ userId, profile: null, failed: true });
+    }
   }, [userId]);
 
   const isCurrent = !!userId && loaded?.userId === userId;
   const value: ProfileState = {
     profile: isCurrent ? loaded.profile : null,
     isLoading: sessionLoading || (!!userId && !isCurrent),
+    loadFailed: isCurrent && loaded.failed,
     refresh,
   };
 

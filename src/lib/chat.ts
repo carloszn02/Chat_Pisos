@@ -56,7 +56,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 export async function fetchMessages(groupId: string, before?: string): Promise<GroupMessage[]> {
   let query = supabase
     .from('group_messages')
-    .select('id, group_id, user_id, body, listing_id, created_at')
+    .select('id, group_id, user_id, body, listing_id, deleted_at, created_at')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .limit(MESSAGES_PAGE_SIZE);
@@ -72,7 +72,7 @@ export async function fetchLastMessages(groupIds: string[]): Promise<Map<string,
     groupIds.map((id) =>
       supabase
         .from('group_messages')
-        .select('id, group_id, user_id, body, listing_id, created_at')
+        .select('id, group_id, user_id, body, listing_id, deleted_at, created_at')
         .eq('group_id', id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -90,7 +90,7 @@ export async function sendMessage(groupId: string, body: string): Promise<GroupM
   const { data, error } = await supabase
     .from('group_messages')
     .insert({ group_id: groupId, body: body.trim() })
-    .select('id, group_id, user_id, body, listing_id, created_at')
+    .select('id, group_id, user_id, body, listing_id, deleted_at, created_at')
     .single();
   if (error) throw error;
   return data;
@@ -109,7 +109,9 @@ export async function fetchAuthors(userIds: string[]): Promise<Map<string, Publi
     if (error) throw error;
     for (const profile of data as PublicProfile[]) authorCache.set(profile.id, profile);
   }
-  return new Map(userIds.flatMap((id) => (authorCache.has(id) ? [[id, authorCache.get(id)!]] : [])));
+  return new Map(
+    userIds.flatMap((id) => (authorCache.has(id) ? [[id, authorCache.get(id)!]] : []))
+  );
 }
 
 export async function fetchPublicProfile(userId: string): Promise<PublicProfile | null> {
@@ -126,11 +128,22 @@ export function forgetAuthor(userId: string) {
 export async function fetchGroupUnreadCounts(): Promise<Map<string, number>> {
   const { data, error } = await supabase.rpc('my_group_unread_counts');
   if (error) throw error;
-  return new Map((data as { group_id: string; unread_count: number }[]).map((row) => [row.group_id, row.unread_count]));
+  return new Map(
+    (data as { group_id: string; unread_count: number }[]).map((row) => [
+      row.group_id,
+      row.unread_count,
+    ])
+  );
 }
 
 /** Marks a group as read for the current user. Failures only affect the counter. */
 export async function markGroupRead(groupId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_group_read', { target_group: groupId });
   if (error) console.warn('Could not mark group as read', error.message);
+}
+
+/** Deletes one of your own messages. It stays in the chat as "Message deleted". */
+export async function deleteMyMessage(kind: 'group' | 'direct', messageId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_my_message', { kind, message: messageId });
+  if (error) throw error;
 }

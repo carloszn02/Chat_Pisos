@@ -24,6 +24,7 @@ import { useDistricts } from '@/hooks/use-districts';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  deleteMyMessage,
   fetchAuthors,
   fetchGroupBySlug,
   fetchMessages,
@@ -34,6 +35,7 @@ import {
   MESSAGES_PAGE_SIZE,
   sendMessage,
 } from '@/lib/chat';
+import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime } from '@/lib/format';
 import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +51,11 @@ function mergeMessages(current: GroupMessage[], incoming: GroupMessage[]): Group
   const fresh = incoming.filter((m) => !known.has(m.id));
   if (fresh.length === 0) return current;
   return [...current, ...fresh].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+/** Swaps in a newer version of a message (e.g. after it was deleted). */
+function replaceMessage(current: GroupMessage[], updated: GroupMessage): GroupMessage[] {
+  return current.map((m) => (m.id === updated.id ? updated : m));
 }
 
 export default function GroupChatScreen() {
@@ -73,6 +80,8 @@ export default function GroupChatScreen() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [toDelete, setToDelete] = useState<GroupMessage | null>(null);
   const [joining, setJoining] = useState(false);
   const [selected, setSelected] = useState<GroupMessage | null>(null);
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
@@ -131,7 +140,12 @@ export default function GroupChatScreen() {
       .channel(`group-messages:${groupId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${groupId}` },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_messages',
+          filter: `group_id=eq.${groupId}`,
+        },
         (payload) => {
           const message = payload.new as GroupMessage;
           setMessages((current) => mergeMessages(current, [message]));
@@ -139,6 +153,16 @@ export default function GroupChatScreen() {
           // The chat is open, so this message counts as read.
           markGroupRead(groupId);
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'group_messages',
+          filter: `group_id=eq.${groupId}`,
+        },
+        (payload) => setMessages((current) => replaceMessage(current, payload.new as GroupMessage))
       )
       .subscribe();
     return () => {
@@ -173,12 +197,14 @@ export default function GroupChatScreen() {
     if (!group || !draft.trim() || sending) return;
     setSending(true);
     setSendError(false);
+    setRateLimited(false);
     try {
       const message = await sendMessage(group.id, draft);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
-    } catch {
-      setSendError(true);
+    } catch (error) {
+      if (isRateLimitError(error)) setRateLimited(true);
+      else setSendError(true);
     } finally {
       setSending(false);
     }
@@ -224,6 +250,22 @@ export default function GroupChatScreen() {
     });
   }
 
+  async function deleteMessage(message: GroupMessage) {
+    try {
+      await deleteMyMessage('group', message.id);
+      setMessages((current) =>
+        replaceMessage(current, {
+          ...message,
+          body: '',
+          listing_id: null,
+          deleted_at: new Date().toISOString(),
+        })
+      );
+    } catch {
+      setSendError(true);
+    }
+  }
+
   async function blockAuthor(authorId: string) {
     try {
       await block(authorId);
@@ -242,14 +284,34 @@ export default function GroupChatScreen() {
     const time = formatMessageTime(item.created_at, i18n.language);
     const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
     // A shared listing shows as a card instead of the plain text.
-    const listingCard = sharedListing ? <ListingCard listing={sharedListing} districts={districts} compact /> : null;
+    const listingCard = sharedListing ? (
+      <ListingCard listing={sharedListing} districts={districts} compact />
+    ) : null;
+
+    const deletedText = (color: string) => (
+      <ThemedText style={[styles.body, styles.deleted, { color }]}>
+        {t('chats.messageDeleted')}
+      </ThemedText>
+    );
 
     if (isMine) {
       return (
-        <View style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
-          {listingCard ?? <ThemedText style={[styles.body, { color: theme.onPrimary }]}>{item.body}</ThemedText>}
-          <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>{time}</ThemedText>
-        </View>
+        <Pressable
+          onLongPress={item.deleted_at ? undefined : () => setToDelete(item)}
+          delayLongPress={350}
+          accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
+          style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
+          {item.deleted_at
+            ? deletedText(theme.onPrimary)
+            : (listingCard ?? (
+                <ThemedText style={[styles.body, { color: theme.onPrimary }]}>
+                  {item.body}
+                </ThemedText>
+              ))}
+          <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>
+            {time}
+          </ThemedText>
+        </Pressable>
       );
     }
 
@@ -257,7 +319,8 @@ export default function GroupChatScreen() {
     const previous = visibleMessages[index + 1];
     const continuesPrevious =
       previous?.user_id === item.user_id &&
-      new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() < GROUPING_WINDOW_MS;
+      new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() <
+        GROUPING_WINDOW_MS;
     const author = authors.get(item.user_id);
 
     return (
@@ -274,18 +337,23 @@ export default function GroupChatScreen() {
           )}
         </View>
         <Pressable
-          onLongPress={() => setSelected(item)}
+          onLongPress={item.deleted_at ? undefined : () => setSelected(item)}
           delayLongPress={350}
-          accessibilityHint={t('chats.messageOptionsHint')}
+          accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
           style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
           {!continuesPrevious && (
-            <Pressable accessibilityRole="link" onPress={() => openProfile(item.user_id)} hitSlop={6}>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => openProfile(item.user_id)}
+              hitSlop={6}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
                 {author ? `${author.first_name}, ${author.age}` : '…'}
               </ThemedText>
             </Pressable>
           )}
-          {listingCard ?? <ThemedText style={styles.body}>{item.body}</ThemedText>}
+          {item.deleted_at
+            ? deletedText(theme.textSecondary)
+            : (listingCard ?? <ThemedText style={styles.body}>{item.body}</ThemedText>)}
           <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
             {time}
           </ThemedText>
@@ -300,7 +368,11 @@ export default function GroupChatScreen() {
         title: group?.name ?? '',
         headerRight: () =>
           isMember ? (
-            <Pressable accessibilityRole="button" onPress={() => setConfirmLeave(true)} hitSlop={12} style={styles.headerButton}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setConfirmLeave(true)}
+              hitSlop={12}
+              style={styles.headerButton}>
               <ThemedText type="small" themeColor="textSecondary">
                 {t('chats.leave')}
               </ThemedText>
@@ -356,11 +428,26 @@ export default function GroupChatScreen() {
         <View
           style={[
             styles.composer,
-            { borderTopColor: theme.border, backgroundColor: theme.backgroundElement, paddingBottom: Math.max(insets.bottom, Spacing.two) },
+            {
+              borderTopColor: theme.border,
+              backgroundColor: theme.backgroundElement,
+              paddingBottom: Math.max(insets.bottom, Spacing.two),
+            },
           ]}>
           {sendError && (
-            <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
               {t('chats.sendError')}
+            </ThemedText>
+          )}
+          {rateLimited && (
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
+              {t('chats.rateLimit')}
             </ThemedText>
           )}
           {isMember ? (
@@ -381,7 +468,9 @@ export default function GroupChatScreen() {
                 { backgroundColor: theme.primary },
                 (pressed || joining) && styles.pressed,
               ]}>
-              <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>{t('chats.joinToWrite')}</ThemedText>
+              <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>
+                {t('chats.joinToWrite')}
+              </ThemedText>
             </Pressable>
           )}
         </View>
@@ -394,7 +483,11 @@ export default function GroupChatScreen() {
           selected
             ? [
                 { label: t('messages.viewProfile'), onPress: () => openProfile(selected.user_id) },
-                { label: t('report.reportMessage'), destructive: true, onPress: () => reportMessage(selected) },
+                {
+                  label: t('report.reportMessage'),
+                  destructive: true,
+                  onPress: () => reportMessage(selected),
+                },
                 {
                   label: t('blocked.blockName', { name: selectedAuthor?.first_name ?? '' }),
                   destructive: true,
@@ -411,10 +504,33 @@ export default function GroupChatScreen() {
         message={t('blocked.confirmBody')}
         options={
           confirmBlockId
-            ? [{ label: t('blocked.block'), destructive: true, onPress: () => blockAuthor(confirmBlockId) }]
+            ? [
+                {
+                  label: t('blocked.block'),
+                  destructive: true,
+                  onPress: () => blockAuthor(confirmBlockId),
+                },
+              ]
             : []
         }
         onClose={() => setConfirmBlockId(null)}
+      />
+      <ActionSheet
+        visible={!!toDelete}
+        title={t('chats.deleteConfirmTitle')}
+        message={t('chats.deleteConfirmBody')}
+        options={
+          toDelete
+            ? [
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => deleteMessage(toDelete),
+                },
+              ]
+            : []
+        }
+        onClose={() => setToDelete(null)}
       />
       <ActionSheet
         visible={confirmLeave}
@@ -478,6 +594,10 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 15,
     lineHeight: 21,
+  },
+  deleted: {
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
   time: {
     fontSize: 11,

@@ -29,6 +29,8 @@ export type Listing = {
   /** Street address, only kept when location_exact is true. */
   address: string | null;
   status: 'active' | 'closed';
+  /** After this moment the listing is hidden from others until renewed. */
+  expires_at: string;
   created_at: string;
 };
 

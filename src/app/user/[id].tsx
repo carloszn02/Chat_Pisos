@@ -132,7 +132,11 @@ export default function UserProfileScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => (isBlocked ? toggleBlock() : setConfirmBlock(true))}
-                  style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.border }, pressed && styles.pressed]}>
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    { borderColor: theme.border },
+                    pressed && styles.pressed,
+                  ]}>
                   <ThemedText type="smallBold">
                     {isBlocked ? t('blocked.unblock') : t('blocked.block')}
                   </ThemedText>
@@ -140,7 +144,11 @@ export default function UserProfileScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={report}
-                  style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.border }, pressed && styles.pressed]}>
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    { borderColor: theme.border },
+                    pressed && styles.pressed,
+                  ]}>
                   <ThemedText type="smallBold" style={{ color: theme.danger }}>
                     {t('report.action')}
                   </ThemedText>

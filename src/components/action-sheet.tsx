@@ -37,7 +37,10 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
       <View
         style={[
           styles.sheet,
-          { backgroundColor: theme.backgroundElement, paddingBottom: Math.max(insets.bottom, Spacing.three) },
+          {
+            backgroundColor: theme.backgroundElement,
+            paddingBottom: Math.max(insets.bottom, Spacing.three),
+          },
         ]}>
         {(title || message) && (
           <View style={styles.header}>
@@ -58,7 +61,11 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
               // iOS can't open a new screen or menu while this one is still closing.
               setTimeout(option.onPress, Platform.OS === 'ios' ? 350 : 0);
             }}
-            style={({ pressed }) => [styles.option, { borderTopColor: theme.border }, pressed && styles.pressed]}>
+            style={({ pressed }) => [
+              styles.option,
+              { borderTopColor: theme.border },
+              pressed && styles.pressed,
+            ]}>
             <ThemedText style={[styles.optionText, option.destructive && { color: theme.danger }]}>
               {option.label}
             </ThemedText>
@@ -67,7 +74,11 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
-          style={({ pressed }) => [styles.option, { borderTopColor: theme.border }, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.option,
+            { borderTopColor: theme.border },
+            pressed && styles.pressed,
+          ]}>
           <ThemedText style={[styles.optionText, styles.cancel]}>{t('common.cancel')}</ThemedText>
         </Pressable>
       </View>
