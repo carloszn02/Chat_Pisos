@@ -15,12 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
+import { GroupListings } from '@/components/group-listings';
 import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
-import { useDistricts } from '@/hooks/use-districts';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -66,7 +66,6 @@ export default function GroupChatScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { blockedIds, block } = useBlocks();
-  const districts = useDistricts();
 
   const [group, setGroup] = useState<ChatGroup | null>(null);
   const [isMember, setIsMember] = useState(false);
@@ -86,6 +85,8 @@ export default function GroupChatScreen() {
   const [selected, setSelected] = useState<GroupMessage | null>(null);
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Each group has two tabs: the conversation, and its listings in order.
+  const [tab, setTab] = useState<'chat' | 'listings'>('chat');
 
   // Loads the authors' names and photos, and the listings shared as cards.
   const addAuthors = useCallback(async (newMessages: GroupMessage[]) => {
@@ -284,9 +285,7 @@ export default function GroupChatScreen() {
     const time = formatMessageTime(item.created_at, i18n.language);
     const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
     // A shared listing shows as a card instead of the plain text.
-    const listingCard = sharedListing ? (
-      <ListingCard listing={sharedListing} districts={districts} compact />
-    ) : null;
+    const listingCard = sharedListing ? <ListingCard listing={sharedListing} compact /> : null;
 
     const deletedText = (color: string) => (
       <ThemedText style={[styles.body, styles.deleted, { color }]}>
@@ -402,78 +401,108 @@ export default function GroupChatScreen() {
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-        <View style={[styles.safetyBanner, { backgroundColor: theme.backgroundSelected }]}>
-          <ThemedText type="small" style={styles.safetyText}>
-            {t('chats.safetyTip')}
-          </ThemedText>
-        </View>
-
-        {visibleMessages.length === 0 ? (
-          <View style={[styles.screen, styles.centered]}>
-            <ThemedText themeColor="textSecondary">{t('chats.emptyChat')}</ThemedText>
-          </View>
-        ) : (
-          <FlatList
-            inverted
-            data={visibleMessages}
-            keyExtractor={(m) => m.id}
-            renderItem={renderMessage}
-            contentContainerStyle={styles.messageList}
-            onEndReached={loadOlder}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={loadingOlder ? <ActivityIndicator color={theme.primary} /> : null}
-          />
-        )}
-
         <View
-          style={[
-            styles.composer,
-            {
-              borderTopColor: theme.border,
-              backgroundColor: theme.backgroundElement,
-              paddingBottom: Math.max(insets.bottom, Spacing.two),
-            },
-          ]}>
-          {sendError && (
-            <ThemedText
-              type="small"
-              style={{ color: theme.danger }}
-              accessibilityLiveRegion="polite">
-              {t('chats.sendError')}
-            </ThemedText>
-          )}
-          {rateLimited && (
-            <ThemedText
-              type="small"
-              style={{ color: theme.danger }}
-              accessibilityLiveRegion="polite">
-              {t('chats.rateLimit')}
-            </ThemedText>
-          )}
-          {isMember ? (
-            <ChatComposer
-              value={draft}
-              onChangeText={setDraft}
-              onSend={send}
-              sending={sending}
-              placeholder={t('chats.messagePlaceholder', { name: group.name })}
-            />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              disabled={joining}
-              onPress={join}
-              style={({ pressed }) => [
-                styles.joinButton,
-                { backgroundColor: theme.primary },
-                (pressed || joining) && styles.pressed,
-              ]}>
-              <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>
-                {t('chats.joinToWrite')}
-              </ThemedText>
-            </Pressable>
-          )}
+          style={[styles.tabs, { borderBottomColor: theme.border }]}
+          accessibilityRole="tablist">
+          {(['chat', 'listings'] as const).map((option) => {
+            const selected = tab === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                onPress={() => setTab(option)}
+                style={[styles.tab, selected && { borderBottomColor: theme.primary }]}>
+                <ThemedText
+                  type={selected ? 'smallBold' : 'small'}
+                  style={{ color: selected ? theme.primary : theme.textSecondary }}>
+                  {option === 'chat' ? t('chats.tabChat') : t('chats.tabListings')}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
         </View>
+
+        {tab === 'listings' ? (
+          <GroupListings group={group} />
+        ) : (
+          <>
+            <View style={[styles.safetyBanner, { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="small" style={styles.safetyText}>
+                {t('chats.safetyTip')}
+              </ThemedText>
+            </View>
+
+            {visibleMessages.length === 0 ? (
+              <View style={[styles.screen, styles.centered]}>
+                <ThemedText themeColor="textSecondary">{t('chats.emptyChat')}</ThemedText>
+              </View>
+            ) : (
+              <FlatList
+                inverted
+                data={visibleMessages}
+                keyExtractor={(m) => m.id}
+                renderItem={renderMessage}
+                contentContainerStyle={styles.messageList}
+                onEndReached={loadOlder}
+                onEndReachedThreshold={0.3}
+                ListFooterComponent={
+                  loadingOlder ? <ActivityIndicator color={theme.primary} /> : null
+                }
+              />
+            )}
+
+            <View
+              style={[
+                styles.composer,
+                {
+                  borderTopColor: theme.border,
+                  backgroundColor: theme.backgroundElement,
+                  paddingBottom: Math.max(insets.bottom, Spacing.two),
+                },
+              ]}>
+              {sendError && (
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
+                  {t('chats.sendError')}
+                </ThemedText>
+              )}
+              {rateLimited && (
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
+                  {t('chats.rateLimit')}
+                </ThemedText>
+              )}
+              {isMember ? (
+                <ChatComposer
+                  value={draft}
+                  onChangeText={setDraft}
+                  onSend={send}
+                  sending={sending}
+                  placeholder={t('chats.messagePlaceholder', { name: group.name })}
+                />
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={joining}
+                  onPress={join}
+                  style={({ pressed }) => [
+                    styles.joinButton,
+                    { backgroundColor: theme.primary },
+                    (pressed || joining) && styles.pressed,
+                  ]}>
+                  <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>
+                    {t('chats.joinToWrite')}
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
       </KeyboardAvoidingView>
 
       <ActionSheet
@@ -554,6 +583,18 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     paddingHorizontal: Spacing.two,
+  },
+  tabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   safetyBanner: {
     paddingHorizontal: Spacing.three,

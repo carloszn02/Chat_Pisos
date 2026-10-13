@@ -15,6 +15,7 @@ import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { PlacesProvider } from '@/hooks/use-places';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
 import { UnreadProvider } from '@/hooks/use-unread';
@@ -75,10 +76,12 @@ export default function RootLayout() {
           <SessionProvider>
             <ProfileProvider>
               <BlocksProvider>
-                <UnreadProvider>
-                  <SplashScreenController />
-                  <RootNavigator />
-                </UnreadProvider>
+                <PlacesProvider>
+                  <UnreadProvider>
+                    <SplashScreenController />
+                    <RootNavigator />
+                  </UnreadProvider>
+                </PlacesProvider>
               </BlocksProvider>
             </ProfileProvider>
           </SessionProvider>
@@ -123,6 +126,7 @@ function RootNavigator() {
         <Stack.Screen name="listing/[id]" options={headerOptions} />
         <Stack.Screen name="edit-listing/[id]" options={headerOptions} />
         <Stack.Screen name="delete-account" options={headerOptions} />
+        <Stack.Screen name="suggest-area" options={headerOptions} />
       </Stack.Protected>
       <Stack.Protected guard={inApp && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

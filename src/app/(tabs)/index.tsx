@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CityBanner } from '@/components/city-banner';
 import { GroupTile } from '@/components/group-tile';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -41,6 +43,7 @@ export default function ChatsScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const userId = session?.user.id;
+  const { city } = usePlaces();
 
   const [data, setData] = useState<ChatsData | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -89,8 +92,9 @@ export default function ChatsScreen() {
     }
   }
 
-  const myGroups = data?.groups.filter((g) => data.myGroupIds.has(g.id)) ?? [];
-  const otherGroups = data?.groups.filter((g) => !data.myGroupIds.has(g.id)) ?? [];
+  const cityGroups = data?.groups.filter((g) => g.city_id === city?.id) ?? [];
+  const myGroups = cityGroups.filter((g) => data?.myGroupIds.has(g.id));
+  const otherGroups = cityGroups.filter((g) => !data?.myGroupIds.has(g.id));
 
   function preview(group: ChatGroup): string {
     const last = data?.lastMessages.get(group.id);
@@ -112,16 +116,10 @@ export default function ChatsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <ThemedText type="subtitle">{t('chats.title')}</ThemedText>
-              <View
-                style={[
-                  styles.cityPill,
-                  { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-                ]}>
-                <ThemedText type="smallBold">{t('chats.city')}</ThemedText>
-              </View>
-            </View>
+            <ThemedText type="subtitle" style={styles.header}>
+              {t('chats.title')}
+            </ThemedText>
+            {city && <CityBanner city={city} subtitle={t('chats.citySubtitle')} />}
 
             {!data && !loadError && (
               <ActivityIndicator color={theme.primary} style={styles.loader} />
@@ -241,6 +239,23 @@ export default function ChatsScreen() {
                     </View>
                   </>
                 )}
+                <Link href="/suggest-area" asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={({ pressed }) => [
+                      styles.suggestBox,
+                      { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                      pressed && styles.pressed,
+                    ]}>
+                    <View style={styles.rowText}>
+                      <ThemedText style={styles.groupName}>{t('chats.suggestTitle')}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {t('chats.suggestHint')}
+                      </ThemedText>
+                    </View>
+                    <ThemedText themeColor="textSecondary">›</ThemedText>
+                  </Pressable>
+                </Link>
               </>
             )}
           </View>
@@ -269,17 +284,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.two,
-  },
-  cityPill: {
-    height: 36,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: 'center',
+    marginBottom: Spacing.one,
   },
   loader: {
     marginTop: Spacing.five,
@@ -342,6 +347,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     justifyContent: 'center',
+  },
+  suggestBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: Spacing.four,
   },
   pressed: {
     opacity: 0.7,

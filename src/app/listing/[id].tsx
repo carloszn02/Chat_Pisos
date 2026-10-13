@@ -18,7 +18,7 @@ import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { districtNames, useDistricts } from '@/hooks/use-districts';
+import { usePlaces } from '@/hooks/use-places';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPublicProfile } from '@/lib/chat';
@@ -40,7 +40,7 @@ export default function ListingDetailScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { width } = useWindowDimensions();
-  const districts = useDistricts();
+  const { placeLabel } = usePlaces();
   const { profile: me } = useProfile();
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -232,7 +232,7 @@ export default function ListingDetailScreen() {
             {listing.title}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {districtNames(listing.district_ids, districts)}
+            {placeLabel(listing.area_ids)}
           </ThemedText>
           <ListingPrice listing={listing} large />
 

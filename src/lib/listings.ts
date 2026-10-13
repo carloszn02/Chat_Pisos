@@ -5,11 +5,10 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { fetchGroups, joinGroup } from '@/lib/chat';
 import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
-import type { ChatGroup } from '@/types/chat';
 import type { Listing, ListingType } from '@/types/listing';
 
 const LISTING_COLUMNS =
-  'id, user_id, type, district_ids, title, description, price_eur, available_from, min_stay_months, ' +
+  'id, user_id, type, city_id, area_ids, title, description, price_eur, available_from, min_stay_months, ' +
   'bills_included, furnished, room_size_m2, flatmates, bedrooms, photo_urls, latitude, longitude, ' +
   'location_exact, address, status, expires_at, created_at';
 
@@ -25,8 +24,10 @@ export const LISTING_LIFETIME_DAYS = 60;
 const PHOTO_MAX_SIDE = 1600;
 
 export type ListingFilters = {
+  cityId: string | null;
   type: ListingType | null;
-  districtId: string | null;
+  /** A district or neighbourhood. Listings in a district's neighbourhoods match the district too. */
+  areaId: string | null;
   maxPrice: number | null;
 };
 
@@ -35,16 +36,6 @@ export type ListingValues = Omit<
   Listing,
   'id' | 'user_id' | 'photo_urls' | 'status' | 'expires_at' | 'created_at'
 >;
-
-let districtCache: ChatGroup[] | null = null;
-
-/** The districts people can choose (every group except the Madrid-wide one). */
-export async function fetchDistricts(): Promise<ChatGroup[]> {
-  if (!districtCache) {
-    districtCache = (await fetchGroups()).filter((group) => !group.is_city_wide);
-  }
-  return districtCache;
-}
 
 export async function fetchListings(filters: ListingFilters): Promise<Listing[]> {
   let query = supabase
@@ -56,7 +47,8 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
     .order('created_at', { ascending: false })
     .limit(LISTINGS_PAGE_SIZE);
   if (filters.type) query = query.eq('type', filters.type);
-  if (filters.districtId) query = query.contains('district_ids', [filters.districtId]);
+  if (filters.cityId) query = query.eq('city_id', filters.cityId);
+  if (filters.areaId) query = query.contains('area_ids', [filters.areaId]);
   if (filters.maxPrice) query = query.lte('price_eur', filters.maxPrice);
   const { data, error } = await query;
   if (error) throw error;
@@ -186,9 +178,40 @@ export async function deleteListing(listing: Listing): Promise<void> {
   await deleteListingPhotos(listing.photo_urls);
 }
 
-/** Posts the listing as a card in each of its district groups (joining them if needed). */
+/**
+ * Posts the listing as a card in the most specific group chats for its places: the
+ * neighbourhood's group if it has one, otherwise the district's, otherwise the city-wide one.
+ */
 export async function shareListingInGroups(listing: Listing): Promise<void> {
-  for (const groupId of listing.district_ids) {
+  const groups = (await fetchGroups()).filter((group) => group.city_id === listing.city_id);
+  const byArea = new Map(groups.map((group) => [group.area_id, group.id]));
+  const { data: places, error: placesError } = await supabase
+    .from('areas')
+    .select('id, parent_id')
+    .in('id', listing.area_ids);
+  if (placesError) throw placesError;
+
+  const targets = new Set<string>();
+  // Neighbourhoods first (most specific), then districts not already covered by one of them.
+  const neighbourhoods = places.filter((place) => place.parent_id);
+  const coveredDistricts = new Set<string>();
+  for (const place of neighbourhoods) {
+    const group = byArea.get(place.id) ?? byArea.get(place.parent_id);
+    if (group) {
+      targets.add(group);
+      coveredDistricts.add(place.parent_id as string);
+    }
+  }
+  for (const place of places.filter((p) => !p.parent_id && !coveredDistricts.has(p.id))) {
+    const group = byArea.get(place.id);
+    if (group) targets.add(group);
+  }
+  if (targets.size === 0) {
+    const cityWide = groups.find((group) => group.is_city_wide);
+    if (cityWide) targets.add(cityWide.id);
+  }
+
+  for (const groupId of targets) {
     await joinGroup(groupId);
     const { error } = await supabase
       .from('group_messages')

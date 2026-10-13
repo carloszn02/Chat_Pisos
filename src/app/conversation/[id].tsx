@@ -20,7 +20,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
-import { useDistricts } from '@/hooks/use-districts';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchPublicProfile, MESSAGES_PAGE_SIZE } from '@/lib/chat';
@@ -60,7 +59,6 @@ export default function ConversationScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { blockedIds, block, unblock } = useBlocks();
-  const districts = useDistricts();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [otherUser, setOtherUser] = useState<PublicProfile | null>(null);
@@ -327,7 +325,7 @@ export default function ConversationScreen() {
           </ThemedText>
         ) : (
           <>
-            {listing && <ListingCard listing={listing} districts={districts} compact />}
+            {listing && <ListingCard listing={listing} compact />}
             <ThemedText style={[styles.body, { color: textColor }]}>{item.body}</ThemedText>
           </>
         )}
@@ -461,11 +459,7 @@ export default function ConversationScreen() {
                       <ThemedText themeColor="textSecondary">✕</ThemedText>
                     </Pressable>
                   </View>
-                  <ListingCard
-                    listing={listings.get(attachedListingId)!}
-                    districts={districts}
-                    compact
-                  />
+                  <ListingCard listing={listings.get(attachedListingId)!} compact />
                 </View>
               )}
               {rateLimited && (

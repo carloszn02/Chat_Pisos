@@ -10,7 +10,9 @@ export type Listing = {
   id: string;
   user_id: string;
   type: ListingType;
-  district_ids: string[];
+  city_id: string;
+  /** Districts and neighbourhoods (rows of `areas`). A neighbourhood's district is always included. */
+  area_ids: string[];
   title: string;
   description: string | null;
   price_eur: number;

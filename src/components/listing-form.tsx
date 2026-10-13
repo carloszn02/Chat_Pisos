@@ -4,11 +4,12 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { AreaPicker } from '@/components/area-picker';
 import { ChoiceChips } from '@/components/choice-chips';
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
-import { useDistricts } from '@/hooks/use-districts';
+import { usePlaces } from '@/hooks/use-places';
 import { useTheme } from '@/hooks/use-theme';
 import type es from '@/i18n/locales/es';
 import { parseCalendarDate } from '@/lib/age';
@@ -70,13 +71,13 @@ function dateParts(isoDate?: string): [string, string, string] {
 export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const districts = useDistricts();
+  const { city, areaById } = usePlaces();
   const isEditing = !!initial;
 
   const [initialDay, initialMonth, initialYear] = dateParts(initial?.available_from);
 
   const [type, setType] = useState<ListingType | null>(initial?.type ?? null);
-  const [districtIds, setDistrictIds] = useState<string[]>(initial?.district_ids ?? []);
+  const [areaIds, setAreaIds] = useState<string[]>(initial?.area_ids ?? []);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [price, setPrice] = useState(initial ? String(initial.price_eur) : '');
   const [day, setDay] = useState(initialDay);
@@ -123,16 +124,15 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
   function changeType(next: ListingType) {
     setType(next);
-    // Rooms and flats are in exactly one district.
-    if (next !== 'seeking_room') setDistrictIds((current) => current.slice(0, 1));
-  }
-
-  function toggleDistrict(id: string) {
-    setDistrictIds((current) => {
-      if (current.includes(id)) return current.filter((d) => d !== id);
-      if (maxDistricts === 1) return [id];
-      return current.length >= maxDistricts ? current : [...current, id];
-    });
+    // Rooms and flats are in one place: keep only the first district (and its neighbourhood).
+    if (next !== 'seeking_room') {
+      setAreaIds((current) => {
+        const firstDistrict = current.find((id) => areaById(id)?.kind === 'district');
+        if (!firstDistrict) return [];
+        const hood = current.find((id) => areaById(id)?.parent_id === firstDistrict);
+        return hood ? [firstDistrict, hood] : [firstDistrict];
+      });
+    }
   }
 
   const movePin = useCallback((coordinates: Coordinates) => {
@@ -182,7 +182,9 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
   async function submit() {
     if (!type) return setError('typeRequired');
-    if (districtIds.length === 0) return setError('districtRequired');
+    if (!city || !areaIds.some((id) => areaById(id)?.kind === 'district')) {
+      return setError('districtRequired');
+    }
     const trimmedTitle = title.trim();
     if (trimmedTitle.length < 3) return setError('titleRequired');
     const priceValue = parseOptionalInt(price);
@@ -213,7 +215,8 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
     const values: ListingValues = {
       type,
-      district_ids: districtIds,
+      city_id: city.id,
+      area_ids: areaIds,
       title: trimmedTitle,
       description: description.trim() || null,
       price_eur: priceValue,
@@ -317,12 +320,11 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
       {type && (
         <>
-          <ChoiceChips
+          <AreaPicker
             label={isSeeking ? t('listings.form.districtsSeeking') : t('listings.form.district')}
-            options={districts.map((d) => d.id)}
-            getLabel={(id) => districts.find((d) => d.id === id)?.name ?? ''}
-            value={districtIds}
-            onChange={toggleDistrict}
+            value={areaIds}
+            onChange={setAreaIds}
+            maxDistricts={maxDistricts}
           />
 
           <View style={styles.field}>

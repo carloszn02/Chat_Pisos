@@ -5,10 +5,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { districtNames } from '@/hooks/use-districts';
+import { usePlaces } from '@/hooks/use-places';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate, formatPrice } from '@/lib/format';
-import type { ChatGroup, PublicProfile } from '@/types/chat';
+import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPE_COLORS, type Listing, type ListingType } from '@/types/listing';
 
 /** The small colored label: "Offering room", "Looking for room" or "Whole flat". */
@@ -45,19 +45,19 @@ export function ListingPrice({ listing, large = false }: { listing: Listing; lar
 
 type ListingCardProps = {
   listing: Listing;
-  districts: ChatGroup[];
   owner?: PublicProfile;
   /** Smaller version without the photo, for group chats. */
   compact?: boolean;
 };
 
-export function ListingCard({ listing, districts, owner, compact = false }: ListingCardProps) {
+export function ListingCard({ listing, owner, compact = false }: ListingCardProps) {
+  const { placeLabel } = usePlaces();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const photo = listing.photo_urls[0];
 
   const details = [
-    districtNames(listing.district_ids, districts),
+    placeLabel(listing.area_ids),
     t('listings.fromDate', { date: formatDate(listing.available_from, i18n.language) }),
     owner && `${owner.first_name}, ${owner.age}`,
   ]

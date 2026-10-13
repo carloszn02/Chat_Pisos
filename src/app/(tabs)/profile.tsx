@@ -9,7 +9,6 @@ import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useDistricts } from '@/hooks/use-districts';
 import { useProfile } from '@/hooks/use-profile';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,7 +23,6 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { profile } = useProfile();
-  const districts = useDistricts();
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const userId = profile?.id;
 
@@ -83,9 +81,7 @@ export default function ProfileScreen() {
                   {t('listings.mineEmpty')}
                 </ThemedText>
               ) : (
-                myListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} districts={districts} />
-                ))
+                myListings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
               )}
             </View>
 

@@ -11,7 +11,7 @@ const PUBLIC_PROFILE_COLUMNS =
 export async function fetchGroups(): Promise<ChatGroup[]> {
   const { data, error } = await supabase
     .from('chat_groups')
-    .select('id, slug, name, short_code, is_city_wide, sort_order')
+    .select('id, slug, name, short_code, is_city_wide, sort_order, city_id, area_id')
     .order('sort_order');
   if (error) throw error;
   return data;
@@ -20,7 +20,7 @@ export async function fetchGroups(): Promise<ChatGroup[]> {
 export async function fetchGroupBySlug(slug: string): Promise<ChatGroup | null> {
   const { data, error } = await supabase
     .from('chat_groups')
-    .select('id, slug, name, short_code, is_city_wide, sort_order')
+    .select('id, slug, name, short_code, is_city_wide, sort_order, city_id, area_id')
     .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;

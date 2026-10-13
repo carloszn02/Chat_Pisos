@@ -31,6 +31,19 @@ const en: typeof es = {
     leaveConfirmBody: "You won't be able to write in the group. You can join again any time.",
     sendError: "Your message couldn't be sent.",
     you: 'You',
+    citySubtitle: 'Rooms, flats and flatmates by neighbourhood',
+    suggestTitle: "Don't see your neighbourhood?",
+    suggestHint: 'Ask for a group for your neighbourhood or district',
+    suggestIntro:
+      "These places in {{city}} don't have a group yet. Mark the ones you're interested in: when enough people ask, we'll open the chat and add you automatically.",
+    wantGroup: 'I want it',
+    interested: 'Requested',
+    hasGroup: 'Already has a group',
+    neighbourhoodCount_one: '{{count}} neighbourhood without a group',
+    neighbourhoodCount_other: '{{count}} neighbourhoods without a group',
+    tabChat: 'Chat',
+    tabListings: 'Listings',
+    noListingsHere: 'No listings in {{name}} yet.',
     rateLimit: "You're sending messages very fast. Wait a moment and try again.",
     messageDeleted: 'Message deleted',
     deleteMessage: 'Delete message',
@@ -158,6 +171,7 @@ const en: typeof es = {
     filters: {
       all: 'All',
       allDistricts: 'All districts',
+      wholeDistrict: 'Whole district',
       maxPrice: 'Max price',
       types: {
         offering_room: 'Rooms offered',
@@ -187,6 +201,7 @@ const en: typeof es = {
         whole_flat: 'The entire flat, for one person or a group',
       },
       district: 'District',
+      neighbourhoodIn: 'Neighbourhood in {{district}} · optional',
       districtsSeeking: "Districts you're interested in (up to 3)",
       title: 'Title',
       titlePlaceholders: {

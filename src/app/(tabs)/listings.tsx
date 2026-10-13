@@ -16,7 +16,7 @@ import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useDistricts } from '@/hooks/use-districts';
+import { usePlaces } from '@/hooks/use-places';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
 import { fetchListings, type ListingFilters } from '@/lib/listings';
@@ -58,10 +58,12 @@ function ChipRow({ chips }: { chips: Chip[] }) {
 export default function ListingsScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
-  const districts = useDistricts();
+  const { city, districts, neighbourhoodsOf } = usePlaces();
+  const cityId = city?.id ?? null;
 
   const [type, setType] = useState<ListingType | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
+  const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(null);
   const [maxPriceText, setMaxPriceText] = useState('');
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [listings, setListings] = useState<Listing[] | null>(null);
@@ -81,17 +83,25 @@ export default function ListingsScreen() {
     }
   }, []);
 
+  // The most specific place chosen: a neighbourhood, otherwise a district.
+  const areaId = neighbourhoodId ?? districtId;
+
   // Reload when the tab is shown and whenever a filter changes.
   useFocusEffect(
     useCallback(() => {
-      load({ type, districtId, maxPrice });
-    }, [load, type, districtId, maxPrice])
+      if (cityId) load({ cityId, type, areaId, maxPrice });
+    }, [load, cityId, type, areaId, maxPrice])
   );
 
   async function refresh() {
     setRefreshing(true);
-    await load({ type, districtId, maxPrice });
+    await load({ cityId, type, areaId, maxPrice });
     setRefreshing(false);
+  }
+
+  function chooseDistrict(id: string | null) {
+    setDistrictId(id);
+    setNeighbourhoodId(null);
   }
 
   function applyMaxPrice() {
@@ -119,15 +129,33 @@ export default function ListingsScreen() {
       key: 'all',
       label: t('listings.filters.allDistricts'),
       selected: districtId === null,
-      onPress: () => setDistrictId(null),
+      onPress: () => chooseDistrict(null),
     },
     ...districts.map((district) => ({
       key: district.id,
       label: district.name,
       selected: districtId === district.id,
-      onPress: () => setDistrictId(district.id),
+      onPress: () => chooseDistrict(district.id),
     })),
   ];
+
+  // Once a district is chosen, its neighbourhoods appear as a second row.
+  const neighbourhoodChips: Chip[] = districtId
+    ? [
+        {
+          key: 'all',
+          label: t('listings.filters.wholeDistrict'),
+          selected: neighbourhoodId === null,
+          onPress: () => setNeighbourhoodId(null),
+        },
+        ...neighbourhoodsOf(districtId).map((hood) => ({
+          key: hood.id,
+          label: hood.name,
+          selected: neighbourhoodId === hood.id,
+          onPress: () => setNeighbourhoodId(hood.id),
+        })),
+      ]
+    : [];
 
   return (
     <ThemedView style={styles.container}>
@@ -145,6 +173,7 @@ export default function ListingsScreen() {
 
             <ChipRow chips={typeChips} />
             <ChipRow chips={districtChips} />
+            {neighbourhoodChips.length > 0 && <ChipRow chips={neighbourhoodChips} />}
 
             <View style={styles.priceRow}>
               <ThemedText type="small" themeColor="textSecondary">
@@ -190,12 +219,7 @@ export default function ListingsScreen() {
             )}
 
             {listings?.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                districts={districts}
-                owner={owners.get(listing.user_id)}
-              />
+              <ListingCard key={listing.id} listing={listing} owner={owners.get(listing.user_id)} />
             ))}
           </View>
         </ScrollView>

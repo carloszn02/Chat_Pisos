@@ -14,6 +14,9 @@ export type ChatGroup = {
   short_code: string;
   is_city_wide: boolean;
   sort_order: number;
+  city_id: string;
+  /** The district or neighbourhood this group is about (null for the city-wide group). */
+  area_id: string | null;
 };
 
 export type GroupMessage = {

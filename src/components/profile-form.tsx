@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
-import { useDistricts } from '@/hooks/use-districts';
+import { useOpenGroups } from '@/hooks/use-open-groups';
 import { useTheme } from '@/hooks/use-theme';
 import { isAdult, parseBirthDate } from '@/lib/age';
 import type { ProfileErrorKey, ProfileFormValues } from '@/lib/profiles';
@@ -67,7 +67,8 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
   const [smoking, setSmoking] = useState<Smoking | null>(initial?.smoking ?? null);
   const [pets, setPets] = useState<Pets | null>(initial?.pets ?? null);
   const [districtIds, setDistrictIds] = useState<string[]>([]);
-  const districts = useDistricts();
+  // The district chats people can join straight away when signing up.
+  const districts = useOpenGroups();
   const [error, setError] = useState<ProfileErrorKey | null>(null);
   const [busy, setBusy] = useState(false);
 
