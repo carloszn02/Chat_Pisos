@@ -39,6 +39,9 @@ The database lives in Supabase. Every change to its structure is a SQL file in `
 9. `20261008100000_delete_account.sql`
 10. `20261009100000_group_unread_counts.sql`
 11. `20261011100000_launch_hardening.sql` — spam limits, photo checks, listing expiry, message deletion, moderation tools. **On a new Supabase project, change the address in `app_storage_url()` first.**
+12. `20261013100000_places.sql` — countries, cities, districts and neighbourhoods; district groups open on demand.
+13. `20261014100000_private_groups.sql` — private group chats between connected people.
+14. `20261017100000_private_group_events.sql` — automatic join/leave notices in private groups.
 
 In Supabase, also set **Authentication → URL Configuration → Site URL** (and Redirect URLs) to the app's address, e.g. `http://localhost:8081` while developing.
 

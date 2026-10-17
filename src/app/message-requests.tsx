@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -11,21 +11,27 @@ import { useInbox } from '@/hooks/use-inbox';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 
+/** Pending message requests (kind=messages) or group invitations (kind=groups). */
 export default function MessageRequestsScreen() {
+  const { kind } = useLocalSearchParams<{ kind?: 'messages' | 'groups' }>();
+  const showGroups = kind === 'groups';
   const { t } = useTranslation();
   const theme = useTheme();
   const { session } = useSession();
   const { data, loadError } = useInbox();
   const requests = data?.items.filter((item) => item.is_incoming_request) ?? [];
   const invitations = data?.groups.filter((group) => group.my_status === 'invited') ?? [];
+  const isEmpty = showGroups ? invitations.length === 0 : requests.length === 0;
 
   return (
     <ThemedView style={styles.screen}>
-      <Stack.Screen options={{ title: t('messages.requests') }} />
+      <Stack.Screen
+        options={{ title: showGroups ? t('messages.invitations') : t('messages.requests') }}
+      />
       <ScrollView>
         <View style={styles.content}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
-            {t('messages.requestsIntro')}
+            {showGroups ? t('messages.invitationsIntro') : t('messages.requestsIntro')}
           </ThemedText>
           {!data && !loadError && <ActivityIndicator color={theme.primary} />}
           {loadError && (
@@ -33,25 +39,28 @@ export default function MessageRequestsScreen() {
               {t('messages.loadError')}
             </ThemedText>
           )}
-          {data && requests.length === 0 && invitations.length === 0 && (
-            <ThemedText themeColor="textSecondary">{t('messages.noRequests')}</ThemedText>
+          {data && isEmpty && (
+            <ThemedText themeColor="textSecondary">
+              {showGroups ? t('messages.noInvitations') : t('messages.noRequests')}
+            </ThemedText>
           )}
-          {invitations.map((group) => (
-            <PrivateGroupRow
-              key={group.id}
-              group={group}
-              users={data?.users ?? new Map()}
-              myUserId={session?.user.id ?? ''}
-            />
-          ))}
-          {requests.map((item) => (
-            <ConversationRow
-              key={item.id}
-              item={item}
-              otherUser={data?.users.get(item.other_user_id)}
-              myUserId={session?.user.id ?? ''}
-            />
-          ))}
+          {showGroups
+            ? invitations.map((group) => (
+                <PrivateGroupRow
+                  key={group.id}
+                  group={group}
+                  users={data?.users ?? new Map()}
+                  myUserId={session?.user.id ?? ''}
+                />
+              ))
+            : requests.map((item) => (
+                <ConversationRow
+                  key={item.id}
+                  item={item}
+                  otherUser={data?.users.get(item.other_user_id)}
+                  myUserId={session?.user.id ?? ''}
+                />
+              ))}
         </View>
       </ScrollView>
     </ThemedView>

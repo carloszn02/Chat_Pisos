@@ -25,7 +25,6 @@ import {
   fetchGroupUnreadCounts,
   fetchLastMessages,
   fetchMyGroupIds,
-  joinGroup,
 } from '@/lib/chat';
 import { formatShortTime } from '@/lib/format';
 import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
@@ -47,7 +46,6 @@ export default function ChatsScreen() {
 
   const [data, setData] = useState<ChatsData | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [joining, setJoining] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -78,18 +76,6 @@ export default function ChatsScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  }
-
-  async function join(group: ChatGroup) {
-    setJoining(group.id);
-    try {
-      await joinGroup(group.id);
-      await load();
-    } catch {
-      setLoadError(true);
-    } finally {
-      setJoining(null);
-    }
   }
 
   const cityGroups = data?.groups.filter((g) => g.city_id === city?.id) ?? [];
@@ -192,54 +178,7 @@ export default function ChatsScreen() {
                   </View>
                 )}
 
-                {otherGroups.length > 0 && (
-                  <>
-                    <ThemedText
-                      type="smallBold"
-                      themeColor="textSecondary"
-                      style={styles.sectionTitle}>
-                      {t('chats.popularDistricts')}
-                    </ThemedText>
-                    <View style={styles.list}>
-                      {otherGroups.map((group) => (
-                        <View key={group.id} style={styles.row}>
-                          <Link
-                            href={{ pathname: '/group/[slug]', params: { slug: group.slug } }}
-                            asChild>
-                            <Pressable
-                              accessibilityRole="link"
-                              style={({ pressed }) => [styles.rowLink, pressed && styles.pressed]}>
-                              <GroupTile group={group} />
-                              <View style={styles.rowText}>
-                                <ThemedText style={styles.groupName}>{group.name}</ThemedText>
-                                <ThemedText type="small" themeColor="textSecondary">
-                                  {group.is_city_wide
-                                    ? t('chats.cityWide')
-                                    : t('chats.districtGroup')}
-                                </ThemedText>
-                              </View>
-                            </Pressable>
-                          </Link>
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`${t('chats.join')} ${group.name}`}
-                            disabled={joining === group.id}
-                            onPress={() => join(group)}
-                            style={({ pressed }) => [
-                              styles.joinButton,
-                              { borderColor: theme.primary },
-                              (pressed || joining === group.id) && styles.pressed,
-                            ]}>
-                            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                              {t('chats.join')}
-                            </ThemedText>
-                          </Pressable>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-                <Link href="/suggest-area" asChild>
+                <Link href="/explore-groups" asChild>
                   <Pressable
                     accessibilityRole="link"
                     style={({ pressed }) => [
@@ -248,9 +187,11 @@ export default function ChatsScreen() {
                       pressed && styles.pressed,
                     ]}>
                     <View style={styles.rowText}>
-                      <ThemedText style={styles.groupName}>{t('chats.suggestTitle')}</ThemedText>
+                      <ThemedText style={styles.groupName}>
+                        {t('chats.exploreTitle', { city: city?.name ?? '' })}
+                      </ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">
-                        {t('chats.suggestHint')}
+                        {t('chats.exploreHint', { count: otherGroups.length })}
                       </ThemedText>
                     </View>
                     <ThemedText themeColor="textSecondary">›</ThemedText>
@@ -309,12 +250,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  rowLink: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
   rowText: {
     flex: 1,
     minWidth: 0,
@@ -340,13 +275,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: 700,
-  },
-  joinButton: {
-    height: 36,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: 'center',
   },
   suggestBox: {
     flexDirection: 'row',

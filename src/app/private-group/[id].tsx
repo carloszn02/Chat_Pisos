@@ -28,6 +28,7 @@ import {
   fetchPrivateGroup,
   fetchPrivateGroupMembers,
   fetchPrivateGroupMessages,
+  eventText,
   leavePrivateGroup,
   markPrivateGroupRead,
   respondToGroupInvite,
@@ -121,6 +122,7 @@ export default function PrivateGroupScreen() {
           if (cancelled) return;
           setMessages((current) => mergeMessages(current, latest));
           setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
+          addPeople(latest.flatMap((m) => (m.subject_id ? [m.subject_id] : [])));
           markPrivateGroupRead(id);
         }
       } catch {
@@ -132,7 +134,7 @@ export default function PrivateGroupScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id, userId, loadGroup]);
+  }, [id, userId, loadGroup, addPeople]);
 
   // Live updates: new or deleted messages, and people joining or leaving.
   useEffect(() => {
@@ -150,7 +152,7 @@ export default function PrivateGroupScreen() {
         (payload) => {
           const message = payload.new as PrivateGroupMessage;
           setMessages((current) => mergeMessages(current, [message]));
-          addPeople([message.sender_id]);
+          addPeople([message.sender_id, ...(message.subject_id ? [message.subject_id] : [])]);
           markPrivateGroupRead(id);
         }
       )
@@ -383,6 +385,17 @@ export default function PrivateGroupScreen() {
   const visibleMessages = messages.filter((m) => !blockedIds.has(m.sender_id));
 
   function renderMessage({ item, index }: { item: PrivateGroupMessage; index: number }) {
+    if (item.kind === 'event' && item.event) {
+      return (
+        <View style={styles.eventRow}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
+            {eventText(t, item.event, item.sender_id, item.subject_id, userId ?? '', (personId) =>
+              personId ? (people.get(personId)?.first_name ?? '…') : '…'
+            )}
+          </ThemedText>
+        </View>
+      );
+    }
     const isMine = item.sender_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
     const body = (color: string) =>
@@ -412,6 +425,7 @@ export default function PrivateGroupScreen() {
     // The list is newest-first, so the message shown just above this one is index + 1.
     const previous = visibleMessages[index + 1];
     const continuesPrevious =
+      previous?.kind === 'message' &&
       previous?.sender_id === item.sender_id &&
       new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() <
         GROUPING_WINDOW_MS;
@@ -630,6 +644,12 @@ const styles = StyleSheet.create({
   membersBar: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  eventRow: {
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    maxWidth: '85%',
   },
   messageList: {
     padding: Spacing.three,

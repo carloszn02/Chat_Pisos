@@ -93,6 +93,9 @@ export type PrivateGroupSummary = {
   last_message_sender_id: string | null;
   last_message_at: string | null;
   last_message_deleted: boolean;
+  last_message_kind: PrivateGroupMessageKind | null;
+  last_message_event: PrivateGroupEvent | null;
+  last_message_subject_id: string | null;
   unread_count: number;
 };
 
@@ -109,11 +112,19 @@ export type PrivateGroupMember = {
   invited_by: string | null;
 };
 
+export type PrivateGroupMessageKind = 'message' | 'event';
+/** Notices written by the database when membership changes. */
+export type PrivateGroupEvent = 'created' | 'joined' | 'left' | 'removed';
+
 export type PrivateGroupMessage = {
   id: string;
   group_id: string;
   sender_id: string;
   body: string;
+  kind: PrivateGroupMessageKind;
+  event: PrivateGroupEvent | null;
+  /** For "removed": the person who was removed. */
+  subject_id: string | null;
   listing_id: string | null;
   deleted_at: string | null;
   created_at: string;

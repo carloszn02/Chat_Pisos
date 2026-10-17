@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatShortTime } from '@/lib/format';
+import { eventText } from '@/lib/private-groups';
 import type { PrivateGroupSummary, PublicProfile } from '@/types/chat';
 
 type PrivateGroupRowProps = {
@@ -55,6 +56,15 @@ export function PrivateGroupRow({ group, users, myUserId }: PrivateGroupRowProps
     });
   } else if (!group.last_message_at) {
     preview = t('privateGroups.memberCount', { count: group.member_count });
+  } else if (group.last_message_kind === 'event' && group.last_message_event) {
+    preview = eventText(
+      t,
+      group.last_message_event,
+      group.last_message_sender_id ?? '',
+      group.last_message_subject_id,
+      myUserId,
+      (personId) => (personId ? (users.get(personId)?.first_name ?? '…') : '…')
+    );
   } else {
     const author =
       group.last_message_sender_id === myUserId

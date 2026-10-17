@@ -1,16 +1,20 @@
 /** Private group chats between connected people (invitations, members, messages). */
 
+import type { TFunction } from 'i18next';
+
 import { MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import { fetchInbox } from '@/lib/direct-messages';
 import { supabase } from '@/lib/supabase';
 import type {
+  PrivateGroupEvent,
   PrivateGroup,
   PrivateGroupMember,
   PrivateGroupMessage,
   PrivateGroupSummary,
 } from '@/types/chat';
 
-const MESSAGE_COLUMNS = 'id, group_id, sender_id, body, listing_id, deleted_at, created_at';
+const MESSAGE_COLUMNS =
+  'id, group_id, sender_id, body, kind, event, subject_id, listing_id, deleted_at, created_at';
 
 /** At most this many people per group, counting pending invitations (the database enforces it). */
 export const PRIVATE_GROUP_MAX_PEOPLE = 10;
@@ -129,4 +133,35 @@ export function inviteErrorKey(error: unknown): 'notConnected' | 'groupFull' | '
   if (message.includes('not_connected')) return 'notConnected';
   if (message.includes('group_full')) return 'groupFull';
   return 'generic';
+}
+
+/**
+ * The text of a notice, e.g. "Bea joined the group". `name` gives a person's first name,
+ * and the translation keys live under privateGroups.events.
+ */
+export function eventText(
+  t: TFunction,
+  event: PrivateGroupEvent,
+  actorId: string,
+  subjectId: string | null,
+  myUserId: string,
+  name: (userId: string | null) => string
+): string {
+  const byMe = actorId === myUserId;
+  switch (event) {
+    case 'created':
+      return byMe
+        ? t('privateGroups.events.createdByMe')
+        : t('privateGroups.events.created', { name: name(actorId) });
+    case 'joined':
+      return byMe
+        ? t('privateGroups.events.joinedMe')
+        : t('privateGroups.events.joined', { name: name(actorId) });
+    case 'left':
+      return t('privateGroups.events.left', { name: name(actorId) });
+    case 'removed':
+      return byMe
+        ? t('privateGroups.events.removedByMe', { name: name(subjectId) })
+        : t('privateGroups.events.removed', { name: name(actorId), removed: name(subjectId) });
+  }
 }

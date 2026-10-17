@@ -31,6 +31,12 @@ const es = {
     sendError: 'No se ha podido enviar el mensaje.',
     you: 'Tú',
     citySubtitle: 'Habitaciones, pisos y compañeros por barrios',
+    exploreTitle: 'Explorar barrios de {{city}}',
+    exploreHint_one: '{{count}} chat de barrio más al que unirte',
+    exploreHint_other: '{{count}} chats de barrio más a los que unirte',
+    exploreIntro:
+      'Únete a los chats de los barrios que te interesan. Puedes leerlos antes de unirte.',
+    joined: 'Unido',
     suggestTitle: '¿No ves tu barrio?',
     suggestHint: 'Pide un grupo para tu barrio o distrito',
     suggestIntro:
@@ -51,7 +57,17 @@ const es = {
   },
   messages: {
     title: 'Mensajes',
-    requests: 'Solicitudes de mensaje',
+    requests: 'Solicitudes',
+    invitations: 'Invitaciones',
+    invitationsIntro:
+      'Personas con las que hablas te han invitado a estos grupos. No verás los mensajes hasta que te unas.',
+    noInvitations: 'No tienes invitaciones pendientes.',
+    sectionGroups: 'Grupos',
+    sectionPrivate: 'Privados',
+    yourGroups: 'Tus grupos',
+    yourChats: 'Tus conversaciones',
+    noGroups:
+      'Aún no estás en ningún grupo. Crea uno con las personas con las que ya hablas, por ejemplo para buscar piso juntos.',
     requestsHint: 'De personas con las que aún no has hablado',
     requestsIntro:
       'Aquí llegan los mensajes de personas con las que aún no has hablado. Solo verán tus respuestas si aceptas.',
@@ -107,6 +123,15 @@ const es = {
     removeConfirm: '¿Quitar a {{name}} del grupo?',
     inviteMore: 'Invitar a más personas',
     invitationsSent: 'Invitaciones enviadas.',
+    events: {
+      created: '{{name}} ha creado el grupo',
+      createdByMe: 'Has creado el grupo',
+      joined: '{{name}} se ha unido',
+      joinedMe: 'Te has unido al grupo',
+      left: '{{name}} ha salido del grupo',
+      removed: '{{name}} ha quitado a {{removed}}',
+      removedByMe: 'Has quitado a {{name}}',
+    },
     sendInvites_one: 'Invitar a {{count}} persona',
     sendInvites_other: 'Invitar a {{count}} personas',
     errors: {

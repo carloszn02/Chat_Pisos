@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -20,6 +21,10 @@ import { useInbox } from '@/hooks/use-inbox';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 
+type Section = 'groups' | 'private';
+const SECTION_KEY = 'chat-pisos.messages-section';
+
+/** Your own conversations, in two sections: private groups and one-to-one chats. */
 export default function MessagesScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -27,6 +32,21 @@ export default function MessagesScreen() {
   const { data, loadError, reload } = useInbox();
   const myUserId = session?.user.id ?? '';
   const [refreshing, setRefreshing] = useState(false);
+  const [section, setSection] = useState<Section>('private');
+
+  // Open on the section used last time.
+  useEffect(() => {
+    AsyncStorage.getItem(SECTION_KEY)
+      .then((saved) => {
+        if (saved === 'groups' || saved === 'private') setSection(saved);
+      })
+      .catch(() => {});
+  }, []);
+
+  function chooseSection(next: Section) {
+    setSection(next);
+    AsyncStorage.setItem(SECTION_KEY, next).catch(() => {});
+  }
 
   async function refresh() {
     setRefreshing(true);
@@ -34,19 +54,25 @@ export default function MessagesScreen() {
     setRefreshing(false);
   }
 
-  const requests = data?.items.filter((item) => item.is_incoming_request) ?? [];
-  const invitations = data?.groups.filter((group) => group.my_status === 'invited') ?? [];
-  const pendingCount = requests.length + invitations.length;
+  const items = data?.items ?? [];
+  const groups = data?.groups ?? [];
+  const messageRequests = items.filter((item) => item.is_incoming_request);
+  const conversations = items.filter((item) => !item.is_incoming_request);
+  const invitations = groups.filter((group) => group.my_status === 'invited');
+  const myGroups = groups.filter((group) => group.my_status === 'member');
 
-  // Private conversations and groups in one list, most recent activity first.
-  const rows = [
-    ...(data?.items ?? [])
-      .filter((item) => !item.is_incoming_request)
-      .map((item) => ({ kind: 'direct' as const, at: item.last_message_at ?? '', item })),
-    ...(data?.groups ?? [])
-      .filter((group) => group.my_status === 'member')
-      .map((group) => ({ kind: 'group' as const, at: group.last_message_at ?? '', group })),
-  ].sort((a, b) => b.at.localeCompare(a.at));
+  // Unread per section (pending requests and invitations count too).
+  const privateUnread =
+    conversations.reduce((total, item) => total + item.unread_count, 0) + messageRequests.length;
+  const groupsUnread =
+    myGroups.reduce((total, group) => total + group.unread_count, 0) + invitations.length;
+
+  const sections: { key: Section; label: string; unread: number }[] = [
+    { key: 'groups', label: t('messages.sectionGroups'), unread: groupsUnread },
+    { key: 'private', label: t('messages.sectionPrivate'), unread: privateUnread },
+  ];
+
+  const pending = section === 'groups' ? invitations.length : messageRequests.length;
 
   return (
     <ThemedView style={styles.container}>
@@ -59,19 +85,56 @@ export default function MessagesScreen() {
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('messages.title')}</ThemedText>
-              <Link href="/new-private-group" asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.newGroup,
-                    { borderColor: theme.primary },
-                    pressed && styles.pressed,
-                  ]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    + {t('privateGroups.newButton')}
-                  </ThemedText>
-                </Pressable>
-              </Link>
+              {section === 'groups' && (
+                <Link href="/new-private-group" asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.newGroup,
+                      { borderColor: theme.primary },
+                      pressed && styles.pressed,
+                    ]}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      + {t('privateGroups.newButton')}
+                    </ThemedText>
+                  </Pressable>
+                </Link>
+              )}
+            </View>
+
+            <View
+              style={[styles.segments, { backgroundColor: theme.backgroundSelected }]}
+              accessibilityRole="tablist">
+              {sections.map((option) => {
+                const selected = option.key === section;
+                return (
+                  <Pressable
+                    key={option.key}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected }}
+                    onPress={() => chooseSection(option.key)}
+                    style={[
+                      styles.segment,
+                      selected && [
+                        styles.segmentSelected,
+                        { backgroundColor: theme.backgroundElement },
+                      ],
+                    ]}>
+                    <ThemedText
+                      type={selected ? 'smallBold' : 'small'}
+                      themeColor={selected ? 'text' : 'textSecondary'}>
+                      {option.label}
+                    </ThemedText>
+                    {option.unread > 0 && (
+                      <View style={[styles.dot, { backgroundColor: theme.primary }]}>
+                        <ThemedText style={[styles.dotText, { color: theme.onPrimary }]}>
+                          {option.unread > 99 ? '99+' : option.unread}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
 
             {!data && !loadError && (
@@ -93,53 +156,59 @@ export default function MessagesScreen() {
 
             {data && (
               <>
-                <Link href="/message-requests" asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={({ pressed }) => [
-                      styles.requestsBox,
-                      { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-                      pressed && styles.pressed,
-                    ]}>
-                    <View style={styles.requestsText}>
-                      <ThemedText style={styles.bold}>{t('messages.requests')}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {t('messages.requestsHint')}
+                {/* Like Instagram: a small link to requests, always there, highlighted when there are some. */}
+                <View style={styles.listHeader}>
+                  <ThemedText type="smallBold" themeColor="textSecondary">
+                    {section === 'groups' ? t('messages.yourGroups') : t('messages.yourChats')}
+                  </ThemedText>
+                  <Link
+                    href={{
+                      pathname: '/message-requests',
+                      params: { kind: section === 'groups' ? 'groups' : 'messages' },
+                    }}
+                    asChild>
+                    <Pressable accessibilityRole="link" hitSlop={10}>
+                      <ThemedText
+                        type={pending > 0 ? 'smallBold' : 'small'}
+                        style={{ color: pending > 0 ? theme.primary : theme.textSecondary }}>
+                        {section === 'groups' ? t('messages.invitations') : t('messages.requests')}
+                        {pending > 0 ? ` (${pending})` : ''}
                       </ThemedText>
-                    </View>
-                    {pendingCount > 0 && (
-                      <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-                        <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
-                          {pendingCount}
-                        </ThemedText>
-                      </View>
-                    )}
-                  </Pressable>
-                </Link>
+                    </Pressable>
+                  </Link>
+                </View>
 
-                {rows.length === 0 ? (
+                {section === 'groups' ? (
+                  myGroups.length === 0 ? (
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
+                      {t('messages.noGroups')}
+                    </ThemedText>
+                  ) : (
+                    <View>
+                      {myGroups.map((group) => (
+                        <PrivateGroupRow
+                          key={group.id}
+                          group={group}
+                          users={data.users}
+                          myUserId={myUserId}
+                        />
+                      ))}
+                    </View>
+                  )
+                ) : conversations.length === 0 ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
                     {t('messages.empty')}
                   </ThemedText>
                 ) : (
                   <View>
-                    {rows.map((row) =>
-                      row.kind === 'direct' ? (
-                        <ConversationRow
-                          key={row.item.id}
-                          item={row.item}
-                          otherUser={data.users.get(row.item.other_user_id)}
-                          myUserId={myUserId}
-                        />
-                      ) : (
-                        <PrivateGroupRow
-                          key={row.group.id}
-                          group={row.group}
-                          users={data.users}
-                          myUserId={myUserId}
-                        />
-                      )
-                    )}
+                    {conversations.map((item) => (
+                      <ConversationRow
+                        key={item.id}
+                        item={item}
+                        otherUser={data.users.get(item.other_user_id)}
+                        myUserId={myUserId}
+                      />
+                    ))}
                   </View>
                 )}
               </>
@@ -173,7 +242,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.one,
   },
   newGroup: {
     height: 36,
@@ -182,6 +250,46 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
   },
+  segments: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 3,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  segmentSelected: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  dot: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotText: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: 700,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.one,
+  },
   loader: {
     marginTop: Spacing.five,
   },
@@ -189,33 +297,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
     alignItems: 'center',
-  },
-  requestsBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  requestsText: {
-    flex: 1,
-  },
-  bold: {
-    fontWeight: 700,
-  },
-  badge: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 6,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: 700,
   },
   empty: {
     marginTop: Spacing.two,

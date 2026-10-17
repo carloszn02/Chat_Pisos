@@ -32,6 +32,12 @@ const en: typeof es = {
     sendError: "Your message couldn't be sent.",
     you: 'You',
     citySubtitle: 'Rooms, flats and flatmates by neighbourhood',
+    exploreTitle: 'Explore {{city}} districts',
+    exploreHint_one: '{{count}} more district chat to join',
+    exploreHint_other: '{{count}} more district chats to join',
+    exploreIntro:
+      "Join the chats of the neighbourhoods you're interested in. You can read them before joining.",
+    joined: 'Joined',
     suggestTitle: "Don't see your neighbourhood?",
     suggestHint: 'Ask for a group for your neighbourhood or district',
     suggestIntro:
@@ -52,7 +58,17 @@ const en: typeof es = {
   },
   messages: {
     title: 'Messages',
-    requests: 'Message requests',
+    requests: 'Requests',
+    invitations: 'Invitations',
+    invitationsIntro:
+      "People you talk to have invited you to these groups. You won't see the messages until you join.",
+    noInvitations: 'You have no pending invitations.',
+    sectionGroups: 'Groups',
+    sectionPrivate: 'Private',
+    yourGroups: 'Your groups',
+    yourChats: 'Your conversations',
+    noGroups:
+      "You're not in any group yet. Create one with people you already talk to, for example to look for a flat together.",
     requestsHint: "From people you haven't talked to yet",
     requestsIntro:
       "Messages from people you haven't talked to yet arrive here. They'll only see your replies if you accept.",
@@ -108,6 +124,15 @@ const en: typeof es = {
     removeConfirm: 'Remove {{name}} from the group?',
     inviteMore: 'Invite more people',
     invitationsSent: 'Invitations sent.',
+    events: {
+      created: '{{name}} created the group',
+      createdByMe: 'You created the group',
+      joined: '{{name}} joined',
+      joinedMe: 'You joined the group',
+      left: '{{name}} left the group',
+      removed: '{{name}} removed {{removed}}',
+      removedByMe: 'You removed {{name}}',
+    },
     sendInvites_one: 'Invite {{count}} person',
     sendInvites_other: 'Invite {{count}} people',
     errors: {

@@ -28,7 +28,11 @@ export function useInbox() {
       const users = await fetchAuthors(
         [
           ...items.map((item) => item.other_user_id),
-          ...groups.flatMap((group) => [group.invited_by, group.last_message_sender_id]),
+          ...groups.flatMap((group) => [
+            group.invited_by,
+            group.last_message_sender_id,
+            group.last_message_subject_id,
+          ]),
         ].filter((id): id is string => !!id)
       );
       setData({ items, groups, users });
