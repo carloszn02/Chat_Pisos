@@ -17,11 +17,13 @@ import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
 import { GroupListings } from '@/components/group-listings';
 import { ListingCard } from '@/components/listing-card';
+import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useSession } from '@/hooks/use-session';
+import { useShare } from '@/hooks/use-share';
 import { useTheme } from '@/hooks/use-theme';
 import {
   deleteMyMessage,
@@ -37,6 +39,7 @@ import {
 } from '@/lib/chat';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime } from '@/lib/format';
+import { appUrl } from '@/lib/links';
 import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
 import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
@@ -85,6 +88,10 @@ export default function GroupChatScreen() {
   const [selected, setSelected] = useState<GroupMessage | null>(null);
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [muteOpen, setMuteOpen] = useState(false);
+  const { share, toast } = useShare();
+  const muteLabel = useMuteLabel('group', group?.id);
   // Each group has two tabs: the conversation, and its listings in order.
   const [tab, setTab] = useState<'chat' | 'listings'>('chat');
 
@@ -366,15 +373,14 @@ export default function GroupChatScreen() {
       options={{
         title: group?.name ?? '',
         headerRight: () =>
-          isMember ? (
+          group ? (
             <Pressable
               accessibilityRole="button"
-              onPress={() => setConfirmLeave(true)}
-              hitSlop={12}
+              accessibilityLabel={t('messages.options')}
+              onPress={() => setMenuOpen(true)}
+              hitSlop={10}
               style={styles.headerButton}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('chats.leave')}
-              </ThemedText>
+              <ThemedText style={styles.menuDots}>⋯</ThemedText>
             </Pressable>
           ) : null,
       }}
@@ -568,6 +574,36 @@ export default function GroupChatScreen() {
         options={[{ label: t('chats.leave'), destructive: true, onPress: leave }]}
         onClose={() => setConfirmLeave(false)}
       />
+      <ActionSheet
+        visible={menuOpen}
+        title={group.name}
+        options={[
+          {
+            label: t('share.shareGroup'),
+            onPress: () =>
+              share(t('share.groupMessage', { name: group.name }), appUrl(`/group/${group.slug}`)),
+          },
+          ...(isMember
+            ? [
+                { label: muteLabel, onPress: () => setMuteOpen(true) },
+                {
+                  label: t('chats.leave'),
+                  destructive: true,
+                  onPress: () => setConfirmLeave(true),
+                },
+              ]
+            : []),
+        ]}
+        onClose={() => setMenuOpen(false)}
+      />
+      <MuteSheet
+        visible={muteOpen}
+        kind="group"
+        chatId={group.id}
+        onClose={() => setMuteOpen(false)}
+        onError={() => setSendError(true)}
+      />
+      {toast}
     </ThemedView>
   );
 }
@@ -583,6 +619,10 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     paddingHorizontal: Spacing.two,
+  },
+  menuDots: {
+    fontSize: 22,
+    fontWeight: 700,
   },
   tabs: {
     flexDirection: 'row',

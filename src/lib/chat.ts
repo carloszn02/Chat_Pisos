@@ -1,7 +1,7 @@
 /** Reading and writing district group chats. */
 
 import { supabase } from '@/lib/supabase';
-import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
+import type { ChatGroup, GroupMessage, GroupStats, PublicProfile } from '@/types/chat';
 
 export const MESSAGES_PAGE_SIZE = 50;
 
@@ -25,6 +25,26 @@ export async function fetchGroupBySlug(slug: string): Promise<ChatGroup | null> 
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/** How busy each group is (members, messages this week, last message), by group id. */
+export async function fetchGroupStats(): Promise<Map<string, GroupStats>> {
+  const { data, error } = await supabase.rpc('chat_group_stats');
+  if (error) throw error;
+  return new Map((data as GroupStats[]).map((row) => [row.group_id, row]));
+}
+
+/** For sorting groups busiest first: messages this week, then members. */
+export function byActivity(stats: Map<string, GroupStats>) {
+  return (a: ChatGroup, b: ChatGroup) => {
+    const sa = stats.get(a.id);
+    const sb = stats.get(b.id);
+    return (
+      (sb?.messages_this_week ?? 0) - (sa?.messages_this_week ?? 0) ||
+      (sb?.member_count ?? 0) - (sa?.member_count ?? 0) ||
+      a.sort_order - b.sort_order
+    );
+  };
 }
 
 /** IDs of the groups the current user has joined. */

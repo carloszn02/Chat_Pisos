@@ -20,10 +20,12 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
 import { useProfile } from '@/hooks/use-profile';
+import { useShare } from '@/hooks/use-share';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPublicProfile } from '@/lib/chat';
 import { startConversation } from '@/lib/direct-messages';
 import { formatDate } from '@/lib/format';
+import { appUrl } from '@/lib/links';
 import {
   daysUntilExpiry,
   deleteListing,
@@ -49,6 +51,7 @@ export default function ListingDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { share, toast } = useShare();
 
   // Reload when coming back from editing.
   useFocusEffect(
@@ -200,7 +203,28 @@ export default function ListingDetailScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <Stack.Screen options={{ title: t(`listings.types.${listing.type}`) }} />
+      <Stack.Screen
+        options={{
+          title: t(`listings.types.${listing.type}`),
+          headerRight: () =>
+            listing.status === 'active' ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  share(
+                    t('share.listingMessage', { title: listing.title }),
+                    appUrl(`/listing/${listing.id}`)
+                  )
+                }
+                hitSlop={10}
+                style={styles.headerButton}>
+                <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                  {t('share.share')}
+                </ThemedText>
+              </Pressable>
+            ) : null,
+        }}
+      />
       <ScrollView>
         {listing.photo_urls.length > 0 && (
           <ScrollView
@@ -433,6 +457,7 @@ export default function ListingDetailScreen() {
         options={[{ label: t('listings.delete'), destructive: true, onPress: remove }]}
         onClose={() => setConfirmDelete(false)}
       />
+      {toast}
     </ThemedView>
   );
 }
@@ -440,6 +465,9 @@ export default function ListingDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  headerButton: {
+    paddingHorizontal: Spacing.two,
   },
   centered: {
     alignItems: 'center',

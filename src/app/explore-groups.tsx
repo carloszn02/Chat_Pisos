@@ -1,40 +1,63 @@
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-import { GroupTile } from '@/components/group-tile';
+import { DistrictCard } from '@/components/district-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchGroups, fetchMyGroupIds, joinGroup } from '@/lib/chat';
-import type { ChatGroup } from '@/types/chat';
+import { byActivity, fetchGroups, fetchGroupStats, fetchMyGroupIds, joinGroup } from '@/lib/chat';
+import type { ChatGroup, GroupStats } from '@/types/chat';
+
+const GAP = Spacing.three;
+
+/** "Lavapiés" and "lavapies" match. */
+function simplify(text: string): string {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
 
 /**
- * The district group chats of the current city you haven't joined yet, plus the way to
- * ask for new ones. This is where exploring other cities will also live.
+ * All the district group chats of the current city, busiest first, with a search box,
+ * plus the way to ask for new ones. This is where exploring other cities will also live.
  */
 export default function ExploreGroupsScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const { session } = useSession();
   const userId = session?.user.id;
-  const { city } = usePlaces();
+  const { city, areaById } = usePlaces();
 
   const [groups, setGroups] = useState<ChatGroup[] | null>(null);
   const [myGroupIds, setMyGroupIds] = useState<Set<string>>(new Set());
+  const [stats, setStats] = useState<Map<string, GroupStats>>(new Map());
   const [joining, setJoining] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const [all, mine] = await Promise.all([fetchGroups(), fetchMyGroupIds(userId)]);
+      const [all, mine, numbers] = await Promise.all([
+        fetchGroups(),
+        fetchMyGroupIds(userId),
+        fetchGroupStats().catch(() => new Map<string, GroupStats>()),
+      ]);
       setGroups(all);
       setMyGroupIds(mine);
+      setStats(numbers);
       setError(false);
     } catch {
       setError(true);
@@ -59,16 +82,60 @@ export default function ExploreGroupsScreen() {
     }
   }
 
-  const cityGroups = (groups ?? []).filter((g) => g.city_id === city?.id);
+  // Two cards per row on phones, three on wider screens.
+  const contentWidth = Math.min(width, MaxContentWidth) - Spacing.four * 2;
+  const columns = contentWidth >= 560 ? 3 : 2;
+  const cardWidth = Math.floor((contentWidth - GAP * (columns - 1)) / columns);
+
+  // Search by the group's name, the official name and the district it belongs to.
+  const query = simplify(search);
+  const cityGroups = (groups ?? [])
+    .filter((g) => g.city_id === city?.id)
+    .filter((g) => {
+      if (!query) return true;
+      const area = g.area_id ? areaById(g.area_id) : undefined;
+      const parent = area?.parent_id ? areaById(area.parent_id) : undefined;
+      return [g.name, area?.official_name, parent?.name].some(
+        (text) => !!text && simplify(text).includes(query)
+      );
+    })
+    .sort(byActivity(stats));
 
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('chats.exploreTitle', { city: city?.name ?? '' }) }} />
-      <ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <ThemedText themeColor="textSecondary" style={styles.intro}>
             {t('chats.exploreIntro')}
           </ThemedText>
+
+          <View
+            style={[
+              styles.searchBox,
+              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+            ]}>
+            <ThemedText themeColor="textSecondary">⌕</ThemedText>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={t('chats.searchPlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              accessibilityLabel={t('chats.searchPlaceholder')}
+              autoCorrect={false}
+              returnKeyType="search"
+              style={[styles.searchInput, { color: theme.text }]}
+            />
+            {search !== '' && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('chats.clearSearch')}
+                onPress={() => setSearch('')}
+                hitSlop={10}>
+                <ThemedText themeColor="textSecondary">✕</ThemedText>
+              </Pressable>
+            )}
+          </View>
 
           {error && (
             <ThemedText type="small" style={{ color: theme.danger }}>
@@ -77,62 +144,41 @@ export default function ExploreGroupsScreen() {
           )}
           {!groups && !error && <ActivityIndicator color={theme.primary} />}
 
-          {cityGroups.map((group) => {
-            const joined = myGroupIds.has(group.id);
-            return (
-              <View key={group.id} style={styles.row}>
-                <Link href={{ pathname: '/group/[slug]', params: { slug: group.slug } }} asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={({ pressed }) => [styles.rowLink, pressed && styles.pressed]}>
-                    <GroupTile group={group} />
-                    <View style={styles.rowText}>
-                      <ThemedText style={styles.bold}>{group.name}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {group.is_city_wide ? t('chats.cityWide') : t('chats.districtGroup')}
-                      </ThemedText>
-                    </View>
-                  </Pressable>
-                </Link>
-                {joined ? (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t('chats.joined')}
-                  </ThemedText>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('chats.join')} ${group.name}`}
-                    disabled={joining === group.id}
-                    onPress={() => join(group)}
-                    style={({ pressed }) => [
-                      styles.joinButton,
-                      { borderColor: theme.primary },
-                      (pressed || joining === group.id) && styles.pressed,
-                    ]}>
-                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                      {t('chats.join')}
-                    </ThemedText>
-                  </Pressable>
-                )}
-              </View>
-            );
-          })}
+          {groups && cityGroups.length === 0 && (
+            <ThemedText themeColor="textSecondary" style={styles.noResults}>
+              {t('chats.noResults', { search })}
+            </ThemedText>
+          )}
+
+          <View style={styles.grid}>
+            {cityGroups.map((group) => (
+              <DistrictCard
+                key={group.id}
+                group={group}
+                stats={stats.get(group.id)}
+                joined={myGroupIds.has(group.id)}
+                joining={joining === group.id}
+                onJoin={() => join(group)}
+                width={cardWidth}
+              />
+            ))}
+          </View>
 
           <Link href="/suggest-area" asChild>
             <Pressable
               accessibilityRole="link"
               style={({ pressed }) => [
                 styles.suggestBox,
-                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
                 pressed && styles.pressed,
               ]}>
-              <View style={styles.rowText}>
+              <View style={styles.flex}>
                 <ThemedText style={styles.bold}>{t('chats.suggestTitle')}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {t('chats.suggestHint')}
                 </ThemedText>
               </View>
-              <ThemedText themeColor="textSecondary">›</ThemedText>
+              <ThemedText style={{ color: theme.primary }}>›</ThemedText>
             </Pressable>
           </Link>
         </View>
@@ -150,46 +196,49 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     padding: Spacing.four,
-    gap: Spacing.two,
+    gap: Spacing.three,
   },
   intro: {
     lineHeight: 22,
-    marginBottom: Spacing.two,
   },
-  row: {
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.two,
+    gap: Spacing.two,
+    height: 46,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
   },
-  rowLink: {
+  searchInput: {
     flex: 1,
+    height: '100%',
+    fontSize: 16,
+  },
+  noResults: {
+    textAlign: 'center',
+    marginVertical: Spacing.four,
+  },
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
+    flexWrap: 'wrap',
+    gap: GAP,
   },
-  rowText: {
+  flex: {
     flex: 1,
-    minWidth: 0,
   },
   bold: {
     fontWeight: 700,
-  },
-  joinButton: {
-    height: 36,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: 'center',
   },
   suggestBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    marginTop: Spacing.four,
+    borderStyle: 'dashed',
+    marginTop: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

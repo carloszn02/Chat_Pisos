@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
+import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -25,6 +26,7 @@ import { deleteMyMessage, fetchAuthors, MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime } from '@/lib/format';
 import {
+  fetchJoinRequests,
   fetchPrivateGroup,
   fetchPrivateGroupMembers,
   fetchPrivateGroupMessages,
@@ -84,6 +86,9 @@ export default function PrivateGroupScreen() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [selected, setSelected] = useState<PrivateGroupMessage | null>(null);
   const [toDelete, setToDelete] = useState<PrivateGroupMessage | null>(null);
+  const [muteOpen, setMuteOpen] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const muteLabel = useMuteLabel('private_group', id);
 
   const me = members.find((m) => m.user_id === userId);
   const isMember = me?.status === 'member';
@@ -100,12 +105,15 @@ export default function PrivateGroupScreen() {
   /** Group details and members; messages only once you're a member. */
   const loadGroup = useCallback(async () => {
     if (!id) return;
-    const [found, memberList] = await Promise.all([
+    const [found, memberList, requests] = await Promise.all([
       fetchPrivateGroup(id),
       fetchPrivateGroupMembers(id),
+      // Empty unless you're a member.
+      fetchJoinRequests(id).catch(() => []),
     ]);
     setGroup(found);
     setMembers(memberList);
+    setPendingRequests(requests.length);
     addPeople(memberList.map((m) => m.user_id));
     return memberList;
   }, [id, addPeople]);
@@ -166,6 +174,15 @@ export default function PrivateGroupScreen() {
         },
         (payload) =>
           setMessages((current) => replaceMessage(current, payload.new as PrivateGroupMessage))
+      )
+      .on(
+        'postgres_changes',
+        // "Asked to join" notices disappear when the request is answered.
+        { event: 'DELETE', schema: 'public', table: 'private_group_messages' },
+        (payload) => {
+          const removedId = (payload.old as { id?: string }).id;
+          if (removedId) setMessages((current) => current.filter((m) => m.id !== removedId));
+        }
       )
       .on(
         'postgres_changes',
@@ -481,6 +498,27 @@ export default function PrivateGroupScreen() {
           </ThemedText>
         </Pressable>
 
+        {pendingRequests > 0 && (
+          <Pressable
+            accessibilityRole="link"
+            onPress={() =>
+              router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } })
+            }
+            style={({ pressed }) => [
+              styles.requestsBar,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              pressed && styles.pressed,
+            ]}>
+            <View style={[styles.requestsDot, { backgroundColor: theme.primary }]} />
+            <ThemedText type="smallBold" style={[styles.flex, { color: theme.primary }]}>
+              {t('privateGroups.requestsBanner', { count: pendingRequests })}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('privateGroups.review')} ›
+            </ThemedText>
+          </Pressable>
+        )}
+
         {visibleMessages.length === 0 ? (
           <View style={[styles.screen, styles.centered]}>
             <ThemedText themeColor="textSecondary">{t('privateGroups.emptyChat')}</ThemedText>
@@ -542,6 +580,7 @@ export default function PrivateGroupScreen() {
             onPress: () =>
               router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } }),
           },
+          { label: muteLabel, onPress: () => setMuteOpen(true) },
           {
             label: t('privateGroups.leave'),
             destructive: true,
@@ -549,6 +588,13 @@ export default function PrivateGroupScreen() {
           },
         ]}
         onClose={() => setMenuOpen(false)}
+      />
+      <MuteSheet
+        visible={muteOpen}
+        kind="private_group"
+        chatId={group.id}
+        onClose={() => setMuteOpen(false)}
+        onError={() => setActionError(true)}
       />
       <ActionSheet
         visible={confirmLeave}
@@ -644,6 +690,25 @@ const styles = StyleSheet.create({
   membersBar: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  requestsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginHorizontal: Spacing.three,
+    marginTop: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  requestsDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  flex: {
+    flex: 1,
   },
   eventRow: {
     alignSelf: 'center',

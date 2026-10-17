@@ -12,12 +12,17 @@ const TINTS = [
   { background: '#F3EAE3', text: '#5C3F2F' },
 ];
 
-/** The square badge with the group's initials (e.g. "ML" for Malasaña). */
-export function GroupTile({ group, size = 48 }: { group: ChatGroup; size?: number }) {
+/** The soft colour of a district group (the city-wide group uses the main colour). */
+export function useGroupTint(group: ChatGroup): { background: string; text: string } {
   const theme = useTheme();
-  const tint = group.is_city_wide
+  return group.is_city_wide
     ? { background: theme.primary, text: theme.onPrimary }
     : TINTS[group.sort_order % TINTS.length];
+}
+
+/** The square badge with the group's initials (e.g. "ML" for Malasaña). */
+export function GroupTile({ group, size = 48 }: { group: ChatGroup; size?: number }) {
+  const tint = useGroupTint(group);
 
   return (
     <View

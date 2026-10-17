@@ -15,6 +15,8 @@ import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { MutesProvider } from '@/hooks/use-mutes';
+import { usePendingLinks } from '@/hooks/use-pending-links';
 import { PlacesProvider } from '@/hooks/use-places';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
@@ -77,10 +79,12 @@ export default function RootLayout() {
             <ProfileProvider>
               <BlocksProvider>
                 <PlacesProvider>
-                  <UnreadProvider>
-                    <SplashScreenController />
-                    <RootNavigator />
-                  </UnreadProvider>
+                  <MutesProvider>
+                    <UnreadProvider>
+                      <SplashScreenController />
+                      <RootNavigator />
+                    </UnreadProvider>
+                  </MutesProvider>
                 </PlacesProvider>
               </BlocksProvider>
             </ProfileProvider>
@@ -103,11 +107,17 @@ function SplashScreenController() {
 // Logged out -> sign-in. Opened a password reset link -> reset-password.
 // Logged in without a profile -> create-profile. Otherwise -> the app.
 function RootNavigator() {
-  const { session, isRecoveringPassword } = useSession();
+  const { session, isLoading: sessionLoading, isRecoveringPassword } = useSession();
   const { profile, isLoading, loadFailed, refresh } = useProfile();
   const loggedIn = !!session;
   const hasProfile = !!profile;
   const inApp = loggedIn && !isRecoveringPassword;
+
+  // Shared links opened while logged out are opened after signing in.
+  usePendingLinks({
+    loggedOut: !loggedIn && !sessionLoading,
+    inApp: inApp && hasProfile && !isLoading,
+  });
 
   // Couldn't reach the server: don't mistake that for "no profile yet".
   if (inApp && loadFailed) return <ConnectionError onRetry={refresh} />;
@@ -131,6 +141,7 @@ function RootNavigator() {
         <Stack.Screen name="new-private-group" options={headerOptions} />
         <Stack.Screen name="private-group/[id]" options={headerOptions} />
         <Stack.Screen name="private-group-members/[id]" options={headerOptions} />
+        <Stack.Screen name="join/[token]" options={headerOptions} />
       </Stack.Protected>
       <Stack.Protected guard={inApp && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

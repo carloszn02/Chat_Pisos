@@ -12,22 +12,31 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CityBanner } from '@/components/city-banner';
+import { DistrictCard } from '@/components/district-card';
 import { GroupTile } from '@/components/group-tile';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useMutes } from '@/hooks/use-mutes';
 import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  byActivity,
   fetchAuthors,
   fetchGroups,
+  fetchGroupStats,
   fetchGroupUnreadCounts,
   fetchLastMessages,
   fetchMyGroupIds,
+  joinGroup,
 } from '@/lib/chat';
 import { formatShortTime } from '@/lib/format';
-import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
+import type { ChatGroup, GroupMessage, GroupStats, PublicProfile } from '@/types/chat';
+
+// How many districts to suggest in the "Discover" row before "See all".
+const DISCOVER_COUNT = 8;
+const CARD_WIDTH = 168;
 
 type ChatsData = {
   groups: ChatGroup[];
@@ -35,6 +44,7 @@ type ChatsData = {
   lastMessages: Map<string, GroupMessage>;
   authors: Map<string, PublicProfile>;
   unread: Map<string, number>;
+  stats: Map<string, GroupStats>;
 };
 
 export default function ChatsScreen() {
@@ -43,22 +53,26 @@ export default function ChatsScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { city } = usePlaces();
+  const { isMuted } = useMutes();
 
   const [data, setData] = useState<ChatsData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [joining, setJoining] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const [groups, myGroupIds, unread] = await Promise.all([
+      const [groups, myGroupIds, unread, stats] = await Promise.all([
         fetchGroups(),
         fetchMyGroupIds(userId),
         fetchGroupUnreadCounts(),
+        // The numbers on the Discover cards are a nice-to-have.
+        fetchGroupStats().catch(() => new Map<string, GroupStats>()),
       ]);
       const lastMessages = await fetchLastMessages([...myGroupIds]);
       const authors = await fetchAuthors([...lastMessages.values()].map((m) => m.user_id));
-      setData({ groups, myGroupIds, lastMessages, authors, unread });
+      setData({ groups, myGroupIds, lastMessages, authors, unread, stats });
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -78,9 +92,24 @@ export default function ChatsScreen() {
     setRefreshing(false);
   }
 
+  async function join(group: ChatGroup) {
+    setJoining(group.id);
+    try {
+      await joinGroup(group.id);
+      await load();
+    } catch {
+      setLoadError(true);
+    } finally {
+      setJoining(null);
+    }
+  }
+
   const cityGroups = data?.groups.filter((g) => g.city_id === city?.id) ?? [];
   const myGroups = cityGroups.filter((g) => data?.myGroupIds.has(g.id));
-  const otherGroups = cityGroups.filter((g) => !data?.myGroupIds.has(g.id));
+  const otherGroups = data
+    ? cityGroups.filter((g) => !data.myGroupIds.has(g.id)).sort(byActivity(data.stats))
+    : [];
+  const discover = otherGroups.slice(0, DISCOVER_COUNT);
 
   function preview(group: ChatGroup): string {
     const last = data?.lastMessages.get(group.id);
@@ -138,6 +167,8 @@ export default function ChatsScreen() {
                     {myGroups.map((group) => {
                       const last = data.lastMessages.get(group.id);
                       const unread = data.unread.get(group.id) ?? 0;
+                      const muted = isMuted('group', group.id);
+                      const highlight = unread > 0 && !muted;
                       return (
                         <Link
                           key={group.id}
@@ -148,10 +179,15 @@ export default function ChatsScreen() {
                             style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                             <GroupTile group={group} />
                             <View style={styles.rowText}>
-                              <ThemedText style={styles.groupName}>{group.name}</ThemedText>
+                              <ThemedText style={styles.groupName} numberOfLines={1}>
+                                {group.name}
+                                {muted ? (
+                                  <ThemedText style={styles.mutedIcon}> 🔕</ThemedText>
+                                ) : null}
+                              </ThemedText>
                               <ThemedText
-                                type={unread > 0 ? 'smallBold' : 'small'}
-                                themeColor={unread > 0 ? 'text' : 'textSecondary'}
+                                type={highlight ? 'smallBold' : 'small'}
+                                themeColor={highlight ? 'text' : 'textSecondary'}
                                 numberOfLines={1}>
                                 {preview(group)}
                               </ThemedText>
@@ -163,9 +199,20 @@ export default function ChatsScreen() {
                                 </ThemedText>
                               )}
                               {unread > 0 && (
-                                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                                <View
+                                  style={[
+                                    styles.badge,
+                                    {
+                                      backgroundColor: muted
+                                        ? theme.backgroundSelected
+                                        : theme.primary,
+                                    },
+                                  ]}>
                                   <ThemedText
-                                    style={[styles.badgeText, { color: theme.onPrimary }]}>
+                                    style={[
+                                      styles.badgeText,
+                                      { color: muted ? theme.textSecondary : theme.onPrimary },
+                                    ]}>
                                     {unread > 99 ? '99+' : unread}
                                   </ThemedText>
                                 </View>
@@ -178,28 +225,85 @@ export default function ChatsScreen() {
                   </View>
                 )}
 
-                <Link href="/explore-groups" asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={({ pressed }) => [
-                      styles.suggestBox,
-                      { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-                      pressed && styles.pressed,
-                    ]}>
-                    <View style={styles.rowText}>
-                      <ThemedText style={styles.groupName}>
-                        {t('chats.exploreTitle', { city: city?.name ?? '' })}
+                <View style={styles.discoverHeader}>
+                  <View style={styles.rowText}>
+                    <ThemedText style={styles.discoverTitle}>{t('chats.discoverTitle')}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {otherGroups.length > 0
+                        ? t('chats.discoverHint', { city: city?.name ?? '' })
+                        : t('chats.allJoined')}
+                    </ThemedText>
+                  </View>
+                  <Link href="/explore-groups" asChild>
+                    <Pressable accessibilityRole="link" hitSlop={10}>
+                      <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                        {t('chats.seeAll')} ›
                       </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {t('chats.exploreHint', { count: otherGroups.length })}
-                      </ThemedText>
-                    </View>
-                    <ThemedText themeColor="textSecondary">›</ThemedText>
-                  </Pressable>
-                </Link>
+                    </Pressable>
+                  </Link>
+                </View>
               </>
             )}
           </View>
+
+          {/* Full-width row that scrolls sideways, lined up with the content above. */}
+          {data && discover.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.carousel}
+              contentContainerStyle={styles.carouselContent}>
+              {discover.map((group) => (
+                <DistrictCard
+                  key={group.id}
+                  group={group}
+                  stats={data.stats.get(group.id)}
+                  joined={false}
+                  joining={joining === group.id}
+                  onJoin={() => join(group)}
+                  width={CARD_WIDTH}
+                />
+              ))}
+              <Link href="/explore-groups" asChild>
+                <Pressable
+                  accessibilityRole="link"
+                  style={({ pressed }) => [
+                    styles.seeAllCard,
+                    { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+                    pressed && styles.pressed,
+                  ]}>
+                  <View style={[styles.seeAllCircle, { backgroundColor: theme.backgroundElement }]}>
+                    <ThemedText style={[styles.seeAllArrow, { color: theme.primary }]}>
+                      →
+                    </ThemedText>
+                  </View>
+                  <ThemedText type="smallBold" style={styles.seeAllText}>
+                    {t('chats.exploreTitle', { city: city?.name ?? '' })}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.seeAllText}>
+                    {t('chats.exploreHint', { count: otherGroups.length })}
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            </ScrollView>
+          )}
+
+          {data && (
+            <View style={styles.footer}>
+              <Link href="/suggest-area" asChild>
+                <Pressable
+                  accessibilityRole="link"
+                  style={({ pressed }) => [styles.suggestRow, pressed && styles.pressed]}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('chats.suggestTitle')}{' '}
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {t('chats.suggestHint')}
+                    </ThemedText>
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -257,6 +361,9 @@ const styles = StyleSheet.create({
   groupName: {
     fontWeight: 700,
   },
+  mutedIcon: {
+    fontSize: 12,
+  },
   meta: {
     alignSelf: 'flex-start',
     alignItems: 'flex-end',
@@ -276,14 +383,62 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: 700,
   },
-  suggestBox: {
+  discoverHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: 14,
-    borderWidth: 1,
     marginTop: Spacing.four,
+  },
+  discoverTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: 700,
+  },
+  carousel: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    marginTop: Spacing.three,
+  },
+  carouselContent: {
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.three,
+  },
+  seeAllCard: {
+    width: CARD_WIDTH,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    padding: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+  },
+  seeAllCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.one,
+  },
+  seeAllArrow: {
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: 700,
+  },
+  seeAllText: {
+    textAlign: 'center',
+  },
+  footer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+  },
+  suggestRow: {
+    paddingVertical: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

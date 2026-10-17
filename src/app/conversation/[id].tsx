@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
+import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatComposer } from '@/components/chat-composer';
 import { ListingCard } from '@/components/listing-card';
@@ -73,6 +74,8 @@ export default function ConversationScreen() {
   const [responding, setResponding] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [muteOpen, setMuteOpen] = useState(false);
+  const muteLabel = useMuteLabel('conversation', id);
   const [selected, setSelected] = useState<DirectMessage | null>(null);
   const [toDelete, setToDelete] = useState<DirectMessage | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
@@ -487,6 +490,7 @@ export default function ConversationScreen() {
         title={otherUser ? `${otherUser.first_name}, ${otherUser.age}` : undefined}
         options={[
           { label: t('messages.viewProfile'), onPress: openProfile },
+          ...(id ? [{ label: muteLabel, onPress: () => setMuteOpen(true) }] : []),
           { label: t('report.action'), destructive: true, onPress: () => report() },
           iBlockedThem
             ? { label: t('blocked.unblock'), onPress: toggleBlock }
@@ -498,6 +502,15 @@ export default function ConversationScreen() {
         ]}
         onClose={() => setMenuOpen(false)}
       />
+      {id && (
+        <MuteSheet
+          visible={muteOpen}
+          kind="conversation"
+          chatId={id}
+          onClose={() => setMuteOpen(false)}
+          onError={() => setActionError(true)}
+        />
+      )}
       <ActionSheet
         visible={!!selected}
         options={

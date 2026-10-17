@@ -18,8 +18,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useInbox } from '@/hooks/use-inbox';
+import { useMutes } from '@/hooks/use-mutes';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
+import { unreadTotal } from '@/hooks/use-unread';
 
 type Section = 'groups' | 'private';
 const SECTION_KEY = 'chat-pisos.messages-section';
@@ -30,6 +32,7 @@ export default function MessagesScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { data, loadError, reload } = useInbox();
+  const { isMuted } = useMutes();
   const myUserId = session?.user.id ?? '';
   const [refreshing, setRefreshing] = useState(false);
   const [section, setSection] = useState<Section>('private');
@@ -61,11 +64,9 @@ export default function MessagesScreen() {
   const invitations = groups.filter((group) => group.my_status === 'invited');
   const myGroups = groups.filter((group) => group.my_status === 'member');
 
-  // Unread per section (pending requests and invitations count too).
-  const privateUnread =
-    conversations.reduce((total, item) => total + item.unread_count, 0) + messageRequests.length;
-  const groupsUnread =
-    myGroups.reduce((total, group) => total + group.unread_count, 0) + invitations.length;
+  // Unread per section (pending requests and invitations count too; muted chats don't).
+  const privateUnread = unreadTotal(items, [], isMuted);
+  const groupsUnread = unreadTotal([], groups, isMuted);
 
   const sections: { key: Section; label: string; unread: number }[] = [
     { key: 'groups', label: t('messages.sectionGroups'), unread: groupsUnread },
@@ -191,6 +192,7 @@ export default function MessagesScreen() {
                           group={group}
                           users={data.users}
                           myUserId={myUserId}
+                          muted={isMuted('private_group', group.id)}
                         />
                       ))}
                     </View>
@@ -207,6 +209,7 @@ export default function MessagesScreen() {
                         item={item}
                         otherUser={data.users.get(item.other_user_id)}
                         myUserId={myUserId}
+                        muted={isMuted('conversation', item.id)}
                       />
                     ))}
                   </View>

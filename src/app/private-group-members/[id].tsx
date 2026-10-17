@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
@@ -10,30 +10,50 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
+import { useShare } from '@/hooks/use-share';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
+import { appUrl } from '@/lib/links';
 import {
+  fetchJoinRequests,
+  fetchPrivateGroup,
   fetchPrivateGroupMembers,
+  getPrivateGroupLink,
   inviteErrorKey,
   inviteToPrivateGroup,
   PRIVATE_GROUP_MAX_PEOPLE,
   removeFromPrivateGroup,
+  respondToJoinRequest,
+  setPrivateGroupLink,
 } from '@/lib/private-groups';
-import type { PrivateGroupMember, PublicProfile } from '@/types/chat';
+import { supabase } from '@/lib/supabase';
+import type { JoinRequest, PrivateGroup, PrivateGroupMember, PublicProfile } from '@/types/chat';
 
-/** Members of a private group, pending invitations, removing people and inviting more. */
+type Loaded = {
+  group: PrivateGroup | null;
+  members: PrivateGroupMember[];
+  requests: JoinRequest[];
+  people: Map<string, PublicProfile>;
+};
+
+/**
+ * Members of a private group, join requests from the invite link, the link itself,
+ * removing people and inviting more.
+ */
 export default function PrivateGroupMembersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const theme = useTheme();
   const { session } = useSession();
   const userId = session?.user.id;
+  const { share, toast } = useShare();
 
-  const [members, setMembers] = useState<PrivateGroupMember[] | null>(null);
-  const [people, setPeople] = useState<Map<string, PublicProfile>>(new Map());
+  const [data, setData] = useState<Loaded | null>(null);
   const [toInvite, setToInvite] = useState<string[]>([]);
   const [toRemove, setToRemove] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [answering, setAnswering] = useState<string | null>(null);
+  const [linkBusy, setLinkBusy] = useState(false);
   const [error, setError] = useState<'notConnected' | 'groupFull' | 'generic' | null>(null);
   const [invited, setInvited] = useState(false);
 
@@ -42,11 +62,17 @@ export default function PrivateGroupMembersScreen() {
     async (isCurrent: () => boolean = () => true) => {
       if (!id) return;
       try {
-        const list = await fetchPrivateGroupMembers(id);
-        const found = await fetchAuthors(list.map((m) => m.user_id));
+        const [group, members, requests] = await Promise.all([
+          fetchPrivateGroup(id),
+          fetchPrivateGroupMembers(id),
+          fetchJoinRequests(id),
+        ]);
+        const people = await fetchAuthors([
+          ...members.map((m) => m.user_id),
+          ...requests.map((r) => r.user_id),
+        ]);
         if (!isCurrent()) return;
-        setMembers(list);
-        setPeople(found);
+        setData({ group, members, requests, people });
       } catch {
         if (isCurrent()) setError('generic');
       }
@@ -64,8 +90,35 @@ export default function PrivateGroupMembersScreen() {
     };
   }, [load]);
 
-  const isOwner = members?.some((m) => m.user_id === userId && m.role === 'owner') ?? false;
-  const freePlaces = PRIVATE_GROUP_MAX_PEOPLE - (members?.length ?? 0);
+  // Someone else accepting a request, joining or leaving updates the lists.
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`private-group-members:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'private_group_members',
+          filter: `group_id=eq.${id}`,
+        },
+        () => {
+          void load();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, load]);
+
+  const members = data?.members ?? [];
+  const requests = data?.requests ?? [];
+  const people = data?.people ?? new Map<string, PublicProfile>();
+  const group = data?.group;
+  const isOwner = members.some((m) => m.user_id === userId && m.role === 'owner');
+  const freePlaces = PRIVATE_GROUP_MAX_PEOPLE - members.length;
 
   async function invite() {
     if (!id || toInvite.length === 0) return;
@@ -95,100 +148,289 @@ export default function PrivateGroupMembersScreen() {
     }
   }
 
-  if (!members) {
+  async function answer(personId: string, accept: boolean) {
+    if (!id) return;
+    setAnswering(personId);
+    setError(null);
+    try {
+      await respondToJoinRequest(id, personId, accept);
+      await load();
+    } catch (answerError) {
+      setError(inviteErrorKey(answerError));
+      await load();
+    } finally {
+      setAnswering(null);
+    }
+  }
+
+  async function shareInviteLink() {
+    if (!id || !group) return;
+    setLinkBusy(true);
+    setError(null);
+    try {
+      const token = await getPrivateGroupLink(id);
+      await share(t('share.privateGroupMessage', { name: group.name }), appUrl(`/join/${token}`));
+    } catch {
+      setError('generic');
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
+  /** Turn the link on/off. `renew` turns it off and on again, so the old link stops working. */
+  async function changeLink(enabled: boolean, renew = false) {
+    if (!id) return;
+    setLinkBusy(true);
+    setError(null);
+    try {
+      if (renew) await setPrivateGroupLink(id, false);
+      await setPrivateGroupLink(id, enabled);
+      await load();
+    } catch {
+      setError('generic');
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
+  if (!data) {
     return (
       <ThemedView style={[styles.screen, styles.centered]}>
         <Stack.Screen options={{ title: t('privateGroups.members') }} />
-        <ActivityIndicator color={theme.primary} />
+        {error ? (
+          <ThemedText themeColor="textSecondary">{t('privateGroups.errors.generic')}</ThemedText>
+        ) : (
+          <ActivityIndicator color={theme.primary} />
+        )}
       </ThemedView>
     );
   }
+
+  const linkEnabled = group?.invite_link_enabled ?? false;
 
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('privateGroups.members') }} />
       <ScrollView>
         <View style={styles.content}>
-          <ThemedText type="small" themeColor="textSecondary">
-            {t('privateGroups.peopleCount', {
-              count: members.length,
-              max: PRIVATE_GROUP_MAX_PEOPLE,
-            })}
-          </ThemedText>
+          {error && (
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
+              {t(`privateGroups.errors.${error}`)}
+            </ThemedText>
+          )}
 
-          <View style={[styles.list, { borderColor: theme.border }]}>
-            {members.map((member, index) => {
-              const person = people.get(member.user_id);
-              const isMe = member.user_id === userId;
-              return (
-                <View
-                  key={member.user_id}
-                  style={[
-                    styles.row,
-                    { backgroundColor: theme.backgroundElement },
-                    index > 0 && { borderTopWidth: 1, borderTopColor: theme.border },
-                  ]}>
-                  <Pressable
-                    accessibilityRole="link"
-                    disabled={isMe}
-                    onPress={() =>
-                      router.push({ pathname: '/user/[id]', params: { id: member.user_id } })
-                    }
-                    style={styles.person}>
-                    <Avatar
-                      uri={person?.avatar_url ?? null}
-                      name={person?.first_name ?? '?'}
-                      size={40}
-                    />
-                    <View style={styles.flex}>
-                      <ThemedText style={styles.bold}>
-                        {isMe
-                          ? t('chats.you')
-                          : person
-                            ? `${person.first_name}, ${person.age}`
-                            : '…'}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {member.status === 'invited'
-                          ? t('privateGroups.pendingInvite')
-                          : member.role === 'owner'
-                            ? t('privateGroups.creator')
-                            : t('privateGroups.member')}
-                      </ThemedText>
+          {requests.length > 0 && (
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionTitle}>
+                {t('privateGroups.requestsTitle', { count: requests.length })}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('privateGroups.requestsHint')}
+              </ThemedText>
+              <View style={[styles.list, { borderColor: theme.border }]}>
+                {requests.map((request, index) => {
+                  const person = people.get(request.user_id);
+                  const isBusy = answering === request.user_id;
+                  return (
+                    <View
+                      key={request.user_id}
+                      style={[
+                        styles.row,
+                        { backgroundColor: theme.backgroundElement },
+                        index > 0 && { borderTopWidth: 1, borderTopColor: theme.border },
+                      ]}>
+                      <Pressable
+                        accessibilityRole="link"
+                        onPress={() =>
+                          router.push({ pathname: '/user/[id]', params: { id: request.user_id } })
+                        }
+                        style={styles.person}>
+                        <Avatar
+                          uri={person?.avatar_url ?? null}
+                          name={person?.first_name ?? '?'}
+                          size={40}
+                        />
+                        <View style={styles.flex}>
+                          <ThemedText style={styles.bold}>
+                            {person ? `${person.first_name}, ${person.age}` : '…'}
+                          </ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                            {person?.occupation || t('privateGroups.seeProfile')}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                      {isBusy ? (
+                        <ActivityIndicator color={theme.primary} />
+                      ) : (
+                        <View style={styles.answerButtons}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t('messages.decline')} ${person?.first_name ?? ''}`}
+                            onPress={() => answer(request.user_id, false)}
+                            hitSlop={6}
+                            style={({ pressed }) => [
+                              styles.smallButton,
+                              { borderColor: theme.border, borderWidth: 1 },
+                              pressed && styles.pressed,
+                            ]}>
+                            <ThemedText type="smallBold">{t('messages.decline')}</ThemedText>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t('privateGroups.accept')} ${person?.first_name ?? ''}`}
+                            onPress={() => answer(request.user_id, true)}
+                            hitSlop={6}
+                            style={({ pressed }) => [
+                              styles.smallButton,
+                              { backgroundColor: theme.primary },
+                              pressed && styles.pressed,
+                            ]}>
+                            <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
+                              {t('privateGroups.accept')}
+                            </ThemedText>
+                          </Pressable>
+                        </View>
+                      )}
                     </View>
-                  </Pressable>
-                  {isOwner && !isMe && (
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('privateGroups.peopleCount', {
+                count: members.length,
+                max: PRIVATE_GROUP_MAX_PEOPLE,
+              })}
+            </ThemedText>
+
+            <View style={[styles.list, { borderColor: theme.border }]}>
+              {members.map((member, index) => {
+                const person = people.get(member.user_id);
+                const isMe = member.user_id === userId;
+                return (
+                  <View
+                    key={member.user_id}
+                    style={[
+                      styles.row,
+                      { backgroundColor: theme.backgroundElement },
+                      index > 0 && { borderTopWidth: 1, borderTopColor: theme.border },
+                    ]}>
                     <Pressable
-                      accessibilityRole="button"
-                      onPress={() => setToRemove(member.user_id)}
-                      hitSlop={8}>
-                      <ThemedText type="small" style={{ color: theme.danger }}>
-                        {t('privateGroups.remove')}
-                      </ThemedText>
+                      accessibilityRole="link"
+                      disabled={isMe}
+                      onPress={() =>
+                        router.push({ pathname: '/user/[id]', params: { id: member.user_id } })
+                      }
+                      style={styles.person}>
+                      <Avatar
+                        uri={person?.avatar_url ?? null}
+                        name={person?.first_name ?? '?'}
+                        size={40}
+                      />
+                      <View style={styles.flex}>
+                        <ThemedText style={styles.bold}>
+                          {isMe
+                            ? t('chats.you')
+                            : person
+                              ? `${person.first_name}, ${person.age}`
+                              : '…'}
+                        </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {member.status === 'invited'
+                            ? t('privateGroups.pendingInvite')
+                            : member.role === 'owner'
+                              ? t('privateGroups.creator')
+                              : t('privateGroups.member')}
+                        </ThemedText>
+                      </View>
                     </Pressable>
-                  )}
-                </View>
-              );
-            })}
+                    {isOwner && !isMe && (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setToRemove(member.user_id)}
+                        hitSlop={8}>
+                        <ThemedText type="small" style={{ color: theme.danger }}>
+                          {t('privateGroups.remove')}
+                        </ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.linkCard,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}>
+            <View style={styles.linkHeader}>
+              <View style={styles.flex}>
+                <ThemedText style={styles.bold}>{t('privateGroups.linkTitle')}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {linkEnabled ? t('privateGroups.linkHint') : t('privateGroups.linkOff')}
+                </ThemedText>
+              </View>
+              {isOwner && (
+                <Switch
+                  accessibilityLabel={t('privateGroups.linkTitle')}
+                  value={linkEnabled}
+                  disabled={linkBusy}
+                  onValueChange={(value) => changeLink(value)}
+                  trackColor={{ true: theme.primary, false: theme.border }}
+                  thumbColor="#FFFFFF"
+                />
+              )}
+            </View>
+            {linkEnabled && freePlaces > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={linkBusy}
+                onPress={shareInviteLink}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary },
+                  (pressed || linkBusy) && styles.pressed,
+                ]}>
+                {linkBusy ? (
+                  <ActivityIndicator color={theme.onPrimary} />
+                ) : (
+                  <ThemedText style={[styles.bold, { color: theme.onPrimary }]}>
+                    {t('privateGroups.shareLink')}
+                  </ThemedText>
+                )}
+              </Pressable>
+            )}
+            {isOwner && linkEnabled && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={linkBusy}
+                onPress={() => changeLink(true, true)}
+                hitSlop={8}
+                style={styles.renew}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('privateGroups.renewLink')}
+                </ThemedText>
+              </Pressable>
+            )}
           </View>
 
           {freePlaces > 0 && (
-            <View style={styles.inviteSection}>
+            <View style={styles.section}>
               <ThemedText style={styles.sectionTitle}>{t('privateGroups.inviteMore')}</ThemedText>
               <ConnectionPicker
                 selected={toInvite}
                 onChange={setToInvite}
-                excludeIds={members.map((m) => m.user_id)}
+                excludeIds={[...members.map((m) => m.user_id), ...requests.map((r) => r.user_id)]}
                 maxSelected={freePlaces}
               />
-              {error && (
-                <ThemedText
-                  type="small"
-                  style={{ color: theme.danger }}
-                  accessibilityLiveRegion="polite">
-                  {t(`privateGroups.errors.${error}`)}
-                </ThemedText>
-              )}
               {invited && (
                 <ThemedText
                   type="small"
@@ -239,6 +481,7 @@ export default function PrivateGroupMembersScreen() {
         }
         onClose={() => setToRemove(null)}
       />
+      {toast}
     </ThemedView>
   );
 }
@@ -256,6 +499,9 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     padding: Spacing.four,
+    gap: Spacing.four,
+  },
+  section: {
     gap: Spacing.three,
   },
   list: {
@@ -275,16 +521,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    minWidth: 0,
   },
   flex: {
     flex: 1,
+    minWidth: 0,
   },
   bold: {
     fontWeight: 700,
   },
-  inviteSection: {
+  answerButtons: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  smallButton: {
+    height: 34,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: Spacing.three,
     gap: Spacing.three,
-    marginTop: Spacing.three,
+  },
+  linkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  renew: {
+    alignSelf: 'center',
   },
   sectionTitle: {
     fontSize: 18,

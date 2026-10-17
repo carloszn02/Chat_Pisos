@@ -13,6 +13,8 @@ type PrivateGroupRowProps = {
   group: PrivateGroupSummary;
   users: Map<string, PublicProfile>;
   myUserId: string;
+  /** Muted chats show a bell icon and a grey counter. */
+  muted?: boolean;
 };
 
 /** The round badge with a group's initials, e.g. "FH" for "Flat hunting". */
@@ -43,11 +45,13 @@ export function PrivateGroupBadge({ name, size = 48 }: { name: string; size?: nu
 }
 
 /** One private group in the Messages list (or an invitation in the requests list). */
-export function PrivateGroupRow({ group, users, myUserId }: PrivateGroupRowProps) {
+export function PrivateGroupRow({ group, users, myUserId, muted = false }: PrivateGroupRowProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const invited = group.my_status === 'invited';
   const unread = group.unread_count > 0;
+  const requests = invited ? 0 : group.pending_requests;
+  const highlight = (unread && !muted) || invited;
 
   let preview: string;
   if (invited) {
@@ -83,14 +87,22 @@ export function PrivateGroupRow({ group, users, myUserId }: PrivateGroupRowProps
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <PrivateGroupBadge name={group.name} />
         <View style={styles.text}>
-          <ThemedText style={styles.name}>{group.name}</ThemedText>
+          <ThemedText style={styles.name} numberOfLines={1}>
+            {group.name}
+            {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
+          </ThemedText>
           <ThemedText
             type="small"
-            themeColor={unread || invited ? 'text' : 'textSecondary'}
-            style={(unread || invited) && styles.bold}
+            themeColor={highlight ? 'text' : 'textSecondary'}
+            style={highlight && styles.bold}
             numberOfLines={1}>
             {preview}
           </ThemedText>
+          {requests > 0 && (
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              {t('privateGroups.requestsBanner', { count: requests })}
+            </ThemedText>
+          )}
         </View>
         <View style={styles.meta}>
           {group.last_message_at && !invited && (
@@ -99,8 +111,18 @@ export function PrivateGroupRow({ group, users, myUserId }: PrivateGroupRowProps
             </ThemedText>
           )}
           {(unread || invited) && (
-            <View style={[styles.count, { backgroundColor: theme.primary }]}>
-              <ThemedText style={[styles.countText, { color: theme.onPrimary }]}>
+            <View
+              style={[
+                styles.count,
+                {
+                  backgroundColor: muted && !invited ? theme.backgroundSelected : theme.primary,
+                },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.countText,
+                  { color: muted && !invited ? theme.textSecondary : theme.onPrimary },
+                ]}>
                 {invited ? '1' : group.unread_count > 99 ? '99+' : group.unread_count}
               </ThemedText>
             </View>
@@ -131,6 +153,9 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: 700,
+  },
+  mutedIcon: {
+    fontSize: 12,
   },
   meta: {
     alignItems: 'flex-end',

@@ -13,10 +13,17 @@ type ConversationRowProps = {
   item: InboxItem;
   otherUser: PublicProfile | undefined;
   myUserId: string;
+  /** Muted chats show a bell icon and a grey counter. */
+  muted?: boolean;
 };
 
 /** One conversation in the Messages list or the requests list. */
-export function ConversationRow({ item, otherUser, myUserId }: ConversationRowProps) {
+export function ConversationRow({
+  item,
+  otherUser,
+  myUserId,
+  muted = false,
+}: ConversationRowProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const name = otherUser?.first_name ?? '…';
@@ -36,8 +43,9 @@ export function ConversationRow({ item, otherUser, myUserId }: ConversationRowPr
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <Avatar uri={otherUser?.avatar_url ?? null} name={name} size={48} />
         <View style={styles.text}>
-          <ThemedText style={styles.name}>
+          <ThemedText style={styles.name} numberOfLines={1}>
             {otherUser ? `${otherUser.first_name}, ${otherUser.age}` : name}
+            {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
           </ThemedText>
           {isSentRequest && (
             <ThemedText type="small" style={{ color: theme.primary }}>
@@ -46,8 +54,8 @@ export function ConversationRow({ item, otherUser, myUserId }: ConversationRowPr
           )}
           <ThemedText
             type="small"
-            themeColor={unread ? 'text' : 'textSecondary'}
-            style={unread && styles.unreadText}
+            themeColor={unread && !muted ? 'text' : 'textSecondary'}
+            style={unread && !muted && styles.unreadText}
             numberOfLines={1}>
             {preview}
           </ThemedText>
@@ -59,8 +67,16 @@ export function ConversationRow({ item, otherUser, myUserId }: ConversationRowPr
             </ThemedText>
           )}
           {unread && (
-            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-              <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+            <View
+              style={[
+                styles.badge,
+                { backgroundColor: muted ? theme.backgroundSelected : theme.primary },
+              ]}>
+              <ThemedText
+                style={[
+                  styles.badgeText,
+                  { color: muted ? theme.textSecondary : theme.onPrimary },
+                ]}>
                 {item.unread_count}
               </ThemedText>
             </View>
@@ -87,6 +103,9 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontWeight: 700,
+  },
+  mutedIcon: {
+    fontSize: 12,
   },
   meta: {
     alignItems: 'flex-end',

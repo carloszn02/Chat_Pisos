@@ -19,6 +19,15 @@ export type ChatGroup = {
   area_id: string | null;
 };
 
+/** Activity numbers for a district group (the chat_group_stats database function). */
+export type GroupStats = {
+  group_id: string;
+  member_count: number;
+  messages_this_week: number;
+  /** A message in the last 24 hours. */
+  active_today: boolean;
+};
+
 export type GroupMessage = {
   id: string;
   group_id: string;
@@ -97,12 +106,30 @@ export type PrivateGroupSummary = {
   last_message_event: PrivateGroupEvent | null;
   last_message_subject_id: string | null;
   unread_count: number;
+  /** Join requests (through the invite link) waiting for a member to answer. */
+  pending_requests: number;
+  invite_link_enabled: boolean;
 };
 
 export type PrivateGroup = {
   id: string;
   name: string;
   created_by: string;
+  invite_link_enabled: boolean;
+};
+
+/** What someone sees when they open a private group's invite link. */
+export type PrivateGroupLinkPreview = {
+  group_id: string;
+  name: string;
+  member_ids: string[];
+  my_status: 'member' | 'invited' | 'requested' | null;
+  is_full: boolean;
+};
+
+export type JoinRequest = {
+  user_id: string;
+  requested_at: string;
 };
 
 export type PrivateGroupMember = {
@@ -114,7 +141,8 @@ export type PrivateGroupMember = {
 
 export type PrivateGroupMessageKind = 'message' | 'event';
 /** Notices written by the database when membership changes. */
-export type PrivateGroupEvent = 'created' | 'joined' | 'left' | 'removed';
+export type PrivateGroupEvent =
+  'created' | 'joined' | 'left' | 'removed' | 'requested' | 'accepted';
 
 export type PrivateGroupMessage = {
   id: string;
@@ -123,7 +151,7 @@ export type PrivateGroupMessage = {
   body: string;
   kind: PrivateGroupMessageKind;
   event: PrivateGroupEvent | null;
-  /** For "removed": the person who was removed. */
+  /** For "removed" / "accepted": the person who was removed or accepted. */
   subject_id: string | null;
   listing_id: string | null;
   deleted_at: string | null;
