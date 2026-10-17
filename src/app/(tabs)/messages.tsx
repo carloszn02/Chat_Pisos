@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConversationRow } from '@/components/conversation-row';
+import { PrivateGroupRow } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -34,7 +35,18 @@ export default function MessagesScreen() {
   }
 
   const requests = data?.items.filter((item) => item.is_incoming_request) ?? [];
-  const conversations = data?.items.filter((item) => !item.is_incoming_request) ?? [];
+  const invitations = data?.groups.filter((group) => group.my_status === 'invited') ?? [];
+  const pendingCount = requests.length + invitations.length;
+
+  // Private conversations and groups in one list, most recent activity first.
+  const rows = [
+    ...(data?.items ?? [])
+      .filter((item) => !item.is_incoming_request)
+      .map((item) => ({ kind: 'direct' as const, at: item.last_message_at ?? '', item })),
+    ...(data?.groups ?? [])
+      .filter((group) => group.my_status === 'member')
+      .map((group) => ({ kind: 'group' as const, at: group.last_message_at ?? '', group })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
 
   return (
     <ThemedView style={styles.container}>
@@ -45,9 +57,22 @@ export default function MessagesScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }>
           <View style={styles.content}>
-            <ThemedText type="subtitle" style={styles.title}>
-              {t('messages.title')}
-            </ThemedText>
+            <View style={styles.header}>
+              <ThemedText type="subtitle">{t('messages.title')}</ThemedText>
+              <Link href="/new-private-group" asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.newGroup,
+                    { borderColor: theme.primary },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    + {t('privateGroups.newButton')}
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            </View>
 
             {!data && !loadError && (
               <ActivityIndicator color={theme.primary} style={styles.loader} />
@@ -82,30 +107,39 @@ export default function MessagesScreen() {
                         {t('messages.requestsHint')}
                       </ThemedText>
                     </View>
-                    {requests.length > 0 && (
+                    {pendingCount > 0 && (
                       <View style={[styles.badge, { backgroundColor: theme.primary }]}>
                         <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
-                          {requests.length}
+                          {pendingCount}
                         </ThemedText>
                       </View>
                     )}
                   </Pressable>
                 </Link>
 
-                {conversations.length === 0 ? (
+                {rows.length === 0 ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
                     {t('messages.empty')}
                   </ThemedText>
                 ) : (
                   <View>
-                    {conversations.map((item) => (
-                      <ConversationRow
-                        key={item.id}
-                        item={item}
-                        otherUser={data.users.get(item.other_user_id)}
-                        myUserId={myUserId}
-                      />
-                    ))}
+                    {rows.map((row) =>
+                      row.kind === 'direct' ? (
+                        <ConversationRow
+                          key={row.item.id}
+                          item={row.item}
+                          otherUser={data.users.get(row.item.other_user_id)}
+                          myUserId={myUserId}
+                        />
+                      ) : (
+                        <PrivateGroupRow
+                          key={row.group.id}
+                          group={row.group}
+                          users={data.users}
+                          myUserId={myUserId}
+                        />
+                      )
+                    )}
                   </View>
                 )}
               </>
@@ -135,8 +169,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.six,
     gap: Spacing.three,
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: Spacing.one,
+  },
+  newGroup: {
+    height: 36,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    justifyContent: 'center',
   },
   loader: {
     marginTop: Spacing.five,

@@ -1,0 +1,688 @@
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ActionSheet } from '@/components/action-sheet';
+import { Avatar } from '@/components/avatar';
+import { ChatComposer } from '@/components/chat-composer';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+import { useBlocks } from '@/hooks/use-blocks';
+import { useSession } from '@/hooks/use-session';
+import { useTheme } from '@/hooks/use-theme';
+import { deleteMyMessage, fetchAuthors, MESSAGES_PAGE_SIZE } from '@/lib/chat';
+import { isRateLimitError } from '@/lib/errors';
+import { formatMessageTime } from '@/lib/format';
+import {
+  fetchPrivateGroup,
+  fetchPrivateGroupMembers,
+  fetchPrivateGroupMessages,
+  leavePrivateGroup,
+  markPrivateGroupRead,
+  respondToGroupInvite,
+  sendPrivateGroupMessage,
+} from '@/lib/private-groups';
+import { supabase } from '@/lib/supabase';
+import type {
+  PrivateGroup,
+  PrivateGroupMember,
+  PrivateGroupMessage,
+  PublicProfile,
+} from '@/types/chat';
+
+// Messages from the same person within this time are grouped (name and photo shown once).
+const GROUPING_WINDOW_MS = 5 * 60 * 1000;
+
+/** Adds messages that aren't in the list yet, keeping newest first. */
+function mergeMessages(current: PrivateGroupMessage[], incoming: PrivateGroupMessage[]) {
+  const known = new Set(current.map((m) => m.id));
+  const fresh = incoming.filter((m) => !known.has(m.id));
+  if (fresh.length === 0) return current;
+  return [...current, ...fresh].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+/** Swaps in a newer version of a message (e.g. after it was deleted). */
+function replaceMessage(current: PrivateGroupMessage[], updated: PrivateGroupMessage) {
+  return current.map((m) => (m.id === updated.id ? updated : m));
+}
+
+export default function PrivateGroupScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const { blockedIds } = useBlocks();
+
+  const [group, setGroup] = useState<PrivateGroup | null>(null);
+  const [members, setMembers] = useState<PrivateGroupMember[]>([]);
+  const [people, setPeople] = useState<Map<string, PublicProfile>>(new Map());
+  const [messages, setMessages] = useState<PrivateGroupMessage[]>([]); // newest first
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [responding, setResponding] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [selected, setSelected] = useState<PrivateGroupMessage | null>(null);
+  const [toDelete, setToDelete] = useState<PrivateGroupMessage | null>(null);
+
+  const me = members.find((m) => m.user_id === userId);
+  const isMember = me?.status === 'member';
+
+  const addPeople = useCallback(async (ids: string[]) => {
+    try {
+      const found = await fetchAuthors(ids);
+      setPeople((current) => new Map([...current, ...found]));
+    } catch {
+      // Names are a nice-to-have.
+    }
+  }, []);
+
+  /** Group details and members; messages only once you're a member. */
+  const loadGroup = useCallback(async () => {
+    if (!id) return;
+    const [found, memberList] = await Promise.all([
+      fetchPrivateGroup(id),
+      fetchPrivateGroupMembers(id),
+    ]);
+    setGroup(found);
+    setMembers(memberList);
+    addPeople(memberList.map((m) => m.user_id));
+    return memberList;
+  }, [id, addPeople]);
+
+  useEffect(() => {
+    if (!id || !userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const memberList = await loadGroup();
+        const mine = memberList?.find((m) => m.user_id === userId);
+        if (!cancelled && mine?.status === 'member') {
+          const latest = await fetchPrivateGroupMessages(id);
+          if (cancelled) return;
+          setMessages((current) => mergeMessages(current, latest));
+          setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
+          markPrivateGroupRead(id);
+        }
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, userId, loadGroup]);
+
+  // Live updates: new or deleted messages, and people joining or leaving.
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`private-group:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'private_group_messages',
+          filter: `group_id=eq.${id}`,
+        },
+        (payload) => {
+          const message = payload.new as PrivateGroupMessage;
+          setMessages((current) => mergeMessages(current, [message]));
+          addPeople([message.sender_id]);
+          markPrivateGroupRead(id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'private_group_messages',
+          filter: `group_id=eq.${id}`,
+        },
+        (payload) =>
+          setMessages((current) => replaceMessage(current, payload.new as PrivateGroupMessage))
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'private_group_members',
+          filter: `group_id=eq.${id}`,
+        },
+        () => {
+          loadGroup().catch(() => {});
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, addPeople, loadGroup]);
+
+  // Leaving the screen counts as having read everything so far.
+  useEffect(() => {
+    if (!id) return;
+    return () => {
+      markPrivateGroupRead(id);
+    };
+  }, [id]);
+
+  async function loadOlder() {
+    if (!id || !hasOlder || loadingOlder || messages.length === 0) return;
+    setLoadingOlder(true);
+    try {
+      const older = await fetchPrivateGroupMessages(id, messages[messages.length - 1].created_at);
+      setMessages((current) => mergeMessages(current, older));
+      setHasOlder(older.length === MESSAGES_PAGE_SIZE);
+      addPeople(older.map((m) => m.sender_id));
+    } catch {
+      // Scrolling up again will retry.
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
+
+  async function send() {
+    if (!id || !draft.trim() || sending) return;
+    setSending(true);
+    setActionError(false);
+    setRateLimited(false);
+    try {
+      const message = await sendPrivateGroupMessage(id, draft);
+      setMessages((current) => mergeMessages(current, [message]));
+      setDraft('');
+    } catch (error) {
+      if (isRateLimitError(error)) setRateLimited(true);
+      else setActionError(true);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function respond(accept: boolean) {
+    if (!id) return;
+    setResponding(true);
+    setActionError(false);
+    try {
+      await respondToGroupInvite(id, accept);
+      if (!accept) {
+        if (router.canGoBack()) router.back();
+        else router.replace('/messages');
+        return;
+      }
+      await loadGroup();
+      const latest = await fetchPrivateGroupMessages(id);
+      setMessages(latest);
+      setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
+      addPeople(latest.map((m) => m.sender_id));
+    } catch {
+      setActionError(true);
+    } finally {
+      setResponding(false);
+    }
+  }
+
+  async function leave() {
+    if (!id) return;
+    try {
+      await leavePrivateGroup(id);
+      if (router.canGoBack()) router.back();
+      else router.replace('/messages');
+    } catch {
+      setActionError(true);
+    }
+  }
+
+  async function deleteMessage(message: PrivateGroupMessage) {
+    try {
+      await deleteMyMessage('private_group', message.id);
+      setMessages((current) =>
+        replaceMessage(current, {
+          ...message,
+          body: '',
+          listing_id: null,
+          deleted_at: new Date().toISOString(),
+        })
+      );
+    } catch {
+      setActionError(true);
+    }
+  }
+
+  function openProfile(personId: string) {
+    router.push({ pathname: '/user/[id]', params: { id: personId } });
+  }
+
+  function reportMessage(message: PrivateGroupMessage) {
+    router.push({
+      pathname: '/report',
+      params: {
+        userId: message.sender_id,
+        name: people.get(message.sender_id)?.first_name ?? '',
+        privateGroupMessageId: message.id,
+        snapshot: message.body.slice(0, 500),
+      },
+    });
+  }
+
+  const header = (
+    <Stack.Screen
+      options={{
+        title: group?.name ?? '',
+        headerRight: () =>
+          isMember ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('messages.options')}
+              onPress={() => setMenuOpen(true)}
+              hitSlop={10}
+              style={styles.headerButton}>
+              <ThemedText style={styles.menuDots}>⋯</ThemedText>
+            </Pressable>
+          ) : null,
+      }}
+    />
+  );
+
+  if (loading || loadError || !group || !me) {
+    return (
+      <ThemedView style={[styles.screen, styles.centered]}>
+        {header}
+        {loading ? (
+          <ActivityIndicator color={theme.primary} />
+        ) : (
+          <ThemedText themeColor="textSecondary">{t('privateGroups.notFound')}</ThemedText>
+        )}
+      </ThemedView>
+    );
+  }
+
+  const memberNames = members
+    .filter((m) => m.status === 'member')
+    .map((m) =>
+      m.user_id === userId ? t('chats.you') : (people.get(m.user_id)?.first_name ?? '…')
+    )
+    .join(', ');
+
+  // Invitation not yet answered: show who's inside and Accept / Decline.
+  if (!isMember) {
+    const inviter = people.get(me.invited_by ?? '');
+    return (
+      <ThemedView style={[styles.screen, styles.centered]}>
+        {header}
+        <View style={styles.inviteBox}>
+          <ThemedText type="subtitle" style={styles.inviteTitle}>
+            {group.name}
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.centerText}>
+            {t('privateGroups.inviteBody', { name: inviter?.first_name ?? '' })}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
+            {t('privateGroups.whoIsIn', { names: memberNames })}
+          </ThemedText>
+          {actionError && (
+            <ThemedText type="small" style={{ color: theme.danger }}>
+              {t('messages.actionError')}
+            </ThemedText>
+          )}
+          <View style={styles.inviteButtons}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={responding}
+              onPress={() => respond(false)}
+              style={({ pressed }) => [
+                styles.inviteButton,
+                { borderColor: theme.border, borderWidth: 1 },
+                (pressed || responding) && styles.pressed,
+              ]}>
+              <ThemedText style={styles.bold}>{t('messages.decline')}</ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={responding}
+              onPress={() => respond(true)}
+              style={({ pressed }) => [
+                styles.inviteButton,
+                { backgroundColor: theme.primary },
+                (pressed || responding) && styles.pressed,
+              ]}>
+              <ThemedText style={[styles.bold, { color: theme.onPrimary }]}>
+                {t('privateGroups.join')}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  const visibleMessages = messages.filter((m) => !blockedIds.has(m.sender_id));
+
+  function renderMessage({ item, index }: { item: PrivateGroupMessage; index: number }) {
+    const isMine = item.sender_id === userId;
+    const time = formatMessageTime(item.created_at, i18n.language);
+    const body = (color: string) =>
+      item.deleted_at ? (
+        <ThemedText style={[styles.body, styles.deleted, { color }]}>
+          {t('chats.messageDeleted')}
+        </ThemedText>
+      ) : (
+        <ThemedText style={[styles.body, { color }]}>{item.body}</ThemedText>
+      );
+
+    if (isMine) {
+      return (
+        <Pressable
+          onLongPress={item.deleted_at ? undefined : () => setToDelete(item)}
+          delayLongPress={350}
+          accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
+          style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
+          {body(theme.onPrimary)}
+          <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>
+            {time}
+          </ThemedText>
+        </Pressable>
+      );
+    }
+
+    // The list is newest-first, so the message shown just above this one is index + 1.
+    const previous = visibleMessages[index + 1];
+    const continuesPrevious =
+      previous?.sender_id === item.sender_id &&
+      new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() <
+        GROUPING_WINDOW_MS;
+    const author = people.get(item.sender_id);
+
+    return (
+      <View style={styles.theirRow}>
+        <View style={styles.avatarSlot}>
+          {!continuesPrevious && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={author?.first_name}
+              onPress={() => openProfile(item.sender_id)}
+              hitSlop={6}>
+              <Avatar uri={author?.avatar_url ?? null} name={author?.first_name ?? '?'} size={32} />
+            </Pressable>
+          )}
+        </View>
+        <Pressable
+          onLongPress={item.deleted_at ? undefined : () => setSelected(item)}
+          delayLongPress={350}
+          accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
+          style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
+          {!continuesPrevious && (
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              {author ? `${author.first_name}, ${author.age}` : '…'}
+            </ThemedText>
+          )}
+          {body(theme.text)}
+          <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
+            {time}
+          </ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.screen}>
+      {header}
+      <KeyboardAvoidingView
+        style={styles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() =>
+            router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } })
+          }
+          style={[styles.membersBar, { backgroundColor: theme.backgroundSelected }]}>
+          <ThemedText type="small" numberOfLines={1} style={styles.centerText}>
+            {memberNames}
+          </ThemedText>
+        </Pressable>
+
+        {visibleMessages.length === 0 ? (
+          <View style={[styles.screen, styles.centered]}>
+            <ThemedText themeColor="textSecondary">{t('privateGroups.emptyChat')}</ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            inverted
+            data={visibleMessages}
+            keyExtractor={(m) => m.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messageList}
+            onEndReached={loadOlder}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={loadingOlder ? <ActivityIndicator color={theme.primary} /> : null}
+          />
+        )}
+
+        <View
+          style={[
+            styles.composer,
+            {
+              borderTopColor: theme.border,
+              backgroundColor: theme.backgroundElement,
+              paddingBottom: Math.max(insets.bottom, Spacing.two),
+            },
+          ]}>
+          {actionError && (
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
+              {t('chats.sendError')}
+            </ThemedText>
+          )}
+          {rateLimited && (
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
+              {t('chats.rateLimit')}
+            </ThemedText>
+          )}
+          <ChatComposer
+            value={draft}
+            onChangeText={setDraft}
+            onSend={send}
+            sending={sending}
+            placeholder={t('chats.messagePlaceholder', { name: group.name })}
+          />
+        </View>
+      </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={menuOpen}
+        title={group.name}
+        options={[
+          {
+            label: t('privateGroups.membersAndInvite'),
+            onPress: () =>
+              router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } }),
+          },
+          {
+            label: t('privateGroups.leave'),
+            destructive: true,
+            onPress: () => setConfirmLeave(true),
+          },
+        ]}
+        onClose={() => setMenuOpen(false)}
+      />
+      <ActionSheet
+        visible={confirmLeave}
+        title={t('privateGroups.leaveConfirmTitle', { name: group.name })}
+        message={t('privateGroups.leaveConfirmBody')}
+        options={[{ label: t('privateGroups.leave'), destructive: true, onPress: leave }]}
+        onClose={() => setConfirmLeave(false)}
+      />
+      <ActionSheet
+        visible={!!selected}
+        title={selected ? people.get(selected.sender_id)?.first_name : undefined}
+        options={
+          selected
+            ? [
+                {
+                  label: t('messages.viewProfile'),
+                  onPress: () => openProfile(selected.sender_id),
+                },
+                {
+                  label: t('report.reportMessage'),
+                  destructive: true,
+                  onPress: () => reportMessage(selected),
+                },
+              ]
+            : []
+        }
+        onClose={() => setSelected(null)}
+      />
+      <ActionSheet
+        visible={!!toDelete}
+        title={t('chats.deleteConfirmTitle')}
+        message={t('chats.deleteConfirmBody')}
+        options={
+          toDelete
+            ? [
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => deleteMessage(toDelete),
+                },
+              ]
+            : []
+        }
+        onClose={() => setToDelete(null)}
+      />
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  centerText: {
+    textAlign: 'center',
+  },
+  headerButton: {
+    paddingHorizontal: Spacing.two,
+  },
+  menuDots: {
+    fontSize: 22,
+    fontWeight: 700,
+  },
+  inviteBox: {
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  inviteTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    textAlign: 'center',
+  },
+  inviteButtons: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignSelf: 'stretch',
+    marginTop: Spacing.two,
+  },
+  inviteButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  membersBar: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  messageList: {
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  theirRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+    maxWidth: '85%',
+  },
+  avatarSlot: {
+    width: 32,
+  },
+  bubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  myBubble: {
+    alignSelf: 'flex-end',
+    maxWidth: '80%',
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+  },
+  theirBubble: {
+    flexShrink: 1,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  deleted: {
+    fontStyle: 'italic',
+    opacity: 0.8,
+  },
+  time: {
+    fontSize: 11,
+    lineHeight: 14,
+    alignSelf: 'flex-end',
+  },
+  composer: {
+    borderTopWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    gap: Spacing.one,
+  },
+  bold: {
+    fontWeight: 700,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+});

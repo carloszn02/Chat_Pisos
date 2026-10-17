@@ -26,6 +26,7 @@ type ReportParams = {
   name?: string;
   groupMessageId?: string;
   directMessageId?: string;
+  privateGroupMessageId?: string;
   listingId?: string;
   snapshot?: string;
 };
@@ -44,7 +45,11 @@ export default function ReportScreen() {
   const [error, setError] = useState<'reasonRequired' | 'rateLimit' | 'generic' | null>(null);
   const [sent, setSent] = useState(false);
 
-  const isMessageReport = !!(params.groupMessageId || params.directMessageId);
+  const isMessageReport = !!(
+    params.groupMessageId ||
+    params.directMessageId ||
+    params.privateGroupMessageId
+  );
   const name = params.name ?? '';
 
   async function send() {
@@ -58,6 +63,7 @@ export default function ReportScreen() {
         details,
         groupMessageId: params.groupMessageId,
         directMessageId: params.directMessageId,
+        privateGroupMessageId: params.privateGroupMessageId,
         listingId: params.listingId,
         messageSnapshot: params.snapshot,
       });

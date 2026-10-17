@@ -143,7 +143,10 @@ export async function markGroupRead(groupId: string): Promise<void> {
 }
 
 /** Deletes one of your own messages. It stays in the chat as "Message deleted". */
-export async function deleteMyMessage(kind: 'group' | 'direct', messageId: string): Promise<void> {
+export async function deleteMyMessage(
+  kind: 'group' | 'direct' | 'private_group',
+  messageId: string
+): Promise<void> {
   const { error } = await supabase.rpc('delete_my_message', { kind, message: messageId });
   if (error) throw error;
 }

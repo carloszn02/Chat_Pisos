@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ConversationRow } from '@/components/conversation-row';
+import { PrivateGroupRow } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -16,6 +17,7 @@ export default function MessageRequestsScreen() {
   const { session } = useSession();
   const { data, loadError } = useInbox();
   const requests = data?.items.filter((item) => item.is_incoming_request) ?? [];
+  const invitations = data?.groups.filter((group) => group.my_status === 'invited') ?? [];
 
   return (
     <ThemedView style={styles.screen}>
@@ -31,9 +33,17 @@ export default function MessageRequestsScreen() {
               {t('messages.loadError')}
             </ThemedText>
           )}
-          {data && requests.length === 0 && (
+          {data && requests.length === 0 && invitations.length === 0 && (
             <ThemedText themeColor="textSecondary">{t('messages.noRequests')}</ThemedText>
           )}
+          {invitations.map((group) => (
+            <PrivateGroupRow
+              key={group.id}
+              group={group}
+              users={data?.users ?? new Map()}
+              myUserId={session?.user.id ?? ''}
+            />
+          ))}
           {requests.map((item) => (
             <ConversationRow
               key={item.id}

@@ -80,3 +80,41 @@ export type DirectMessage = {
   deleted_at: string | null;
   created_at: string;
 };
+
+/** One private group in the Messages tab (the my_private_groups database function). */
+export type PrivateGroupSummary = {
+  id: string;
+  name: string;
+  my_status: 'invited' | 'member';
+  my_role: 'owner' | 'member';
+  invited_by: string | null;
+  member_count: number;
+  last_message_body: string | null;
+  last_message_sender_id: string | null;
+  last_message_at: string | null;
+  last_message_deleted: boolean;
+  unread_count: number;
+};
+
+export type PrivateGroup = {
+  id: string;
+  name: string;
+  created_by: string;
+};
+
+export type PrivateGroupMember = {
+  user_id: string;
+  role: 'owner' | 'member';
+  status: 'invited' | 'member';
+  invited_by: string | null;
+};
+
+export type PrivateGroupMessage = {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  body: string;
+  listing_id: string | null;
+  deleted_at: string | null;
+  created_at: string;
+};

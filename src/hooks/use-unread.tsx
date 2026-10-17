@@ -8,6 +8,7 @@ import { createContext, useContext, useEffect, useState, type PropsWithChildren 
 import { useBlocks } from '@/hooks/use-blocks';
 import { useProfile } from '@/hooks/use-profile';
 import { fetchInbox } from '@/lib/direct-messages';
+import { fetchMyPrivateGroups } from '@/lib/private-groups';
 import { supabase } from '@/lib/supabase';
 
 const UnreadContext = createContext(0);
@@ -25,8 +26,14 @@ export function UnreadProvider({ children }: PropsWithChildren) {
 
     async function refresh() {
       try {
-        const items = await fetchInbox();
-        const count = items.reduce((total, item) => total + item.unread_count, 0);
+        const [items, groups] = await Promise.all([fetchInbox(), fetchMyPrivateGroups()]);
+        // Unread private messages, unread group messages, and pending group invitations.
+        const count =
+          items.reduce((total, item) => total + item.unread_count, 0) +
+          groups.reduce(
+            (total, group) => total + (group.my_status === 'invited' ? 1 : group.unread_count),
+            0
+          );
         if (!cancelled && userId) setLoaded({ userId, count });
       } catch {
         // Keep the last known count.
@@ -42,6 +49,16 @@ export function UnreadProvider({ children }: PropsWithChildren) {
         refresh
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, refresh)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'private_group_messages' },
+        refresh
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'private_group_members' },
+        refresh
+      )
       .subscribe();
 
     return () => {

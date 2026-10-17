@@ -127,6 +127,9 @@ function RootNavigator() {
         <Stack.Screen name="edit-listing/[id]" options={headerOptions} />
         <Stack.Screen name="delete-account" options={headerOptions} />
         <Stack.Screen name="suggest-area" options={headerOptions} />
+        <Stack.Screen name="new-private-group" options={headerOptions} />
+        <Stack.Screen name="private-group/[id]" options={headerOptions} />
+        <Stack.Screen name="private-group-members/[id]" options={headerOptions} />
       </Stack.Protected>
       <Stack.Protected guard={inApp && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />
