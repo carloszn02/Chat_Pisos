@@ -434,9 +434,21 @@ const en: typeof es = {
     account: 'Account',
     signedInAs: 'Signed in as {{email}}',
     signOut: 'Log out',
+    signOutConfirm: 'Log out on this device?',
+    changePassword: 'Change password',
+    passwordLinkSent: 'We sent a link to {{email}} to choose a new password.',
+    passwordLinkError: "The link couldn't be sent. Please try again later.",
+    about: 'About',
+    version: 'Version',
   },
   profileTab: {
+    title: 'Profile',
     editProfile: 'Edit profile',
+    aboutTab: 'About me',
+    listingsTab: 'Listings',
+    emptyAbout:
+      'Tell others what you are like and your habits: it helps find compatible flatmates.',
+    addAbout: 'Add a description',
   },
   editProfile: {
     title: 'Edit profile',

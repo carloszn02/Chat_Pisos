@@ -133,6 +133,7 @@ function RootNavigator() {
         <Stack.Screen name="user/[id]" options={headerOptions} />
         <Stack.Screen name="report" options={{ ...headerOptions, presentation: 'modal' }} />
         <Stack.Screen name="blocked-users" options={headerOptions} />
+        <Stack.Screen name="settings" options={headerOptions} />
         <Stack.Screen name="listing/[id]" options={headerOptions} />
         <Stack.Screen name="edit-listing/[id]" options={headerOptions} />
         <Stack.Screen name="delete-account" options={headerOptions} />

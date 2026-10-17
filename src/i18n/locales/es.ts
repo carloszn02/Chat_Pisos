@@ -433,9 +433,21 @@ const es = {
     account: 'Cuenta',
     signedInAs: 'Has iniciado sesión como {{email}}',
     signOut: 'Cerrar sesión',
+    signOutConfirm: '¿Cerrar sesión en este dispositivo?',
+    changePassword: 'Cambiar contraseña',
+    passwordLinkSent: 'Te hemos enviado un enlace a {{email}} para elegir una contraseña nueva.',
+    passwordLinkError: 'No se ha podido enviar el enlace. Inténtalo de nuevo más tarde.',
+    about: 'Información',
+    version: 'Versión',
   },
   profileTab: {
+    title: 'Perfil',
     editProfile: 'Editar perfil',
+    aboutTab: 'Sobre mí',
+    listingsTab: 'Anuncios',
+    emptyAbout:
+      'Cuéntales a los demás cómo eres y tus costumbres: ayuda a encontrar compañeros compatibles.',
+    addAbout: 'Añadir descripción',
   },
   editProfile: {
     title: 'Editar perfil',

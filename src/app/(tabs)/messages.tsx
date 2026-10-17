@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
+import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -68,11 +69,6 @@ export default function MessagesScreen() {
   const privateUnread = unreadTotal(items, [], isMuted);
   const groupsUnread = unreadTotal([], groups, isMuted);
 
-  const sections: { key: Section; label: string; unread: number }[] = [
-    { key: 'groups', label: t('messages.sectionGroups'), unread: groupsUnread },
-    { key: 'private', label: t('messages.sectionPrivate'), unread: privateUnread },
-  ];
-
   const pending = section === 'groups' ? invitations.length : messageRequests.length;
 
   return (
@@ -103,40 +99,14 @@ export default function MessagesScreen() {
               )}
             </View>
 
-            <View
-              style={[styles.segments, { backgroundColor: theme.backgroundSelected }]}
-              accessibilityRole="tablist">
-              {sections.map((option) => {
-                const selected = option.key === section;
-                return (
-                  <Pressable
-                    key={option.key}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected }}
-                    onPress={() => chooseSection(option.key)}
-                    style={[
-                      styles.segment,
-                      selected && [
-                        styles.segmentSelected,
-                        { backgroundColor: theme.backgroundElement },
-                      ],
-                    ]}>
-                    <ThemedText
-                      type={selected ? 'smallBold' : 'small'}
-                      themeColor={selected ? 'text' : 'textSecondary'}>
-                      {option.label}
-                    </ThemedText>
-                    {option.unread > 0 && (
-                      <View style={[styles.dot, { backgroundColor: theme.primary }]}>
-                        <ThemedText style={[styles.dotText, { color: theme.onPrimary }]}>
-                          {option.unread > 99 ? '99+' : option.unread}
-                        </ThemedText>
-                      </View>
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
+            <SegmentedControl
+              segments={[
+                { key: 'groups', label: t('messages.sectionGroups'), badge: groupsUnread },
+                { key: 'private', label: t('messages.sectionPrivate'), badge: privateUnread },
+              ]}
+              selected={section}
+              onChange={chooseSection}
+            />
 
             {!data && !loadError && (
               <ActivityIndicator color={theme.primary} style={styles.loader} />
@@ -252,40 +222,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1.5,
     justifyContent: 'center',
-  },
-  segments: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 3,
-  },
-  segment: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  segmentSelected: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  dot: {
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotText: {
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: 700,
   },
   listHeader: {
     flexDirection: 'row',

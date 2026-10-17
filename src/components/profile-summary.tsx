@@ -28,8 +28,17 @@ export type ProfileSummaryData = {
   pets: Pets | null;
 };
 
-/** Photo, "Name, age", occupation, languages, about text and habits. */
-export function ProfileSummary({ profile }: { profile: ProfileSummaryData }) {
+/**
+ * Photo, "Name, age", occupation, languages, about text and habits.
+ * `part` shows only the top (photo and name) or only the details (about and habits).
+ */
+export function ProfileSummary({
+  profile,
+  part = 'all',
+}: {
+  profile: ProfileSummaryData;
+  part?: 'all' | 'identity' | 'details';
+}) {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -49,23 +58,27 @@ export function ProfileSummary({ profile }: { profile: ProfileSummaryData }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.identity}>
-        <Avatar uri={profile.avatar_url} name={profile.first_name} size={80} />
-        <View style={styles.identityText}>
-          <ThemedText type="subtitle" style={styles.name}>
-            {profile.first_name}, {profile.age}
-          </ThemedText>
-          {subtitle ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {subtitle}
+      {part !== 'details' && (
+        <View style={styles.identity}>
+          <Avatar uri={profile.avatar_url} name={profile.first_name} size={80} />
+          <View style={styles.identityText}>
+            <ThemedText type="subtitle" style={styles.name}>
+              {profile.first_name}, {profile.age}
             </ThemedText>
-          ) : null}
+            {subtitle ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {subtitle}
+              </ThemedText>
+            ) : null}
+          </View>
         </View>
-      </View>
+      )}
 
-      {profile.about ? <ThemedText style={styles.about}>{profile.about}</ThemedText> : null}
+      {part !== 'identity' && profile.about ? (
+        <ThemedText style={styles.about}>{profile.about}</ThemedText>
+      ) : null}
 
-      {habits.length > 0 && (
+      {part !== 'identity' && habits.length > 0 && (
         <View style={styles.pills}>
           {habits.map((habit) => (
             <View
