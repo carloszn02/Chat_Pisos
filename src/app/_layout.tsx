@@ -20,6 +20,7 @@ import { MutesProvider } from '@/hooks/use-mutes';
 import { usePendingLinks } from '@/hooks/use-pending-links';
 import { PlacesProvider } from '@/hooks/use-places';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
+import { SavedProvider } from '@/hooks/use-saved';
 import { SessionProvider, useSession } from '@/hooks/use-session';
 
 SplashScreen.preventAutoHideAsync();
@@ -80,10 +81,12 @@ export default function RootLayout() {
               <BlocksProvider>
                 <PlacesProvider>
                   <MutesProvider>
-                    <InboxProvider>
-                      <SplashScreenController />
-                      <RootNavigator />
-                    </InboxProvider>
+                    <SavedProvider>
+                      <InboxProvider>
+                        <SplashScreenController />
+                        <RootNavigator />
+                      </InboxProvider>
+                    </SavedProvider>
                   </MutesProvider>
                 </PlacesProvider>
               </BlocksProvider>

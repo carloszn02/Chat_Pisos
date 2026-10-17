@@ -281,6 +281,16 @@ const en: typeof es = {
   listings: {
     location: 'Location',
     mapUnavailable: 'The map could not be loaded.',
+    save: 'Save listing',
+    unsave: 'Remove from saved',
+    saved: 'Saved',
+    savedEmpty:
+      "You haven't saved any listings yet. Tap the heart on a listing to find it here later.",
+    viewList: 'List',
+    viewMap: 'Map',
+    mapHint: 'Tap a price to see the listing.',
+    withoutLocation_one: "{{count}} listing has no location, so it isn't on the map.",
+    withoutLocation_other: "{{count}} listings have no location, so they aren't on the map.",
     approximateNote: 'Approximate area. Ask for the exact address by message.',
     title: 'Listings',
     new: 'New listing',

@@ -279,6 +279,16 @@ const es = {
   listings: {
     location: 'Ubicación',
     mapUnavailable: 'No se ha podido cargar el mapa.',
+    save: 'Guardar anuncio',
+    unsave: 'Quitar de guardados',
+    saved: 'Guardados',
+    savedEmpty:
+      'Aún no has guardado ningún anuncio. Toca el corazón de un anuncio para encontrarlo aquí después.',
+    viewList: 'Lista',
+    viewMap: 'Mapa',
+    mapHint: 'Toca un precio para ver el anuncio.',
+    withoutLocation_one: '{{count}} anuncio no tiene ubicación y no aparece en el mapa.',
+    withoutLocation_other: '{{count}} anuncios no tienen ubicación y no aparecen en el mapa.',
     approximateNote: 'Zona aproximada. Pide la dirección exacta por mensaje.',
     title: 'Anuncios',
     new: 'Nuevo anuncio',

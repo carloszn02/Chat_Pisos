@@ -6,65 +6,8 @@ import type { LocationMapProps } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { MAPLIBRE_CSS, MAPLIBRE_JS, mapConfig } from '@/lib/map';
-
-// The small part of the MapLibre library this screen uses.
-type LngLat = { lat: number; lng: number };
-type MapLibreMarker = {
-  setLngLat(position: [number, number] | LngLat): MapLibreMarker;
-  addTo(map: MapLibreMap): MapLibreMarker;
-  getLngLat(): LngLat;
-  on(event: 'dragend', handler: () => void): void;
-};
-type MapLibreMap = {
-  addControl(control: unknown, position?: string): void;
-  on(event: 'click', handler: (event: { lngLat: LngLat }) => void): void;
-  on(event: 'load', handler: () => void): void;
-  addSource(id: string, source: unknown): void;
-  addLayer(layer: unknown): void;
-  remove(): void;
-};
-type MapLibre = {
-  Map: new (options: Record<string, unknown>) => MapLibreMap;
-  Marker: new (options: { color: string; draggable: boolean }) => MapLibreMarker;
-  NavigationControl: new (options: { showCompass: boolean }) => unknown;
-};
-
-declare global {
-  interface Window {
-    maplibregl?: MapLibre;
-  }
-}
-
-let loading: Promise<MapLibre> | null = null;
-
-/** Adds the MapLibre script and styles to the page once, and waits for them. */
-function loadMapLibre(): Promise<MapLibre> {
-  if (window.maplibregl) return Promise.resolve(window.maplibregl);
-  if (!loading) {
-    loading = new Promise((resolve, reject) => {
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = MAPLIBRE_CSS.url;
-      css.integrity = MAPLIBRE_CSS.integrity;
-      css.crossOrigin = 'anonymous';
-      document.head.appendChild(css);
-
-      const script = document.createElement('script');
-      script.src = MAPLIBRE_JS.url;
-      script.integrity = MAPLIBRE_JS.integrity;
-      script.crossOrigin = 'anonymous';
-      script.onload = () =>
-        window.maplibregl ? resolve(window.maplibregl) : reject(new Error('MapLibre missing'));
-      script.onerror = () => {
-        loading = null; // allow a retry next time
-        reject(new Error('MapLibre failed to load'));
-      };
-      document.head.appendChild(script);
-    });
-  }
-  return loading;
-}
+import { mapConfig } from '@/lib/map';
+import { loadMapLibre, type MapLibreMap } from '@/lib/maplibre-web';
 
 /** Web version of LocationMap: draws the map straight into the page. */
 export function LocationMap({

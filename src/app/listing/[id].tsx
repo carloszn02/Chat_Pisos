@@ -15,6 +15,7 @@ import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ListingPrice, ListingTypeTag } from '@/components/listing-card';
 import { LocationMap } from '@/components/location-map';
+import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -208,20 +209,23 @@ export default function ListingDetailScreen() {
           title: t(`listings.types.${listing.type}`),
           headerRight: () =>
             listing.status === 'active' ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() =>
-                  share(
-                    t('share.listingMessage', { title: listing.title }),
-                    appUrl(`/listing/${listing.id}`)
-                  )
-                }
-                hitSlop={10}
-                style={styles.headerButton}>
-                <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                  {t('share.share')}
-                </ThemedText>
-              </Pressable>
+              <View style={styles.headerActions}>
+                {!isOwner && <SaveButton listingId={listing.id} variant="plain" />}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    share(
+                      t('share.listingMessage', { title: listing.title }),
+                      appUrl(`/listing/${listing.id}`)
+                    )
+                  }
+                  hitSlop={10}
+                  style={styles.headerButton}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {t('share.share')}
+                  </ThemedText>
+                </Pressable>
+              </View>
             ) : null,
         }}
       />
@@ -468,6 +472,11 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     paddingHorizontal: Spacing.two,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   centered: {
     alignItems: 'center',

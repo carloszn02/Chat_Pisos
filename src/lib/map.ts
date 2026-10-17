@@ -140,3 +140,107 @@ export function parseMapMessage(data: unknown): MapMessage | null {
   }
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// The map of many listings (Listings tab › Map): one price label per listing.
+
+/** One listing on the map. */
+export type ListingPin = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  /** The text on the pin, e.g. "620 €". */
+  label: string;
+};
+
+/** Where the map starts when there are no listings to show (central Madrid). */
+export const DEFAULT_MAP_CENTER = { latitude: 40.4168, longitude: -3.7038 };
+
+export type ListingsMapMessage = { type: 'select'; id: string | null };
+
+export function parseListingsMapMessage(data: unknown): ListingsMapMessage | null {
+  if (typeof data !== 'string') return null;
+  try {
+    const message = JSON.parse(data);
+    if (message?.type === 'select' && (typeof message.id === 'string' || message.id === null)) {
+      return message;
+    }
+  } catch {
+    // Not one of our messages.
+  }
+  return null;
+}
+
+/** The pins' look, shared by the web and phone versions. */
+export function listingPinCss(color: string): string {
+  return `.pin { background: #FFFFFF; color: #2E2620; border: 1.5px solid ${color};
+  border-radius: 999px; padding: 4px 9px; font: 700 13px/16px system-ui, sans-serif;
+  white-space: nowrap; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+.pin.selected { background: ${color}; color: #FFFFFF; z-index: 2; }`;
+}
+
+/** A full web page with the listings map, for the phone WebView. */
+export function buildListingsMapHtml(pins: ListingPin[], color: string): string {
+  const config = JSON.stringify({ pins, color, style: MAP_STYLE_URL, center: DEFAULT_MAP_CENTER });
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="${MAPLIBRE_CSS.url}" integrity="${MAPLIBRE_CSS.integrity}" crossorigin="anonymous">
+<style>html, body, #map { margin: 0; height: 100%; } #error { display: none; padding: 16px; font-family: sans-serif; color: #75685F; }
+${listingPinCss(color)}</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="error">Map unavailable</div>
+<script src="${MAPLIBRE_JS.url}" integrity="${MAPLIBRE_JS.integrity}" crossorigin="anonymous"></script>
+<script>
+  var config = ${config};
+  var elements = {};
+  function send(id) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'select', id: id }));
+  }
+  window.setSelected = function (id) {
+    Object.keys(elements).forEach(function (key) {
+      elements[key].classList.toggle('selected', key === id);
+    });
+  };
+  if (!window.maplibregl) {
+    document.getElementById('error').style.display = 'block';
+  } else {
+    var map = new maplibregl.Map({
+      container: 'map',
+      style: config.style,
+      center: [config.center.longitude, config.center.latitude],
+      zoom: 11.5,
+      attributionControl: { compact: true }
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('click', function () { send(null); window.setSelected(null); });
+    // Fold the map credits into the small (i) button so they don't cover the pins.
+    map.on('load', function () {
+      var credits = document.querySelector('.maplibregl-ctrl-attrib');
+      if (credits) credits.classList.remove('maplibregl-compact-show');
+    });
+    var bounds = new maplibregl.LngLatBounds();
+    config.pins.forEach(function (pin) {
+      var el = document.createElement('div');
+      el.className = 'pin';
+      el.textContent = pin.label;
+      el.addEventListener('click', function (event) {
+        event.stopPropagation();
+        window.setSelected(pin.id);
+        send(pin.id);
+      });
+      elements[pin.id] = el;
+      new maplibregl.Marker({ element: el }).setLngLat([pin.longitude, pin.latitude]).addTo(map);
+      bounds.extend([pin.longitude, pin.latitude]);
+    });
+    if (config.pins.length > 1) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 });
+    else if (config.pins.length === 1) map.jumpTo({ center: [config.pins[0].longitude, config.pins[0].latitude], zoom: 14 });
+  }
+</script>
+</body>
+</html>`;
+}

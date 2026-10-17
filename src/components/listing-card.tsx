@@ -3,9 +3,11 @@ import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
+import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate, formatPrice } from '@/lib/format';
 import type { PublicProfile } from '@/types/chat';
@@ -54,7 +56,10 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
   const { placeLabel } = usePlaces();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const { session } = useSession();
   const photo = listing.photo_urls[0];
+  // The heart, for other people's listings (not in the small chat version).
+  const showSave = !compact && listing.user_id !== session?.user.id;
 
   const details = [
     placeLabel(listing.area_ids),
@@ -65,44 +70,54 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
     .join(' · ');
 
   return (
-    <Link href={{ pathname: '/listing/[id]', params: { id: listing.id } }} asChild>
-      <Pressable
-        accessibilityRole="link"
-        style={({ pressed }) => [
-          styles.card,
-          compact && styles.compactCard,
-          {
-            borderColor: theme.border,
-            backgroundColor: compact ? theme.background : theme.backgroundElement,
-          },
-          pressed && styles.pressed,
-        ]}>
-        {!compact && photo && (
-          <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
-        )}
-        <View style={styles.headerRow}>
-          <ListingTypeTag type={listing.type} />
-          {listing.status === 'closed' ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('listings.closed')}
-            </ThemedText>
-          ) : (
-            new Date(listing.expires_at) <= new Date() && (
-              <ThemedText type="small" style={{ color: theme.danger }}>
-                {t('listings.expired')}
-              </ThemedText>
-            )
+    <View>
+      <Link href={{ pathname: '/listing/[id]', params: { id: listing.id } }} asChild>
+        <Pressable
+          accessibilityRole="link"
+          style={({ pressed }) => [
+            styles.card,
+            compact && styles.compactCard,
+            {
+              borderColor: theme.border,
+              backgroundColor: compact ? theme.background : theme.backgroundElement,
+            },
+            pressed && styles.pressed,
+          ]}>
+          {!compact && photo && (
+            <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
           )}
+          <View style={[styles.headerRow, showSave && !photo && styles.headerWithHeart]}>
+            <ListingTypeTag type={listing.type} />
+            {listing.status === 'closed' ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('listings.closed')}
+              </ThemedText>
+            ) : (
+              new Date(listing.expires_at) <= new Date() && (
+                <ThemedText type="small" style={{ color: theme.danger }}>
+                  {t('listings.expired')}
+                </ThemedText>
+              )
+            )}
+          </View>
+          <ThemedText
+            style={[styles.title, showSave && !photo && styles.headerWithHeart]}
+            numberOfLines={2}>
+            {listing.title}
+          </ThemedText>
+          <ListingPrice listing={listing} />
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+            {details}
+          </ThemedText>
+        </Pressable>
+      </Link>
+      {/* Next to the link rather than inside it, so tapping the heart doesn't open the listing. */}
+      {showSave && (
+        <View style={[styles.heart, photo ? styles.heartOnPhoto : styles.heartNoPhoto]}>
+          <SaveButton listingId={listing.id} />
         </View>
-        <ThemedText style={styles.title} numberOfLines={2}>
-          {listing.title}
-        </ThemedText>
-        <ListingPrice listing={listing} />
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-          {details}
-        </ThemedText>
-      </Pressable>
-    </Link>
+      )}
+    </View>
   );
 }
 
@@ -127,6 +142,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerWithHeart: {
+    paddingRight: 40,
+  },
+  heart: {
+    position: 'absolute',
+  },
+  // On top of the photo's corner.
+  heartOnPhoto: {
+    top: Spacing.three + Spacing.two,
+    right: Spacing.three + Spacing.two,
+  },
+  // Level with the type label.
+  heartNoPhoto: {
+    top: 10,
+    right: 10,
   },
   tag: {
     alignSelf: 'flex-start',
