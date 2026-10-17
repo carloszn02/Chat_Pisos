@@ -89,6 +89,21 @@ export async function fetchPrivateGroup(groupId: string): Promise<PrivateGroup |
   return data;
 }
 
+/** When you last read a private group. Used for the "new messages" line. */
+export async function fetchPrivateGroupLastRead(
+  groupId: string,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('private_group_members')
+    .select('last_read_at')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.last_read_at ?? null;
+}
+
 export async function fetchPrivateGroupMembers(groupId: string): Promise<PrivateGroupMember[]> {
   const { data, error } = await supabase
     .from('private_group_members')

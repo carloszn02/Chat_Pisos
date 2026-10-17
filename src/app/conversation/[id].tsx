@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -13,10 +13,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
-import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { Avatar } from '@/components/avatar';
+import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
 import { ListingCard } from '@/components/listing-card';
+import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -73,6 +74,9 @@ export default function ConversationScreen() {
   const [actionError, setActionError] = useState(false);
   const [responding, setResponding] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
+  const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
+  const listRef = useRef<FlatList<DirectMessage>>(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
   const muteLabel = useMuteLabel('conversation', id);
@@ -114,6 +118,11 @@ export default function ConversationScreen() {
         setMessages((current) => mergeMessages(current, latest));
         setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
         addListings([...latest.map((m) => m.listing_id), listingId ?? null]);
+        const lastReadAt =
+          found.user_a === userId ? found.user_a_last_read_at : found.user_b_last_read_at;
+        setFirstUnread(
+          findFirstUnread(latest, lastReadAt, (m) => m.sender_id !== userId && !m.deleted_at)
+        );
         markConversationRead(id);
       } catch {
         if (!cancelled) setLoadError(true);
@@ -223,6 +232,9 @@ export default function ConversationScreen() {
     }
   }
 
+  const firstUnreadIndex = firstUnread ? messages.findIndex((m) => m.id === firstUnread.id) : -1;
+  const onScrollToIndexFailed = useJumpToUnread(listRef, firstUnreadIndex);
+
   const header = (
     <Stack.Screen
       options={{
@@ -305,7 +317,19 @@ export default function ConversationScreen() {
     }
   }
 
-  function renderMessage({ item }: { item: DirectMessage }) {
+  // Each message, with the day and "new messages" dividers above it when needed.
+  function renderMessage({ item, index }: { item: DirectMessage; index: number }) {
+    return (
+      <ChatDividers
+        createdAt={item.created_at}
+        olderCreatedAt={messages[index + 1]?.created_at}
+        newCount={item.id === firstUnread?.id ? firstUnread.count : undefined}>
+        {renderBubble(item)}
+      </ChatDividers>
+    );
+  }
+
+  function renderBubble(item: DirectMessage) {
     const isMine = item.sender_id === userId;
     const listing = item.listing_id ? listings.get(item.listing_id) : undefined;
     const textColor = isMine ? theme.onPrimary : theme.text;
@@ -364,8 +388,10 @@ export default function ConversationScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             inverted
             data={messages}
+            onScrollToIndexFailed={onScrollToIndexFailed}
             keyExtractor={(m) => m.id}
             renderItem={renderMessage}
             contentContainerStyle={styles.messageList}

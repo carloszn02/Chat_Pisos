@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
+import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { ThemedText } from '@/components/themed-text';
@@ -24,10 +25,11 @@ import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchAuthors, MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import { isRateLimitError } from '@/lib/errors';
-import { formatMessageTime } from '@/lib/format';
+import { formatMessageTime, isSameDay } from '@/lib/format';
 import {
   fetchJoinRequests,
   fetchPrivateGroup,
+  fetchPrivateGroupLastRead,
   fetchPrivateGroupMembers,
   fetchPrivateGroupMessages,
   eventText,
@@ -88,6 +90,9 @@ export default function PrivateGroupScreen() {
   const [toDelete, setToDelete] = useState<PrivateGroupMessage | null>(null);
   const [muteOpen, setMuteOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState(0);
+  // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
+  const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
+  const listRef = useRef<FlatList<PrivateGroupMessage>>(null);
   const muteLabel = useMuteLabel('private_group', id);
 
   const me = members.find((m) => m.user_id === userId);
@@ -126,8 +131,18 @@ export default function PrivateGroupScreen() {
         const memberList = await loadGroup();
         const mine = memberList?.find((m) => m.user_id === userId);
         if (!cancelled && mine?.status === 'member') {
-          const latest = await fetchPrivateGroupMessages(id);
+          const [latest, lastReadAt] = await Promise.all([
+            fetchPrivateGroupMessages(id),
+            fetchPrivateGroupLastRead(id, userId).catch(() => null),
+          ]);
           if (cancelled) return;
+          setFirstUnread(
+            findFirstUnread(
+              latest,
+              lastReadAt,
+              (m) => m.kind === 'message' && m.sender_id !== userId && !m.deleted_at
+            )
+          );
           setMessages((current) => mergeMessages(current, latest));
           setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
           addPeople(latest.flatMap((m) => (m.subject_id ? [m.subject_id] : [])));
@@ -308,6 +323,11 @@ export default function PrivateGroupScreen() {
     });
   }
 
+  const firstUnreadIndex = firstUnread
+    ? messages.filter((m) => !blockedIds.has(m.sender_id)).findIndex((m) => m.id === firstUnread.id)
+    : -1;
+  const onScrollToIndexFailed = useJumpToUnread(listRef, firstUnreadIndex);
+
   const header = (
     <Stack.Screen
       options={{
@@ -401,7 +421,19 @@ export default function PrivateGroupScreen() {
 
   const visibleMessages = messages.filter((m) => !blockedIds.has(m.sender_id));
 
+  // Each message, with the day and "new messages" dividers above it when needed.
   function renderMessage({ item, index }: { item: PrivateGroupMessage; index: number }) {
+    return (
+      <ChatDividers
+        createdAt={item.created_at}
+        olderCreatedAt={visibleMessages[index + 1]?.created_at}
+        newCount={item.id === firstUnread?.id ? firstUnread.count : undefined}>
+        {renderBubble(item, index)}
+      </ChatDividers>
+    );
+  }
+
+  function renderBubble(item: PrivateGroupMessage, index: number) {
     if (item.kind === 'event' && item.event) {
       return (
         <View style={styles.eventRow}>
@@ -444,6 +476,8 @@ export default function PrivateGroupScreen() {
     const continuesPrevious =
       previous?.kind === 'message' &&
       previous?.sender_id === item.sender_id &&
+      item.id !== firstUnread?.id &&
+      isSameDay(item.created_at, previous.created_at) &&
       new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() <
         GROUPING_WINDOW_MS;
     const author = people.get(item.sender_id);
@@ -525,8 +559,10 @@ export default function PrivateGroupScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             inverted
             data={visibleMessages}
+            onScrollToIndexFailed={onScrollToIndexFailed}
             keyExtractor={(m) => m.id}
             renderItem={renderMessage}
             contentContainerStyle={styles.messageList}

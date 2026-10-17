@@ -63,6 +63,9 @@ export type Conversation = {
   user_b: string;
   created_by: string;
   status: ConversationStatus;
+  /** When each person last read the conversation (null = never). */
+  user_a_last_read_at: string | null;
+  user_b_last_read_at: string | null;
 };
 
 /** One row of the inbox (the my_conversations database function). */

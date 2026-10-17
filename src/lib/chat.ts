@@ -211,6 +211,18 @@ export async function fetchGroupUnreadCounts(): Promise<Map<string, number>> {
   );
 }
 
+/** When you last read a group (null if you're not a member). Used for the "new messages" line. */
+export async function fetchGroupLastRead(groupId: string, userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('last_read_at')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.last_read_at ?? null;
+}
+
 /** Marks a group as read for the current user. Failures only affect the counter. */
 export async function markGroupRead(groupId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_group_read', { target_group: groupId });

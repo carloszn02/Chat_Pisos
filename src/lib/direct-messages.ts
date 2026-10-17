@@ -22,7 +22,7 @@ export async function fetchInbox(): Promise<InboxItem[]> {
 export async function fetchConversation(id: string): Promise<Conversation | null> {
   const { data, error } = await supabase
     .from('conversations')
-    .select('id, user_a, user_b, created_by, status')
+    .select('id, user_a, user_b, created_by, status, user_a_last_read_at, user_b_last_read_at')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

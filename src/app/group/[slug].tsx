@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
+import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
 import { GroupListings } from '@/components/group-listings';
 import { ListingCard } from '@/components/listing-card';
@@ -29,6 +30,7 @@ import {
   deleteMyMessage,
   fetchAuthors,
   fetchGroupBySlug,
+  fetchGroupLastRead,
   fetchMessages,
   fetchMyGroupIds,
   joinGroup,
@@ -38,7 +40,7 @@ import {
   sendMessage,
 } from '@/lib/chat';
 import { isRateLimitError } from '@/lib/errors';
-import { formatMessageTime } from '@/lib/format';
+import { formatMessageTime, isSameDay } from '@/lib/format';
 import { appUrl } from '@/lib/links';
 import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
@@ -89,6 +91,9 @@ export default function GroupChatScreen() {
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
+  const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
+  const listRef = useRef<FlatList<GroupMessage>>(null);
   const [muteOpen, setMuteOpen] = useState(false);
   const { share, toast } = useShare();
   const muteLabel = useMuteLabel('group', group?.id);
@@ -118,14 +123,20 @@ export default function GroupChatScreen() {
       try {
         const found = await fetchGroupBySlug(slug);
         if (!found) throw new Error('Group not found');
-        const [myGroupIds, latest] = await Promise.all([
+        const [myGroupIds, latest, lastReadAt] = await Promise.all([
           fetchMyGroupIds(userId),
           fetchMessages(found.id),
+          fetchGroupLastRead(found.id, userId).catch(() => null),
         ]);
         if (cancelled) return;
         setGroup(found);
         setIsMember(myGroupIds.has(found.id));
-        if (myGroupIds.has(found.id)) markGroupRead(found.id);
+        if (myGroupIds.has(found.id)) {
+          setFirstUnread(
+            findFirstUnread(latest, lastReadAt, (m) => m.user_id !== userId && !m.deleted_at)
+          );
+          markGroupRead(found.id);
+        }
         setMessages((current) => mergeMessages(current, latest));
         setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
         addAuthors(latest);
@@ -287,7 +298,24 @@ export default function GroupChatScreen() {
   const selectedAuthor = selected ? authors.get(selected.user_id) : undefined;
   const blockTarget = confirmBlockId ? authors.get(confirmBlockId) : undefined;
 
+  const firstUnreadIndex = firstUnread
+    ? visibleMessages.findIndex((m) => m.id === firstUnread.id)
+    : -1;
+  const onScrollToIndexFailed = useJumpToUnread(listRef, firstUnreadIndex);
+
+  // Each message, with the day and "new messages" dividers above it when needed.
   function renderMessage({ item, index }: { item: GroupMessage; index: number }) {
+    return (
+      <ChatDividers
+        createdAt={item.created_at}
+        olderCreatedAt={visibleMessages[index + 1]?.created_at}
+        newCount={item.id === firstUnread?.id ? firstUnread.count : undefined}>
+        {renderBubble(item, index)}
+      </ChatDividers>
+    );
+  }
+
+  function renderBubble(item: GroupMessage, index: number) {
     const isMine = item.user_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
     const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
@@ -325,6 +353,8 @@ export default function GroupChatScreen() {
     const previous = visibleMessages[index + 1];
     const continuesPrevious =
       previous?.user_id === item.user_id &&
+      item.id !== firstUnread?.id &&
+      isSameDay(item.created_at, previous.created_at) &&
       new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() <
         GROUPING_WINDOW_MS;
     const author = authors.get(item.user_id);
@@ -445,8 +475,10 @@ export default function GroupChatScreen() {
               </View>
             ) : (
               <FlatList
+                ref={listRef}
                 inverted
                 data={visibleMessages}
+                onScrollToIndexFailed={onScrollToIndexFailed}
                 keyExtractor={(m) => m.id}
                 renderItem={renderMessage}
                 contentContainerStyle={styles.messageList}
