@@ -86,6 +86,61 @@ export async function fetchMessages(groupId: string, before?: string): Promise<G
   return data;
 }
 
+export type GroupPreviews = {
+  /** Groups the current user has joined. */
+  myGroupIds: Set<string>;
+  lastMessages: Map<string, GroupMessage>;
+  unread: Map<string, number>;
+};
+
+type PreviewRow = {
+  group_id: string;
+  unread_count: number;
+  last_message_id: string | null;
+  last_message_user_id: string | null;
+  last_message_body: string | null;
+  last_message_listing_id: string | null;
+  last_message_deleted_at: string | null;
+  last_message_created_at: string | null;
+};
+
+/**
+ * Everything the Chats tab list needs about your groups, in one request. Falls back to the
+ * older one-request-per-group way if the database function hasn't been added yet.
+ */
+export async function fetchGroupPreviews(userId: string): Promise<GroupPreviews> {
+  const { data, error } = await supabase.rpc('my_group_previews');
+  if (error) {
+    // PGRST202 = the function doesn't exist yet (its SQL file hasn't been run).
+    if (error.code !== 'PGRST202') throw error;
+    const [myGroupIds, unread] = await Promise.all([
+      fetchMyGroupIds(userId),
+      fetchGroupUnreadCounts(),
+    ]);
+    return { myGroupIds, unread, lastMessages: await fetchLastMessages([...myGroupIds]) };
+  }
+  const rows = data as PreviewRow[];
+  const lastMessages = new Map<string, GroupMessage>();
+  for (const row of rows) {
+    if (row.last_message_id && row.last_message_user_id && row.last_message_created_at) {
+      lastMessages.set(row.group_id, {
+        id: row.last_message_id,
+        group_id: row.group_id,
+        user_id: row.last_message_user_id,
+        body: row.last_message_body ?? '',
+        listing_id: row.last_message_listing_id,
+        deleted_at: row.last_message_deleted_at,
+        created_at: row.last_message_created_at,
+      });
+    }
+  }
+  return {
+    myGroupIds: new Set(rows.map((row) => row.group_id)),
+    unread: new Map(rows.map((row) => [row.group_id, row.unread_count ?? 0])),
+    lastMessages,
+  };
+}
+
 /** The latest message of each given group, for the previews in the chats list. */
 export async function fetchLastMessages(groupIds: string[]): Promise<Map<string, GroupMessage>> {
   const results = await Promise.all(

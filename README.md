@@ -43,6 +43,7 @@ The database lives in Supabase. Every change to its structure is a SQL file in `
 13. `20261014100000_private_groups.sql` — private group chats between connected people.
 14. `20261017100000_private_group_events.sql` — automatic join/leave notices in private groups.
 15. `20261018100000_mutes_links_requests.sql` — muted chats, district group activity numbers, private group invite links with join requests.
+16. `20261019100000_group_previews.sql` — the Chats tab list in one request.
 
 In Supabase, also set **Authentication → URL Configuration → Site URL** (and Redirect URLs) to the app's address, e.g. `http://localhost:8081` while developing.
 

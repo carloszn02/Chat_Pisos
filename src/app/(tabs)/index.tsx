@@ -24,11 +24,9 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   byActivity,
   fetchAuthors,
+  fetchGroupPreviews,
   fetchGroups,
   fetchGroupStats,
-  fetchGroupUnreadCounts,
-  fetchLastMessages,
-  fetchMyGroupIds,
   joinGroup,
 } from '@/lib/chat';
 import { formatShortTime } from '@/lib/format';
@@ -63,14 +61,12 @@ export default function ChatsScreen() {
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const [groups, myGroupIds, unread, stats] = await Promise.all([
+      const [groups, { myGroupIds, unread, lastMessages }, stats] = await Promise.all([
         fetchGroups(),
-        fetchMyGroupIds(userId),
-        fetchGroupUnreadCounts(),
+        fetchGroupPreviews(userId),
         // The numbers on the Discover cards are a nice-to-have.
         fetchGroupStats().catch(() => new Map<string, GroupStats>()),
       ]);
-      const lastMessages = await fetchLastMessages([...myGroupIds]);
       const authors = await fetchAuthors([...lastMessages.values()].map((m) => m.user_id));
       setData({ groups, myGroupIds, lastMessages, authors, unread, stats });
       setLoadError(false);

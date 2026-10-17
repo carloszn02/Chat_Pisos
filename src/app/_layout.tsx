@@ -15,12 +15,12 @@ import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { InboxProvider } from '@/hooks/use-inbox';
 import { MutesProvider } from '@/hooks/use-mutes';
 import { usePendingLinks } from '@/hooks/use-pending-links';
 import { PlacesProvider } from '@/hooks/use-places';
 import { ProfileProvider, useProfile } from '@/hooks/use-profile';
 import { SessionProvider, useSession } from '@/hooks/use-session';
-import { UnreadProvider } from '@/hooks/use-unread';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -80,10 +80,10 @@ export default function RootLayout() {
               <BlocksProvider>
                 <PlacesProvider>
                   <MutesProvider>
-                    <UnreadProvider>
+                    <InboxProvider>
                       <SplashScreenController />
                       <RootNavigator />
-                    </UnreadProvider>
+                    </InboxProvider>
                   </MutesProvider>
                 </PlacesProvider>
               </BlocksProvider>
