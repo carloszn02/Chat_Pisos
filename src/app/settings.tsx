@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
@@ -20,6 +21,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { blockedIds } = useBlocks();
+  const { city } = usePlaces();
   const email = session?.user.email ?? '';
 
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -96,6 +98,16 @@ export default function SettingsScreen() {
                 {Constants.expoConfig?.version ?? '1.0.0'}
               </ThemedText>
             </Row>
+            {city?.photo_credit && (
+              <Row>
+                <View style={styles.credit}>
+                  <ThemedText>{t('settings.photoCredits')}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('settings.cityPhoto', { city: city.name })}: {city.photo_credit}
+                  </ThemedText>
+                </View>
+              </Row>
+            )}
           </Section>
 
           <Pressable
@@ -215,6 +227,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  credit: {
+    flex: 1,
+    paddingVertical: Spacing.two,
+    gap: 2,
   },
   signOut: {
     height: 50,

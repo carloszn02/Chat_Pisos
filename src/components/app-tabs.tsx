@@ -51,7 +51,7 @@ export default function AppTabs() {
           sf={{ default: 'envelope', selected: 'envelope.fill' }}
           md="mail"
         />
-        <NativeTabs.Trigger.Badge hidden={unread === 0}>
+        <NativeTabs.Trigger.Badge hidden={!(unread > 0)}>
           {unread > 99 ? '99+' : String(unread)}
         </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>

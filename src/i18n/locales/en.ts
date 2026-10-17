@@ -440,6 +440,8 @@ const en: typeof es = {
     passwordLinkError: "The link couldn't be sent. Please try again later.",
     about: 'About',
     version: 'Version',
+    photoCredits: 'Photo credits',
+    cityPhoto: '{{city}} photo',
   },
   profileTab: {
     title: 'Profile',

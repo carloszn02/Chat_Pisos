@@ -50,7 +50,7 @@ export function PrivateGroupRow({ group, users, myUserId, muted = false }: Priva
   const theme = useTheme();
   const invited = group.my_status === 'invited';
   const unread = group.unread_count > 0;
-  const requests = invited ? 0 : group.pending_requests;
+  const requests = invited ? 0 : (group.pending_requests ?? 0);
   const highlight = (unread && !muted) || invited;
 
   let preview: string;

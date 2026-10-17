@@ -439,6 +439,8 @@ const es = {
     passwordLinkError: 'No se ha podido enviar el enlace. Inténtalo de nuevo más tarde.',
     about: 'Información',
     version: 'Versión',
+    photoCredits: 'Créditos de las fotos',
+    cityPhoto: 'Foto de {{city}}',
   },
   profileTab: {
     title: 'Perfil',

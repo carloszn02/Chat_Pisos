@@ -5,7 +5,8 @@ import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
 import type { City } from '@/types/places';
 
-// City photos shipped with the app, by city slug. The credit text lives in the database.
+// City photos shipped with the app, by city slug. The credit text lives in the database and
+// is shown in Settings › About (the photo licence asks for it).
 const CITY_PHOTOS: Record<string, ImageSourcePropType> = {
   madrid: require('@/assets/images/cities/madrid.jpg'),
 };
@@ -32,7 +33,6 @@ export function CityBanner({ city, subtitle }: { city: City; subtitle: string })
           {subtitle}
         </ThemedText>
       </View>
-      {city.photo_credit && <ThemedText style={styles.credit}>{city.photo_credit}</ThemedText>}
     </View>
   );
 }
@@ -61,14 +61,5 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#FFFFFF',
     opacity: 0.92,
-  },
-  credit: {
-    position: 'absolute',
-    top: 8,
-    right: 10,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    fontSize: 10,
-    lineHeight: 12,
   },
 });
