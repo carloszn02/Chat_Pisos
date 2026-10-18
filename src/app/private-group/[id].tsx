@@ -1,29 +1,25 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
+import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useChatPhotoUrls } from '@/hooks/use-chat-photo-urls';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchAuthors, MESSAGES_PAGE_SIZE } from '@/lib/chat';
+import { deleteChatPhotos, pickChatPhoto, uploadChatPhoto } from '@/lib/chat-photos';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime, isSameDay } from '@/lib/format';
 import {
@@ -39,6 +35,8 @@ import {
   sendPrivateGroupMessage,
 } from '@/lib/private-groups';
 import { supabase } from '@/lib/supabase';
+import type { ImagePickerAsset } from 'expo-image-picker';
+
 import type {
   PrivateGroup,
   PrivateGroupMember,
@@ -90,6 +88,10 @@ export default function PrivateGroupScreen() {
   const [toDelete, setToDelete] = useState<PrivateGroupMessage | null>(null);
   const [muteOpen, setMuteOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState(0);
+  // A photo chosen to send (shown above the text box), and a photo opened full screen.
+  const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<PrivateGroupMessage>>(null);
@@ -240,15 +242,24 @@ export default function PrivateGroupScreen() {
     }
   }
 
+  async function choosePhoto() {
+    const picked = await pickChatPhoto();
+    if (picked) setPhoto(picked);
+  }
+
   async function send() {
-    if (!id || !draft.trim() || sending) return;
+    if (!id || !userId || (!draft.trim() && !photo) || sending) return;
     setSending(true);
     setActionError(false);
     setRateLimited(false);
     try {
-      const message = await sendPrivateGroupMessage(id, draft);
+      const uploaded = photo
+        ? await uploadChatPhoto(userId, 'private_group', id, photo)
+        : undefined;
+      const message = await sendPrivateGroupMessage(id, draft, uploaded);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
+      setPhoto(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setActionError(true);
@@ -293,12 +304,14 @@ export default function PrivateGroupScreen() {
 
   async function deleteMessage(message: PrivateGroupMessage) {
     try {
+      if (message.image_path) await deleteChatPhotos([message.image_path]);
       await deleteMyMessage('private_group', message.id);
       setMessages((current) =>
         replaceMessage(current, {
           ...message,
           body: '',
           listing_id: null,
+          image_path: null,
           deleted_at: new Date().toISOString(),
         })
       );
@@ -319,6 +332,7 @@ export default function PrivateGroupScreen() {
         name: people.get(message.sender_id)?.first_name ?? '',
         privateGroupMessageId: message.id,
         snapshot: message.body.slice(0, 500),
+        imagePath: message.image_path ?? undefined,
       },
     });
   }
@@ -447,13 +461,26 @@ export default function PrivateGroupScreen() {
     }
     const isMine = item.sender_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
+    const photoUrl = item.image_path ? photoUrls.get(item.image_path) : undefined;
+    // The photo (if any) above the text; a photo alone has no text line.
     const body = (color: string) =>
       item.deleted_at ? (
         <ThemedText style={[styles.body, styles.deleted, { color }]}>
           {t('chats.messageDeleted')}
         </ThemedText>
       ) : (
-        <ThemedText style={[styles.body, { color }]}>{item.body}</ThemedText>
+        <>
+          {item.image_path && (
+            <ChatPhoto
+              url={photoUrl}
+              failed={failedPhotos.has(item.image_path ?? '')}
+              width={item.image_width ?? null}
+              height={item.image_height ?? null}
+              onPress={() => setViewerUrl(photoUrl ?? null)}
+            />
+          )}
+          {item.body ? <ThemedText style={[styles.body, { color }]}>{item.body}</ThemedText> : null}
+        </>
       );
 
     if (isMine) {
@@ -517,10 +544,7 @@ export default function PrivateGroupScreen() {
   return (
     <ThemedView style={styles.screen}>
       {header}
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View style={styles.screen}>
         <Pressable
           accessibilityRole="link"
           onPress={() =>
@@ -603,9 +627,14 @@ export default function PrivateGroupScreen() {
             onSend={send}
             sending={sending}
             placeholder={t('chats.messagePlaceholder', { name: group.name })}
+            onPickPhoto={choosePhoto}
+            photoUri={photo?.uri}
+            onRemovePhoto={() => setPhoto(null)}
           />
         </View>
-      </KeyboardAvoidingView>
+        {/* Grows with the keyboard so the text box stays visible above it. */}
+        <KeyboardSpacer />
+      </View>
 
       <ActionSheet
         visible={menuOpen}
@@ -625,6 +654,7 @@ export default function PrivateGroupScreen() {
         ]}
         onClose={() => setMenuOpen(false)}
       />
+      <PhotoViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
       <MuteSheet
         visible={muteOpen}
         kind="private_group"

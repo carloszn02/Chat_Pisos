@@ -37,6 +37,10 @@ export type GroupMessage = {
   listing_id: string | null;
   /** Set when the author deleted the message (its text is then empty). */
   deleted_at: string | null;
+  /** A photo in the private chat-photos storage (with its size), if the message has one. */
+  image_path?: string | null;
+  image_width?: number | null;
+  image_height?: number | null;
   created_at: string;
 };
 
@@ -90,6 +94,10 @@ export type DirectMessage = {
   listing_id: string | null;
   /** Set when the sender deleted the message (its text is then empty). */
   deleted_at: string | null;
+  /** A photo in the private chat-photos storage (with its size), if the message has one. */
+  image_path?: string | null;
+  image_width?: number | null;
+  image_height?: number | null;
   created_at: string;
 };
 
@@ -158,5 +166,9 @@ export type PrivateGroupMessage = {
   subject_id: string | null;
   listing_id: string | null;
   deleted_at: string | null;
+  /** A photo in the private chat-photos storage (with its size), if the message has one. */
+  image_path?: string | null;
+  image_width?: number | null;
+  image_height?: number | null;
   created_at: string;
 };

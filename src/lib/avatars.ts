@@ -1,5 +1,6 @@
 import type { ImagePickerAsset } from 'expo-image-picker';
 
+import { readFileBytes } from '@/lib/file-bytes';
 import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 
@@ -16,7 +17,7 @@ export async function uploadAvatar(userId: string, asset: ImagePickerAsset): Pro
   // A new file name each time, so phones and browsers never show an old cached photo.
   const path = `${userId}/avatar-${Date.now()}.${extension}`;
 
-  const body = await (await fetch(image.uri)).arrayBuffer();
+  const body = await readFileBytes(image.uri);
   const { error } = await supabase.storage.from('avatars').upload(path, body, { contentType });
   if (error) throw error;
 

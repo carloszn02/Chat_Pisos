@@ -1,27 +1,22 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { ListingCard } from '@/components/listing-card';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
+import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useChatPhotoUrls } from '@/hooks/use-chat-photo-urls';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchPublicProfile, MESSAGES_PAGE_SIZE } from '@/lib/chat';
@@ -32,10 +27,13 @@ import {
   respondToRequest,
   sendDirectMessage,
 } from '@/lib/direct-messages';
+import { deleteChatPhotos, pickChatPhoto, uploadChatPhoto } from '@/lib/chat-photos';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime } from '@/lib/format';
 import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
+import type { ImagePickerAsset } from 'expo-image-picker';
+
 import type { Conversation, DirectMessage, PublicProfile } from '@/types/chat';
 import type { Listing } from '@/types/listing';
 
@@ -74,6 +72,10 @@ export default function ConversationScreen() {
   const [actionError, setActionError] = useState(false);
   const [responding, setResponding] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // A photo chosen to send (shown above the text box), and a photo opened full screen.
+  const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<DirectMessage>>(null);
@@ -200,16 +202,23 @@ export default function ConversationScreen() {
     }
   }
 
+  async function choosePhoto() {
+    const picked = await pickChatPhoto();
+    if (picked) setPhoto(picked);
+  }
+
   async function send() {
-    if (!id || !draft.trim() || sending) return;
+    if (!id || !userId || (!draft.trim() && !photo) || sending) return;
     setSending(true);
     setActionError(false);
     setRateLimited(false);
     try {
-      const message = await sendDirectMessage(id, draft, attachedListingId ?? undefined);
+      const uploaded = photo ? await uploadChatPhoto(userId, 'conversation', id, photo) : undefined;
+      const message = await sendDirectMessage(id, draft, attachedListingId ?? undefined, uploaded);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
       setAttachedListingId(null);
+      setPhoto(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setActionError(true);
@@ -286,19 +295,27 @@ export default function ConversationScreen() {
       params: {
         userId: otherId,
         name,
-        ...(message ? { directMessageId: message.id, snapshot: message.body.slice(0, 500) } : {}),
+        ...(message
+          ? {
+              directMessageId: message.id,
+              snapshot: message.body.slice(0, 500),
+              imagePath: message.image_path ?? undefined,
+            }
+          : {}),
       },
     });
   }
 
   async function deleteMessage(message: DirectMessage) {
     try {
+      if (message.image_path) await deleteChatPhotos([message.image_path]);
       await deleteMyMessage('direct', message.id);
       setMessages((current) =>
         replaceMessage(current, {
           ...message,
           body: '',
           listing_id: null,
+          image_path: null,
           deleted_at: new Date().toISOString(),
         })
       );
@@ -352,8 +369,19 @@ export default function ConversationScreen() {
           </ThemedText>
         ) : (
           <>
+            {item.image_path && (
+              <ChatPhoto
+                url={photoUrls.get(item.image_path)}
+                failed={failedPhotos.has(item.image_path ?? '')}
+                width={item.image_width ?? null}
+                height={item.image_height ?? null}
+                onPress={() => setViewerUrl(photoUrls.get(item.image_path ?? '') ?? null)}
+              />
+            )}
             {listing && <ListingCard listing={listing} compact />}
-            <ThemedText style={[styles.body, { color: textColor }]}>{item.body}</ThemedText>
+            {item.body ? (
+              <ThemedText style={[styles.body, { color: textColor }]}>{item.body}</ThemedText>
+            ) : null}
           </>
         )}
         <ThemedText
@@ -370,10 +398,7 @@ export default function ConversationScreen() {
   return (
     <ThemedView style={styles.screen}>
       {header}
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View style={styles.screen}>
         <View style={[styles.banner, { backgroundColor: theme.backgroundSelected }]}>
           <ThemedText type="small" style={styles.bannerText}>
             {t('messages.safetyTip')}
@@ -505,11 +530,17 @@ export default function ConversationScreen() {
                 onSend={send}
                 sending={sending}
                 placeholder={t('messages.placeholder', { name })}
+                // Photos only once the request has been accepted.
+                onPickPhoto={conversation.status === 'accepted' ? choosePhoto : undefined}
+                photoUri={photo?.uri}
+                onRemovePhoto={() => setPhoto(null)}
               />
             </>
           )}
         </View>
-      </KeyboardAvoidingView>
+        {/* Grows with the keyboard so the text box stays visible above it. */}
+        <KeyboardSpacer />
+      </View>
 
       <ActionSheet
         visible={menuOpen}
@@ -528,6 +559,7 @@ export default function ConversationScreen() {
         ]}
         onClose={() => setMenuOpen(false)}
       />
+      <PhotoViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
       {id && (
         <MuteSheet
           visible={muteOpen}

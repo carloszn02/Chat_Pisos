@@ -1,28 +1,23 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { GroupListings } from '@/components/group-listings';
 import { ListingCard } from '@/components/listing-card';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
+import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useChatPhotoUrls } from '@/hooks/use-chat-photo-urls';
 import { useSession } from '@/hooks/use-session';
 import { useShare } from '@/hooks/use-share';
 import { useTheme } from '@/hooks/use-theme';
@@ -39,11 +34,14 @@ import {
   MESSAGES_PAGE_SIZE,
   sendMessage,
 } from '@/lib/chat';
+import { deleteChatPhotos, pickChatPhoto, uploadChatPhoto } from '@/lib/chat-photos';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime, isSameDay } from '@/lib/format';
 import { appUrl } from '@/lib/links';
 import { fetchListingsByIds } from '@/lib/listings';
 import { supabase } from '@/lib/supabase';
+import type { ImagePickerAsset } from 'expo-image-picker';
+
 import type { ChatGroup, GroupMessage, PublicProfile } from '@/types/chat';
 import type { Listing } from '@/types/listing';
 
@@ -91,6 +89,10 @@ export default function GroupChatScreen() {
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // A photo chosen to send (shown above the text box), and a photo opened full screen.
+  const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<GroupMessage>>(null);
@@ -212,15 +214,22 @@ export default function GroupChatScreen() {
     }
   }
 
+  async function choosePhoto() {
+    const picked = await pickChatPhoto();
+    if (picked) setPhoto(picked);
+  }
+
   async function send() {
-    if (!group || !draft.trim() || sending) return;
+    if (!group || !userId || (!draft.trim() && !photo) || sending) return;
     setSending(true);
     setSendError(false);
     setRateLimited(false);
     try {
-      const message = await sendMessage(group.id, draft);
+      const uploaded = photo ? await uploadChatPhoto(userId, 'group', group.id, photo) : undefined;
+      const message = await sendMessage(group.id, draft, uploaded);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
+      setPhoto(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setSendError(true);
@@ -265,18 +274,21 @@ export default function GroupChatScreen() {
         name: authors.get(message.user_id)?.first_name ?? '',
         groupMessageId: message.id,
         snapshot: message.body.slice(0, 500),
+        imagePath: message.image_path ?? undefined,
       },
     });
   }
 
   async function deleteMessage(message: GroupMessage) {
     try {
+      if (message.image_path) await deleteChatPhotos([message.image_path]);
       await deleteMyMessage('group', message.id);
       setMessages((current) =>
         replaceMessage(current, {
           ...message,
           body: '',
           listing_id: null,
+          image_path: null,
           deleted_at: new Date().toISOString(),
         })
       );
@@ -321,6 +333,17 @@ export default function GroupChatScreen() {
     const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
     // A shared listing shows as a card instead of the plain text.
     const listingCard = sharedListing ? <ListingCard listing={sharedListing} compact /> : null;
+    const photoUrl = item.image_path ? photoUrls.get(item.image_path) : undefined;
+    const photoView =
+      !item.deleted_at && item.image_path ? (
+        <ChatPhoto
+          url={photoUrl}
+          failed={failedPhotos.has(item.image_path ?? '')}
+          width={item.image_width ?? null}
+          height={item.image_height ?? null}
+          onPress={() => setViewerUrl(photoUrl ?? null)}
+        />
+      ) : null;
 
     const deletedText = (color: string) => (
       <ThemedText style={[styles.body, styles.deleted, { color }]}>
@@ -335,13 +358,15 @@ export default function GroupChatScreen() {
           delayLongPress={350}
           accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
           style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
+          {photoView}
           {item.deleted_at
             ? deletedText(theme.onPrimary)
-            : (listingCard ?? (
+            : (listingCard ??
+              (item.body ? (
                 <ThemedText style={[styles.body, { color: theme.onPrimary }]}>
                   {item.body}
                 </ThemedText>
-              ))}
+              ) : null))}
           <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>
             {time}
           </ThemedText>
@@ -387,9 +412,11 @@ export default function GroupChatScreen() {
               </ThemedText>
             </Pressable>
           )}
+          {photoView}
           {item.deleted_at
             ? deletedText(theme.textSecondary)
-            : (listingCard ?? <ThemedText style={styles.body}>{item.body}</ThemedText>)}
+            : (listingCard ??
+              (item.body ? <ThemedText style={styles.body}>{item.body}</ThemedText> : null))}
           <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
             {time}
           </ThemedText>
@@ -433,10 +460,7 @@ export default function GroupChatScreen() {
   return (
     <ThemedView style={styles.screen}>
       {header}
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <View style={styles.screen}>
         <View
           style={[styles.tabs, { borderBottomColor: theme.border }]}
           accessibilityRole="tablist">
@@ -522,6 +546,9 @@ export default function GroupChatScreen() {
                   onSend={send}
                   sending={sending}
                   placeholder={t('chats.messagePlaceholder', { name: group.name })}
+                  onPickPhoto={choosePhoto}
+                  photoUri={photo?.uri}
+                  onRemovePhoto={() => setPhoto(null)}
                 />
               ) : (
                 <Pressable
@@ -541,7 +568,9 @@ export default function GroupChatScreen() {
             </View>
           </>
         )}
-      </KeyboardAvoidingView>
+        {/* Grows with the keyboard so the text box stays visible above it. */}
+        <KeyboardSpacer />
+      </View>
 
       <ActionSheet
         visible={!!selected}
@@ -636,6 +665,7 @@ export default function GroupChatScreen() {
         onError={() => setSendError(true)}
       />
       {toast}
+      <PhotoViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
     </ThemedView>
   );
 }

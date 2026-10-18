@@ -3,7 +3,7 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';
 
-export type PreparedImage = { uri: string; mimeType: string };
+export type PreparedImage = { uri: string; mimeType: string; width: number; height: number };
 
 /**
  * Resizes a photo so its longest side is at most `maxSide` pixels and saves it as a JPEG.
@@ -21,9 +21,14 @@ export async function shrinkImage(
     }
     const image = await context.renderAsync();
     const result = await image.saveAsync({ compress: 0.75, format: SaveFormat.JPEG });
-    return { uri: result.uri, mimeType: 'image/jpeg' };
+    return { uri: result.uri, mimeType: 'image/jpeg', width: result.width, height: result.height };
   } catch (error) {
     console.warn('Could not shrink photo, uploading the original', error);
-    return { uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' };
+    return {
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? 'image/jpeg',
+      width: asset.width,
+      height: asset.height,
+    };
   }
 }

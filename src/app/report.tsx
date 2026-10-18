@@ -29,6 +29,8 @@ type ReportParams = {
   privateGroupMessageId?: string;
   listingId?: string;
   snapshot?: string;
+  /** The photo in the reported message, so the team can look at it. */
+  imagePath?: string;
 };
 
 /** Report a person, or one of their messages, to the Chat Pisos team. */
@@ -66,6 +68,7 @@ export default function ReportScreen() {
         privateGroupMessageId: params.privateGroupMessageId,
         listingId: params.listingId,
         messageSnapshot: params.snapshot,
+        imagePath: params.imagePath,
       });
       if (alsoBlock && !blockedIds.has(params.userId)) await block(params.userId);
       setSent(true);

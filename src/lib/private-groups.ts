@@ -3,6 +3,7 @@
 import type { TFunction } from 'i18next';
 
 import { MESSAGES_PAGE_SIZE } from '@/lib/chat';
+import type { ChatPhoto } from '@/lib/chat-photos';
 import { fetchInbox } from '@/lib/direct-messages';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -16,7 +17,7 @@ import type {
 } from '@/types/chat';
 
 const MESSAGE_COLUMNS =
-  'id, group_id, sender_id, body, kind, event, subject_id, listing_id, deleted_at, created_at';
+  'id, group_id, sender_id, body, kind, event, subject_id, listing_id, image_path, image_width, image_height, deleted_at, created_at';
 
 /** At most this many people per group, counting pending invitations (the database enforces it). */
 export const PRIVATE_GROUP_MAX_PEOPLE = 10;
@@ -134,11 +135,12 @@ export async function fetchPrivateGroupMessages(
 
 export async function sendPrivateGroupMessage(
   groupId: string,
-  body: string
+  body: string,
+  photo?: ChatPhoto
 ): Promise<PrivateGroupMessage> {
   const { data, error } = await supabase
     .from('private_group_messages')
-    .insert({ group_id: groupId, body: body.trim() })
+    .insert({ group_id: groupId, body: body.trim(), ...photo })
     .select(MESSAGE_COLUMNS)
     .single();
   if (error) throw error;

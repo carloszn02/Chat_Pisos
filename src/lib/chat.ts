@@ -1,9 +1,13 @@
 /** Reading and writing district group chats. */
 
+import type { ChatPhoto } from '@/lib/chat-photos';
 import { supabase } from '@/lib/supabase';
 import type { ChatGroup, GroupMessage, GroupStats, PublicProfile } from '@/types/chat';
 
 export const MESSAGES_PAGE_SIZE = 50;
+
+const GROUP_MESSAGE_COLUMNS =
+  'id, group_id, user_id, body, listing_id, image_path, image_width, image_height, deleted_at, created_at';
 
 const PUBLIC_PROFILE_COLUMNS =
   'id, first_name, age, occupation, languages, about, avatar_url, schedule, tidiness, smoking, pets';
@@ -76,7 +80,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 export async function fetchMessages(groupId: string, before?: string): Promise<GroupMessage[]> {
   let query = supabase
     .from('group_messages')
-    .select('id, group_id, user_id, body, listing_id, deleted_at, created_at')
+    .select(GROUP_MESSAGE_COLUMNS)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .limit(MESSAGES_PAGE_SIZE);
@@ -161,28 +165,42 @@ export async function fetchLastMessages(groupIds: string[]): Promise<Map<string,
   return map;
 }
 
-export async function sendMessage(groupId: string, body: string): Promise<GroupMessage> {
+export async function sendMessage(
+  groupId: string,
+  body: string,
+  photo?: ChatPhoto
+): Promise<GroupMessage> {
   const { data, error } = await supabase
     .from('group_messages')
-    .insert({ group_id: groupId, body: body.trim() })
-    .select('id, group_id, user_id, body, listing_id, deleted_at, created_at')
+    .insert({ group_id: groupId, body: body.trim(), ...photo })
+    .select(GROUP_MESSAGE_COLUMNS)
     .single();
   if (error) throw error;
   return data;
 }
 
-// Public profiles are cached for the whole session so each author is only fetched once.
+// Public profiles are remembered for a few minutes so each author isn't fetched again and
+// again. Not longer: when someone changes their photo, the old one is deleted, and keeping
+// its address would show an empty photo.
+const AUTHOR_CACHE_MS = 3 * 60 * 1000;
 const authorCache = new Map<string, PublicProfile>();
+const authorFetchedAt = new Map<string, number>();
 
 export async function fetchAuthors(userIds: string[]): Promise<Map<string, PublicProfile>> {
-  const missing = [...new Set(userIds)].filter((id) => !authorCache.has(id));
+  const now = Date.now();
+  const missing = [...new Set(userIds)].filter(
+    (id) => !authorCache.has(id) || now - (authorFetchedAt.get(id) ?? 0) > AUTHOR_CACHE_MS
+  );
   if (missing.length > 0) {
     const { data, error } = await supabase
       .from('public_profiles')
       .select(PUBLIC_PROFILE_COLUMNS)
       .in('id', missing);
     if (error) throw error;
-    for (const profile of data as PublicProfile[]) authorCache.set(profile.id, profile);
+    for (const profile of data as PublicProfile[]) {
+      authorCache.set(profile.id, profile);
+      authorFetchedAt.set(profile.id, now);
+    }
   }
   return new Map(
     userIds.flatMap((id) => (authorCache.has(id) ? [[id, authorCache.get(id)!]] : []))
@@ -197,6 +215,7 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfile 
 /** Forget a cached author, e.g. after the user edits their own profile. */
 export function forgetAuthor(userId: string) {
   authorCache.delete(userId);
+  authorFetchedAt.delete(userId);
 }
 
 /** Unread messages per joined group (messages from blocked users aren't counted). */

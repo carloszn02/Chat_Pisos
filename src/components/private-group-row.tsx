@@ -74,9 +74,10 @@ export function PrivateGroupRow({ group, users, myUserId, muted = false }: Priva
       group.last_message_sender_id === myUserId
         ? t('chats.you')
         : (users.get(group.last_message_sender_id ?? '')?.first_name ?? '');
+    // A photo sent without text shows as "📷 Photo".
     const body = group.last_message_deleted
       ? t('chats.messageDeleted')
-      : (group.last_message_body ?? '');
+      : group.last_message_body || t('chats.photoPreview');
     preview = author ? `${author}: ${body}` : body;
   }
 

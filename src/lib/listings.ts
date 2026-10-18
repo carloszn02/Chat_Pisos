@@ -3,6 +3,7 @@
 import type { ImagePickerAsset } from 'expo-image-picker';
 
 import { fetchGroups, joinGroup } from '@/lib/chat';
+import { readFileBytes } from '@/lib/file-bytes';
 import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import type { Listing, ListingType } from '@/types/listing';
@@ -92,7 +93,7 @@ async function uploadPhoto(
   const contentType = image.mimeType;
   const extension = contentType.split('/')[1] ?? 'jpg';
   const path = `${userId}/${Date.now()}-${index}.${extension}`;
-  const body = await (await fetch(image.uri)).arrayBuffer();
+  const body = await readFileBytes(image.uri);
   const { error } = await supabase.storage.from(PHOTOS_BUCKET).upload(path, body, { contentType });
   if (error) throw error;
   return supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;

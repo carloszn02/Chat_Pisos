@@ -1,10 +1,12 @@
 /** Private 1-to-1 conversations and message requests. */
 
 import { MESSAGES_PAGE_SIZE } from '@/lib/chat';
+import type { ChatPhoto } from '@/lib/chat-photos';
 import { supabase } from '@/lib/supabase';
 import type { Conversation, DirectMessage, InboxItem } from '@/types/chat';
 
-const MESSAGE_COLUMNS = 'id, conversation_id, sender_id, body, listing_id, deleted_at, created_at';
+const MESSAGE_COLUMNS =
+  'id, conversation_id, sender_id, body, listing_id, image_path, image_width, image_height, deleted_at, created_at';
 
 /** Opens (or finds) the conversation with another user and returns its id. */
 export async function startConversation(otherUserId: string): Promise<string> {
@@ -50,11 +52,17 @@ export async function fetchDirectMessages(
 export async function sendDirectMessage(
   conversationId: string,
   body: string,
-  listingId?: string
+  listingId?: string,
+  photo?: ChatPhoto
 ): Promise<DirectMessage> {
   const { data, error } = await supabase
     .from('direct_messages')
-    .insert({ conversation_id: conversationId, body: body.trim(), listing_id: listingId ?? null })
+    .insert({
+      conversation_id: conversationId,
+      body: body.trim(),
+      listing_id: listingId ?? null,
+      ...photo,
+    })
     .select(MESSAGE_COLUMNS)
     .single();
   if (error) throw error;

@@ -115,7 +115,9 @@ export default function ChatsScreen() {
       last.user_id === userId
         ? t('chats.you')
         : (data?.authors.get(last.user_id)?.first_name ?? '');
-    return author ? `${author}: ${last.body}` : last.body;
+    // A photo sent without text shows as "📷 Photo".
+    const text = last.body || t('chats.photoPreview');
+    return author ? `${author}: ${text}` : text;
   }
 
   return (

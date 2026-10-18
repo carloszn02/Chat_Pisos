@@ -22,6 +22,7 @@ export type ReportInput = {
   privateGroupMessageId?: string;
   listingId?: string;
   messageSnapshot?: string;
+  imagePath?: string;
 };
 
 export async function fetchBlockedIds(userId: string): Promise<Set<string>> {
@@ -58,6 +59,7 @@ export async function submitReport(input: ReportInput): Promise<void> {
     private_group_message_id: input.privateGroupMessageId ?? null,
     listing_id: input.listingId ?? null,
     message_snapshot: input.messageSnapshot ?? null,
+    image_path: input.imagePath ?? null,
   });
   if (error) throw error;
 }

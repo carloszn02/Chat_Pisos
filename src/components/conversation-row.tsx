@@ -29,9 +29,12 @@ export function ConversationRow({
   const name = otherUser?.first_name ?? '…';
   const unread = item.unread_count > 0;
 
+  // A photo sent without text shows as "📷 Photo".
   let preview = item.last_message_deleted
     ? t('chats.messageDeleted')
-    : (item.last_message_body ?? '');
+    : item.last_message_at && !item.last_message_body
+      ? t('chats.photoPreview')
+      : (item.last_message_body ?? '');
   if (item.last_message_sender_id === myUserId) preview = `${t('chats.you')}: ${preview}`;
 
   const isSentRequest = item.status === 'pending' && !item.is_incoming_request;
