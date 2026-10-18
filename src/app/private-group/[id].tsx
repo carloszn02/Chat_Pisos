@@ -12,6 +12,7 @@ import { ChatComposer } from '@/components/chat-composer';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
+import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -27,6 +28,7 @@ import {
   fetchJoinRequests,
   fetchPrivateGroup,
   fetchPrivateGroupLastRead,
+  fetchPrivateGroupMessagesByIds,
   fetchPrivateGroupMembers,
   fetchPrivateGroupMessages,
   eventText,
@@ -93,6 +95,12 @@ export default function PrivateGroupScreen() {
   const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
+  // Replies: the message being answered, the menu for your own messages, and the original
+  // briefly highlighted after tapping a quote.
+  const [replyTo, setReplyTo] = useState<PrivateGroupMessage | null>(null);
+  const [mineMenu, setMineMenu] = useState<PrivateGroupMessage | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const quoted = useQuotedMessages(messages, fetchPrivateGroupMessagesByIds);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<PrivateGroupMessage>>(null);
@@ -257,10 +265,11 @@ export default function PrivateGroupScreen() {
       const uploaded = photo
         ? await uploadChatPhoto(userId, 'private_group', id, photo)
         : undefined;
-      const message = await sendPrivateGroupMessage(id, draft, uploaded);
+      const message = await sendPrivateGroupMessage(id, draft, uploaded, replyTo?.id);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
       setPhoto(null);
+      setReplyTo(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setActionError(true);
@@ -319,6 +328,19 @@ export default function PrivateGroupScreen() {
     } catch {
       setActionError(true);
     }
+  }
+
+  function authorName(personId: string): string {
+    return personId === userId ? t('chats.you') : (people.get(personId)?.first_name ?? '…');
+  }
+
+  /** Scrolls to the quoted message and highlights it for a moment. */
+  function jumpTo(messageId: string) {
+    const index = visibleMessages.findIndex((m) => m.id === messageId);
+    if (index === -1) return;
+    listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: true });
+    setHighlightId(messageId);
+    setTimeout(() => setHighlightId((current) => (current === messageId ? null : current)), 1600);
   }
 
   function openProfile(personId: string) {
@@ -471,6 +493,17 @@ export default function PrivateGroupScreen() {
         </ThemedText>
       ) : (
         <>
+          {item.reply_to_id && (
+            <QuotedMessage
+              name={(() => {
+                const original = quoted(item.reply_to_id);
+                return original ? authorName(original.sender_id) : '…';
+              })()}
+              text={quoteText(t, quoted(item.reply_to_id))}
+              mine={isMine}
+              onPress={() => jumpTo(item.reply_to_id ?? '')}
+            />
+          )}
           {item.image_path && (
             <ChatPhoto
               url={photoUrl}
@@ -487,10 +520,15 @@ export default function PrivateGroupScreen() {
     if (isMine) {
       return (
         <Pressable
-          onLongPress={item.deleted_at ? undefined : () => setToDelete(item)}
+          onLongPress={item.deleted_at ? undefined : () => setMineMenu(item)}
           delayLongPress={350}
           accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
-          style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
+          style={[
+            styles.bubble,
+            styles.myBubble,
+            { backgroundColor: theme.primary },
+            highlightId === item.id && styles.highlight,
+          ]}>
           {body(theme.onPrimary)}
           <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>
             {time}
@@ -527,7 +565,12 @@ export default function PrivateGroupScreen() {
           onLongPress={item.deleted_at ? undefined : () => setSelected(item)}
           delayLongPress={350}
           accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
-          style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
+          style={[
+            styles.bubble,
+            styles.theirBubble,
+            { backgroundColor: theme.backgroundElement },
+            highlightId === item.id && styles.highlight,
+          ]}>
           {!continuesPrevious && (
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
               {author ? `${author.first_name}, ${author.age}` : '…'}
@@ -631,6 +674,10 @@ export default function PrivateGroupScreen() {
             onPickPhoto={choosePhoto}
             photoUri={photo?.uri}
             onRemovePhoto={() => setPhoto(null)}
+            replyTo={
+              replyTo ? { name: authorName(replyTo.sender_id), text: quoteText(t, replyTo) } : null
+            }
+            onCancelReply={() => setReplyTo(null)}
           />
         </View>
         {/* Grows with the keyboard so the text box stays visible above it. */}
@@ -676,6 +723,7 @@ export default function PrivateGroupScreen() {
         options={
           selected
             ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(selected) },
                 {
                   label: t('messages.viewProfile'),
                   onPress: () => openProfile(selected.sender_id),
@@ -689,6 +737,22 @@ export default function PrivateGroupScreen() {
             : []
         }
         onClose={() => setSelected(null)}
+      />
+      <ActionSheet
+        visible={!!mineMenu}
+        options={
+          mineMenu
+            ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(mineMenu) },
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => setToDelete(mineMenu),
+                },
+              ]
+            : []
+        }
+        onClose={() => setMineMenu(null)}
       />
       <ActionSheet
         visible={!!toDelete}
@@ -722,6 +786,10 @@ const styles = StyleSheet.create({
   },
   centerText: {
     textAlign: 'center',
+  },
+  // The original message, for a moment after tapping its quote.
+  highlight: {
+    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
   },
   headerButton: {
     paddingHorizontal: Spacing.two,

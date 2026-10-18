@@ -12,6 +12,7 @@ import { ChatComposer } from '@/components/chat-composer';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { GroupListings } from '@/components/group-listings';
 import { ListingCard } from '@/components/listing-card';
+import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { ThemedText } from '@/components/themed-text';
@@ -27,6 +28,7 @@ import {
   fetchAuthors,
   fetchGroupBySlug,
   fetchGroupLastRead,
+  fetchGroupMessagesByIds,
   fetchMessages,
   fetchMyGroupIds,
   joinGroup,
@@ -36,6 +38,7 @@ import {
   sendMessage,
 } from '@/lib/chat';
 import { deleteChatPhotos, pickChatPhoto, uploadChatPhoto } from '@/lib/chat-photos';
+import { startConversation } from '@/lib/direct-messages';
 import { isRateLimitError } from '@/lib/errors';
 import { formatMessageTime, isSameDay } from '@/lib/format';
 import { appUrl } from '@/lib/links';
@@ -94,6 +97,12 @@ export default function GroupChatScreen() {
   const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
+  // Replies: the message being answered, the menu for your own messages, and the original
+  // briefly highlighted after tapping a quote.
+  const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
+  const [mineMenu, setMineMenu] = useState<GroupMessage | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const quoted = useQuotedMessages(messages, fetchGroupMessagesByIds);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<GroupMessage>>(null);
@@ -227,10 +236,11 @@ export default function GroupChatScreen() {
     setRateLimited(false);
     try {
       const uploaded = photo ? await uploadChatPhoto(userId, 'group', group.id, photo) : undefined;
-      const message = await sendMessage(group.id, draft, uploaded);
+      const message = await sendMessage(group.id, draft, uploaded, replyTo?.id);
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
       setPhoto(null);
+      setReplyTo(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setSendError(true);
@@ -258,6 +268,29 @@ export default function GroupChatScreen() {
       await leaveGroup(group.id, userId);
       setIsMember(false);
       if (router.canGoBack()) router.back();
+    } catch {
+      setSendError(true);
+    }
+  }
+
+  function authorName(authorId: string): string {
+    return authorId === userId ? t('chats.you') : (authors.get(authorId)?.first_name ?? '…');
+  }
+
+  /** Scrolls to the quoted message and highlights it for a moment. */
+  function jumpTo(messageId: string) {
+    const index = visibleMessages.findIndex((m) => m.id === messageId);
+    if (index === -1) return;
+    listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: true });
+    setHighlightId(messageId);
+    setTimeout(() => setHighlightId((current) => (current === messageId ? null : current)), 1600);
+  }
+
+  /** Opens a private chat with the listing's owner, with the listing attached. */
+  async function replyPrivately(listingOwnerId: string, listingId: string) {
+    try {
+      const conversationId = await startConversation(listingOwnerId);
+      router.push({ pathname: '/conversation/[id]', params: { id: conversationId, listingId } });
     } catch {
       setSendError(true);
     }
@@ -333,7 +366,40 @@ export default function GroupChatScreen() {
     const time = formatMessageTime(item.created_at, i18n.language);
     const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
     // A shared listing shows as a card instead of the plain text.
-    const listingCard = sharedListing ? <ListingCard listing={sharedListing} compact /> : null;
+    const listingCard = sharedListing ? (
+      <View style={styles.listingShare}>
+        <ListingCard listing={sharedListing} compact />
+        {/* One tap to write to the owner about this listing. */}
+        {sharedListing.user_id !== userId && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => replyPrivately(sharedListing.user_id, sharedListing.id)}
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.replyPrivately,
+              { borderColor: theme.primary },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              {t('chats.replyPrivately')}
+            </ThemedText>
+          </Pressable>
+        )}
+      </View>
+    ) : null;
+    const quote =
+      !item.deleted_at && item.reply_to_id ? (
+        <QuotedMessage
+          name={(() => {
+            const original = quoted(item.reply_to_id);
+            return original ? authorName(original.user_id) : '…';
+          })()}
+          text={quoteText(t, quoted(item.reply_to_id))}
+          mine={isMine}
+          onPress={() => jumpTo(item.reply_to_id ?? '')}
+        />
+      ) : null;
+    const highlighted = highlightId === item.id && styles.highlight;
     const photoUrl = item.image_path ? photoUrls.get(item.image_path) : undefined;
     const photoView =
       !item.deleted_at && item.image_path ? (
@@ -355,10 +421,11 @@ export default function GroupChatScreen() {
     if (isMine) {
       return (
         <Pressable
-          onLongPress={item.deleted_at ? undefined : () => setToDelete(item)}
+          onLongPress={item.deleted_at ? undefined : () => setMineMenu(item)}
           delayLongPress={350}
           accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
-          style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }]}>
+          style={[styles.bubble, styles.myBubble, { backgroundColor: theme.primary }, highlighted]}>
+          {quote}
           {photoView}
           {item.deleted_at
             ? deletedText(theme.onPrimary)
@@ -402,7 +469,12 @@ export default function GroupChatScreen() {
           onLongPress={item.deleted_at ? undefined : () => setSelected(item)}
           delayLongPress={350}
           accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
-          style={[styles.bubble, styles.theirBubble, { backgroundColor: theme.backgroundElement }]}>
+          style={[
+            styles.bubble,
+            styles.theirBubble,
+            { backgroundColor: theme.backgroundElement },
+            highlighted,
+          ]}>
           {!continuesPrevious && (
             <Pressable
               accessibilityRole="link"
@@ -413,6 +485,7 @@ export default function GroupChatScreen() {
               </ThemedText>
             </Pressable>
           )}
+          {quote}
           {photoView}
           {item.deleted_at
             ? deletedText(theme.textSecondary)
@@ -550,6 +623,12 @@ export default function GroupChatScreen() {
                   onPickPhoto={choosePhoto}
                   photoUri={photo?.uri}
                   onRemovePhoto={() => setPhoto(null)}
+                  replyTo={
+                    replyTo
+                      ? { name: authorName(replyTo.user_id), text: quoteText(t, replyTo) }
+                      : null
+                  }
+                  onCancelReply={() => setReplyTo(null)}
                 />
               ) : (
                 <Pressable
@@ -579,6 +658,7 @@ export default function GroupChatScreen() {
         options={
           selected
             ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(selected) },
                 { label: t('messages.viewProfile'), onPress: () => openProfile(selected.user_id) },
                 {
                   label: t('report.reportMessage'),
@@ -611,6 +691,22 @@ export default function GroupChatScreen() {
             : []
         }
         onClose={() => setConfirmBlockId(null)}
+      />
+      <ActionSheet
+        visible={!!mineMenu}
+        options={
+          mineMenu
+            ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(mineMenu) },
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => setToDelete(mineMenu),
+                },
+              ]
+            : []
+        }
+        onClose={() => setMineMenu(null)}
       />
       <ActionSheet
         visible={!!toDelete}
@@ -682,6 +778,20 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     paddingHorizontal: Spacing.two,
+  },
+  listingShare: {
+    gap: Spacing.two,
+  },
+  replyPrivately: {
+    alignSelf: 'flex-start',
+    borderWidth: 1.5,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+  },
+  // The original message, for a moment after tapping its quote.
+  highlight: {
+    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
   },
   menuDots: {
     fontSize: 22,

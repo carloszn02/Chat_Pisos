@@ -17,7 +17,7 @@ import type {
 } from '@/types/chat';
 
 const MESSAGE_COLUMNS =
-  'id, group_id, sender_id, body, kind, event, subject_id, listing_id, image_path, image_width, image_height, deleted_at, created_at';
+  'id, group_id, sender_id, body, kind, event, subject_id, listing_id, image_path, image_width, image_height, reply_to_id, deleted_at, created_at';
 
 /** At most this many people per group, counting pending invitations (the database enforces it). */
 export const PRIVATE_GROUP_MAX_PEOPLE = 10;
@@ -133,14 +133,28 @@ export async function fetchPrivateGroupMessages(
   return data;
 }
 
+/** Specific messages (e.g. older ones quoted by replies). */
+export async function fetchPrivateGroupMessagesByIds(
+  ids: string[]
+): Promise<PrivateGroupMessage[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('private_group_messages')
+    .select(MESSAGE_COLUMNS)
+    .in('id', ids);
+  if (error) throw error;
+  return data;
+}
+
 export async function sendPrivateGroupMessage(
   groupId: string,
   body: string,
-  photo?: ChatPhoto
+  photo?: ChatPhoto,
+  replyToId?: string
 ): Promise<PrivateGroupMessage> {
   const { data, error } = await supabase
     .from('private_group_messages')
-    .insert({ group_id: groupId, body: body.trim(), ...photo })
+    .insert({ group_id: groupId, body: body.trim(), ...photo, reply_to_id: replyToId ?? null })
     .select(MESSAGE_COLUMNS)
     .single();
   if (error) throw error;

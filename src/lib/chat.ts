@@ -7,7 +7,7 @@ import type { ChatGroup, GroupMessage, GroupStats, PublicProfile } from '@/types
 export const MESSAGES_PAGE_SIZE = 50;
 
 const GROUP_MESSAGE_COLUMNS =
-  'id, group_id, user_id, body, listing_id, image_path, image_width, image_height, deleted_at, created_at';
+  'id, group_id, user_id, body, listing_id, image_path, image_width, image_height, reply_to_id, deleted_at, created_at';
 
 const PUBLIC_PROFILE_COLUMNS =
   'id, first_name, age, occupation, languages, about, avatar_url, schedule, tidiness, smoking, pets';
@@ -145,6 +145,17 @@ export async function fetchGroupPreviews(userId: string): Promise<GroupPreviews>
   };
 }
 
+/** Specific messages (e.g. older ones quoted by replies). */
+export async function fetchGroupMessagesByIds(ids: string[]): Promise<GroupMessage[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('group_messages')
+    .select(GROUP_MESSAGE_COLUMNS)
+    .in('id', ids);
+  if (error) throw error;
+  return data;
+}
+
 /** The latest message of each given group, for the previews in the chats list. */
 export async function fetchLastMessages(groupIds: string[]): Promise<Map<string, GroupMessage>> {
   const results = await Promise.all(
@@ -168,11 +179,12 @@ export async function fetchLastMessages(groupIds: string[]): Promise<Map<string,
 export async function sendMessage(
   groupId: string,
   body: string,
-  photo?: ChatPhoto
+  photo?: ChatPhoto,
+  replyToId?: string
 ): Promise<GroupMessage> {
   const { data, error } = await supabase
     .from('group_messages')
-    .insert({ group_id: groupId, body: body.trim(), ...photo })
+    .insert({ group_id: groupId, body: body.trim(), ...photo, reply_to_id: replyToId ?? null })
     .select(GROUP_MESSAGE_COLUMNS)
     .single();
   if (error) throw error;

@@ -41,6 +41,8 @@ export type GroupMessage = {
   image_path?: string | null;
   image_width?: number | null;
   image_height?: number | null;
+  /** The earlier message this one replies to ("Responder"), if any. */
+  reply_to_id?: string | null;
   created_at: string;
 };
 
@@ -98,6 +100,8 @@ export type DirectMessage = {
   image_path?: string | null;
   image_width?: number | null;
   image_height?: number | null;
+  /** The earlier message this one replies to ("Responder"), if any. */
+  reply_to_id?: string | null;
   created_at: string;
 };
 
@@ -170,5 +174,7 @@ export type PrivateGroupMessage = {
   image_path?: string | null;
   image_width?: number | null;
   image_height?: number | null;
+  /** The earlier message this one replies to ("Responder"), if any. */
+  reply_to_id?: string | null;
   created_at: string;
 };

@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { ReplyBar } from '@/components/message-reply';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,6 +19,9 @@ type ChatComposerProps = {
   /** The chosen photo, shown small above the text box until it's sent. */
   photoUri?: string | null;
   onRemovePhoto?: () => void;
+  /** The message being replied to, shown above the text box with ✕ to cancel. */
+  replyTo?: { name: string; text: string } | null;
+  onCancelReply?: () => void;
 };
 
 /** The text box, photo button and send button at the bottom of a chat. */
@@ -30,6 +34,8 @@ export function ChatComposer({
   onPickPhoto,
   photoUri,
   onRemovePhoto,
+  replyTo,
+  onCancelReply,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -37,6 +43,9 @@ export function ChatComposer({
 
   return (
     <View style={styles.wrap}>
+      {replyTo && (
+        <ReplyBar name={replyTo.name} text={replyTo.text} onCancel={() => onCancelReply?.()} />
+      )}
       {photoUri && (
         <View style={styles.preview}>
           <Image source={{ uri: photoUri }} style={styles.previewImage} contentFit="cover" />

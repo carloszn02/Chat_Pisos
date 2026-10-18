@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import type { Conversation, DirectMessage, InboxItem } from '@/types/chat';
 
 const MESSAGE_COLUMNS =
-  'id, conversation_id, sender_id, body, listing_id, image_path, image_width, image_height, deleted_at, created_at';
+  'id, conversation_id, sender_id, body, listing_id, image_path, image_width, image_height, reply_to_id, deleted_at, created_at';
 
 /** Opens (or finds) the conversation with another user and returns its id. */
 export async function startConversation(otherUserId: string): Promise<string> {
@@ -48,12 +48,24 @@ export async function fetchDirectMessages(
   return data;
 }
 
+/** Specific messages (e.g. older ones quoted by replies). */
+export async function fetchDirectMessagesByIds(ids: string[]): Promise<DirectMessage[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('direct_messages')
+    .select(MESSAGE_COLUMNS)
+    .in('id', ids);
+  if (error) throw error;
+  return data;
+}
+
 /** Sends a private message, optionally about a listing (shown as a card above the text). */
 export async function sendDirectMessage(
   conversationId: string,
   body: string,
   listingId?: string,
-  photo?: ChatPhoto
+  photo?: ChatPhoto,
+  replyToId?: string
 ): Promise<DirectMessage> {
   const { data, error } = await supabase
     .from('direct_messages')
@@ -62,6 +74,7 @@ export async function sendDirectMessage(
       body: body.trim(),
       listing_id: listingId ?? null,
       ...photo,
+      reply_to_id: replyToId ?? null,
     })
     .select(MESSAGE_COLUMNS)
     .single();

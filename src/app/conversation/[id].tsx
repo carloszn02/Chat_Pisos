@@ -11,6 +11,7 @@ import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/cha
 import { ChatComposer } from '@/components/chat-composer';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { ListingCard } from '@/components/listing-card';
+import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { ThemedText } from '@/components/themed-text';
@@ -23,6 +24,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchPublicProfile, MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import {
   fetchConversation,
+  fetchDirectMessagesByIds,
   fetchDirectMessages,
   markConversationRead,
   respondToRequest,
@@ -77,6 +79,12 @@ export default function ConversationScreen() {
   const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const { urls: photoUrls, failed: failedPhotos } = useChatPhotoUrls(messages);
+  // Replies: the message being answered, the menu for your own messages, and the original
+  // briefly highlighted after tapping a quote.
+  const [replyTo, setReplyTo] = useState<DirectMessage | null>(null);
+  const [mineMenu, setMineMenu] = useState<DirectMessage | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const quoted = useQuotedMessages(messages, fetchDirectMessagesByIds);
   // The first message you hadn't read when you opened the chat ("3 new messages" goes above it).
   const [firstUnread, setFirstUnread] = useState<{ id: string; count: number } | null>(null);
   const listRef = useRef<FlatList<DirectMessage>>(null);
@@ -215,11 +223,18 @@ export default function ConversationScreen() {
     setRateLimited(false);
     try {
       const uploaded = photo ? await uploadChatPhoto(userId, 'conversation', id, photo) : undefined;
-      const message = await sendDirectMessage(id, draft, attachedListingId ?? undefined, uploaded);
+      const message = await sendDirectMessage(
+        id,
+        draft,
+        attachedListingId ?? undefined,
+        uploaded,
+        replyTo?.id
+      );
       setMessages((current) => mergeMessages(current, [message]));
       setDraft('');
       setAttachedListingId(null);
       setPhoto(null);
+      setReplyTo(null);
     } catch (error) {
       if (isRateLimitError(error)) setRateLimited(true);
       else setActionError(true);
@@ -290,6 +305,19 @@ export default function ConversationScreen() {
     router.push({ pathname: '/user/[id]', params: { id: otherId } });
   }
 
+  function authorName(senderId: string): string {
+    return senderId === userId ? t('chats.you') : (otherUser?.first_name ?? '…');
+  }
+
+  /** Scrolls to the quoted message and highlights it for a moment. */
+  function jumpTo(messageId: string) {
+    const index = messages.findIndex((m) => m.id === messageId);
+    if (index === -1) return;
+    listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: true });
+    setHighlightId(messageId);
+    setTimeout(() => setHighlightId((current) => (current === messageId ? null : current)), 1600);
+  }
+
   function report(message?: DirectMessage) {
     router.push({
       pathname: '/report',
@@ -354,7 +382,7 @@ export default function ConversationScreen() {
     return (
       <Pressable
         onLongPress={
-          item.deleted_at ? undefined : () => (isMine ? setToDelete(item) : setSelected(item))
+          item.deleted_at ? undefined : () => (isMine ? setMineMenu(item) : setSelected(item))
         }
         delayLongPress={350}
         accessibilityHint={item.deleted_at ? undefined : t('chats.messageOptionsHint')}
@@ -363,6 +391,7 @@ export default function ConversationScreen() {
           isMine
             ? [styles.myBubble, { backgroundColor: theme.primary }]
             : [styles.theirBubble, { backgroundColor: theme.backgroundElement }],
+          highlightId === item.id && styles.highlight,
         ]}>
         {item.deleted_at ? (
           <ThemedText style={[styles.body, styles.deleted, { color: textColor }]}>
@@ -370,6 +399,17 @@ export default function ConversationScreen() {
           </ThemedText>
         ) : (
           <>
+            {item.reply_to_id && (
+              <QuotedMessage
+                name={(() => {
+                  const original = quoted(item.reply_to_id);
+                  return original ? authorName(original.sender_id) : '…';
+                })()}
+                text={quoteText(t, quoted(item.reply_to_id))}
+                mine={isMine}
+                onPress={() => jumpTo(item.reply_to_id ?? '')}
+              />
+            )}
             {item.image_path && (
               <ChatPhoto
                 url={photoUrls.get(item.image_path)}
@@ -535,6 +575,12 @@ export default function ConversationScreen() {
                 onPickPhoto={conversation.status === 'accepted' ? choosePhoto : undefined}
                 photoUri={photo?.uri}
                 onRemovePhoto={() => setPhoto(null)}
+                replyTo={
+                  replyTo
+                    ? { name: authorName(replyTo.sender_id), text: quoteText(t, replyTo) }
+                    : null
+                }
+                onCancelReply={() => setReplyTo(null)}
               />
             </>
           )}
@@ -575,6 +621,7 @@ export default function ConversationScreen() {
         options={
           selected
             ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(selected) },
                 {
                   label: t('report.reportMessage'),
                   destructive: true,
@@ -584,6 +631,22 @@ export default function ConversationScreen() {
             : []
         }
         onClose={() => setSelected(null)}
+      />
+      <ActionSheet
+        visible={!!mineMenu}
+        options={
+          mineMenu
+            ? [
+                { label: t('chats.reply'), onPress: () => setReplyTo(mineMenu) },
+                {
+                  label: t('chats.deleteMessage'),
+                  destructive: true,
+                  onPress: () => setToDelete(mineMenu),
+                },
+              ]
+            : []
+        }
+        onClose={() => setMineMenu(null)}
       />
       <ActionSheet
         visible={!!toDelete}
@@ -621,6 +684,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,
+  },
+  // The original message, for a moment after tapping its quote.
+  highlight: {
+    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
   },
   headerButton: {
     flexDirection: 'row',
