@@ -1,16 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
@@ -103,9 +97,7 @@ export default function MessagesScreen() {
               onChange={chooseSection}
             />
 
-            {!data && !loadError && (
-              <ActivityIndicator color={theme.primary} style={styles.loader} />
-            )}
+            {!data && !loadError && <RowsSkeleton />}
 
             {loadError && (
               <View style={styles.errorBox}>
@@ -222,9 +214,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: Spacing.one,
-  },
-  loader: {
-    marginTop: Spacing.five,
   },
   errorBox: {
     flexDirection: 'row',

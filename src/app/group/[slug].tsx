@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
@@ -449,7 +450,7 @@ export default function GroupChatScreen() {
       <ThemedView style={[styles.screen, styles.centered]}>
         {header}
         {loading ? (
-          <ActivityIndicator color={theme.primary} />
+          <ChatSkeleton />
         ) : (
           <ThemedText themeColor="textSecondary">{t('chats.loadError')}</ThemedText>
         )}

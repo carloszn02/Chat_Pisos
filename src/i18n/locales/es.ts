@@ -235,6 +235,7 @@ const es = {
   common: {
     cancel: 'Cancelar',
     close: 'Cerrar',
+    loading: 'Cargando',
   },
   report: {
     action: 'Denunciar',

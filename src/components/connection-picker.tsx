@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RowsSkeleton } from '@/components/skeleton';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -68,7 +69,7 @@ export function ConnectionPicker({
       </ThemedText>
     );
   }
-  if (!people) return <ActivityIndicator color={theme.primary} />;
+  if (!people) return <RowsSkeleton count={3} />;
   if (available.length === 0) {
     return (
       <ThemedText themeColor="textSecondary" style={styles.empty}>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ListingCardsSkeleton } from '@/components/skeleton';
 import { ListingCard, ListingMiniCard } from '@/components/listing-card';
 import { ListingsMap } from '@/components/listings-map';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -399,9 +400,7 @@ export default function ListingsScreen() {
           <View style={styles.content}>
             {filtersBlock}
 
-            {!listings && !loadError && (
-              <ActivityIndicator color={theme.primary} style={styles.loader} />
-            )}
+            {!listings && !loadError && <ListingCardsSkeleton />}
 
             {listings && shown.length === 0 && (
               <ThemedText themeColor="textSecondary" style={styles.empty}>
@@ -527,9 +526,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     fontSize: 15,
-  },
-  loader: {
-    marginTop: Spacing.five,
   },
   empty: {
     marginTop: Spacing.three,

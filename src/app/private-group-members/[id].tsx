@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
+import { RowsSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ConnectionPicker } from '@/components/connection-picker';
@@ -200,7 +201,9 @@ export default function PrivateGroupMembersScreen() {
         {error ? (
           <ThemedText themeColor="textSecondary">{t('privateGroups.errors.generic')}</ThemedText>
         ) : (
-          <ActivityIndicator color={theme.primary} />
+          <View style={styles.skeleton}>
+            <RowsSkeleton count={4} />
+          </View>
         )}
       </ThemedView>
     );
@@ -493,6 +496,14 @@ const styles = StyleSheet.create({
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  skeleton: {
+    alignSelf: 'stretch',
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    marginHorizontal: 'auto',
+    padding: Spacing.four,
+    flex: 1,
   },
   content: {
     width: '100%',

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { DetailSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
@@ -84,9 +85,7 @@ export default function UserProfileScreen() {
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: profile?.first_name ?? '' }} />
       {loading ? (
-        <View style={[styles.screen, styles.centered]}>
-          <ActivityIndicator color={theme.primary} />
-        </View>
+        <DetailSkeleton photo={false} />
       ) : !profile ? (
         <View style={[styles.screen, styles.centered]}>
           <ThemedText themeColor="textSecondary">{t('messages.userNotFound')}</ThemedText>

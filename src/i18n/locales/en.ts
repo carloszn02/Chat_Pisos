@@ -236,6 +236,7 @@ const en: typeof es = {
   common: {
     cancel: 'Cancel',
     close: 'Close',
+    loading: 'Loading',
   },
   report: {
     action: 'Report',

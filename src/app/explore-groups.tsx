@@ -2,7 +2,6 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { CardGridSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { DistrictCard } from '@/components/district-card';
 import { ThemedText } from '@/components/themed-text';
@@ -143,7 +143,7 @@ export default function ExploreGroupsScreen() {
               {t('chats.loadError')}
             </ThemedText>
           )}
-          {!groups && !error && <ActivityIndicator color={theme.primary} />}
+          {!groups && !error && <CardGridSkeleton count={columns * 2} cardWidth={cardWidth} />}
 
           {groups && cityGroups.length === 0 && (
             <ThemedText themeColor="textSecondary" style={styles.noResults}>

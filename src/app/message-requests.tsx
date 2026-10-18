@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { RowsSkeleton } from '@/components/skeleton';
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
@@ -33,7 +34,7 @@ export default function MessageRequestsScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
             {showGroups ? t('messages.invitationsIntro') : t('messages.requestsIntro')}
           </ThemedText>
-          {!data && !loadError && <ActivityIndicator color={theme.primary} />}
+          {!data && !loadError && <RowsSkeleton count={3} />}
           {loadError && (
             <ThemedText type="small" style={{ color: theme.danger }}>
               {t('messages.loadError')}

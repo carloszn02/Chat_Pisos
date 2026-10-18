@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { DetailSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
@@ -161,7 +162,7 @@ export default function ListingDetailScreen() {
       <ThemedView style={[styles.screen, styles.centered]}>
         <Stack.Screen options={{ title: '' }} />
         {loading ? (
-          <ActivityIndicator color={theme.primary} />
+          <DetailSkeleton />
         ) : (
           <ThemedText themeColor="textSecondary">{t('listings.notFound')}</ThemedText>
         )}

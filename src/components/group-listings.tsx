@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ListingCardsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -65,7 +66,7 @@ export function GroupListings({ group }: { group: ChatGroup }) {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
       }>
-      {!listings && !loadError && <ActivityIndicator color={theme.primary} />}
+      {!listings && !loadError && <ListingCardsSkeleton count={2} />}
       {loadError && (
         <ThemedText type="small" style={{ color: theme.danger }}>
           {t('listings.loadError')}

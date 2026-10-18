@@ -1,8 +1,9 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { RowsSkeleton } from '@/components/skeleton';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -67,7 +68,7 @@ export default function BlockedUsersScreen() {
           {ids.length === 0 ? (
             <ThemedText themeColor="textSecondary">{t('blocked.empty')}</ThemedText>
           ) : !users ? (
-            <ActivityIndicator color={theme.primary} />
+            <RowsSkeleton count={Math.min(ids.length, 5)} />
           ) : (
             ids.map((id) => {
               const user = users.get(id);
