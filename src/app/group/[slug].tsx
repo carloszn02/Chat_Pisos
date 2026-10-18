@@ -1,4 +1,4 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -9,8 +9,10 @@ import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { GroupListings } from '@/components/group-listings';
+import { GroupTile } from '@/components/group-tile';
 import { ListingCard } from '@/components/listing-card';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
@@ -29,6 +31,7 @@ import {
   fetchGroupBySlug,
   fetchGroupLastRead,
   fetchGroupMessagesByIds,
+  fetchGroupStats,
   fetchMessages,
   fetchMyGroupIds,
   joinGroup,
@@ -76,6 +79,8 @@ export default function GroupChatScreen() {
 
   const [group, setGroup] = useState<ChatGroup | null>(null);
   const [isMember, setIsMember] = useState(false);
+  // For the line under the group's name at the top ("128 members").
+  const [memberCount, setMemberCount] = useState<number | null>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]); // newest first
   const [authors, setAuthors] = useState<Map<string, PublicProfile>>(new Map());
   const [listings, setListings] = useState<Map<string, Listing>>(new Map());
@@ -499,10 +504,44 @@ export default function GroupChatScreen() {
     );
   }
 
+  // Coming back from the group's page: you may have joined or left there.
+  useFocusEffect(
+    useCallback(() => {
+      if (!groupId || !userId) return;
+      let cancelled = false;
+      Promise.all([fetchMyGroupIds(userId), fetchGroupStats()])
+        .then(([mine, stats]) => {
+          if (cancelled) return;
+          setIsMember(mine.has(groupId));
+          setMemberCount(stats.get(groupId)?.member_count ?? null);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [groupId, userId])
+  );
+
   const header = (
     <Stack.Screen
       options={{
         title: group?.name ?? '',
+        // Tapping the name opens the group's page (like WhatsApp's group info).
+        headerTitle: () =>
+          group ? (
+            <ChatHeaderTitle
+              title={group.name}
+              subtitle={
+                memberCount !== null
+                  ? t('chats.memberCount', { count: memberCount })
+                  : t('chats.tapForInfo')
+              }
+              picture={<GroupTile group={group} size={34} />}
+              onPress={() =>
+                router.push({ pathname: '/group-info/[slug]', params: { slug: group.slug } })
+              }
+            />
+          ) : undefined,
         headerRight: () =>
           group ? (
             <Pressable

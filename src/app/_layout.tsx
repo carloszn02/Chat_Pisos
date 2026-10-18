@@ -142,6 +142,7 @@ function RootNavigator() {
         <Stack.Screen name="delete-account" options={headerOptions} />
         <Stack.Screen name="suggest-area" options={headerOptions} />
         <Stack.Screen name="explore-groups" options={headerOptions} />
+        <Stack.Screen name="group-info/[slug]" options={headerOptions} />
         <Stack.Screen name="new-private-group" options={headerOptions} />
         <Stack.Screen name="private-group/[id]" options={headerOptions} />
         <Stack.Screen name="private-group-members/[id]" options={headerOptions} />

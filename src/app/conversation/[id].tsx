@@ -9,6 +9,7 @@ import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { ListingCard } from '@/components/listing-card';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
@@ -264,6 +265,16 @@ export default function ConversationScreen() {
     <Stack.Screen
       options={{
         title: otherUser ? `${otherUser.first_name}, ${otherUser.age}` : '',
+        // Tapping the photo and name opens their profile (like WhatsApp).
+        headerTitle: () =>
+          otherUser ? (
+            <ChatHeaderTitle
+              title={`${otherUser.first_name}, ${otherUser.age}`}
+              subtitle={t('chats.seeProfile')}
+              picture={<Avatar uri={otherUser.avatar_url} name={otherUser.first_name} size={34} />}
+              onPress={openProfile}
+            />
+          ) : null,
         headerRight: () =>
           otherUser ? (
             <Pressable
@@ -272,7 +283,6 @@ export default function ConversationScreen() {
               onPress={() => setMenuOpen(true)}
               hitSlop={8}
               style={styles.headerButton}>
-              <Avatar uri={otherUser.avatar_url} name={otherUser.first_name} size={32} />
               <ThemedText style={styles.menuDots}>⋯</ThemedText>
             </Pressable>
           ) : null,

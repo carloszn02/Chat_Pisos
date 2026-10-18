@@ -9,10 +9,12 @@ import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
 import { ChatComposer } from '@/components/chat-composer';
+import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
+import { PrivateGroupBadge } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -365,10 +367,30 @@ export default function PrivateGroupScreen() {
     : -1;
   const onScrollToIndexFailed = useJumpToUnread(listRef, firstUnreadIndex);
 
+  // Under the group's name: who's in it.
+  const headerMembers = members
+    .filter((m) => m.status === 'member')
+    .map((m) =>
+      m.user_id === userId ? t('chats.you') : (people.get(m.user_id)?.first_name ?? '…')
+    )
+    .join(', ');
+
   const header = (
     <Stack.Screen
       options={{
         title: group?.name ?? '',
+        // Tapping the name opens the members page (like WhatsApp's group info).
+        headerTitle: () =>
+          group && isMember ? (
+            <ChatHeaderTitle
+              title={group.name}
+              subtitle={headerMembers}
+              picture={<PrivateGroupBadge name={group.name} size={34} />}
+              onPress={() =>
+                router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } })
+              }
+            />
+          ) : undefined,
         headerRight: () =>
           isMember ? (
             <Pressable
@@ -589,17 +611,6 @@ export default function PrivateGroupScreen() {
     <ThemedView style={styles.screen}>
       {header}
       <View style={styles.screen}>
-        <Pressable
-          accessibilityRole="link"
-          onPress={() =>
-            router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } })
-          }
-          style={[styles.membersBar, { backgroundColor: theme.backgroundSelected }]}>
-          <ThemedText type="small" numberOfLines={1} style={styles.centerText}>
-            {memberNames}
-          </ThemedText>
-        </Pressable>
-
         {pendingRequests > 0 && (
           <Pressable
             accessibilityRole="link"
@@ -821,10 +832,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  membersBar: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
   },
   requestsBar: {
     flexDirection: 'row',
