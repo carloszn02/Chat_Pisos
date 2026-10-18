@@ -18,6 +18,8 @@ export type MapLibreMap = {
   addControl(control: unknown, position?: string): void;
   on(event: 'click', handler: (event: { lngLat: LngLat }) => void): void;
   on(event: 'load', handler: () => void): void;
+  on(event: 'moveend', handler: (event: { originalEvent?: unknown }) => void): void;
+  getBounds(): { getNorth(): number; getSouth(): number; getEast(): number; getWest(): number };
   fitBounds(bounds: unknown, options: Record<string, unknown>): void;
   jumpTo(options: Record<string, unknown>): void;
   addSource(id: string, source: unknown): void;

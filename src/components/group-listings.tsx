@@ -1,15 +1,8 @@
-import { Link } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ListingCard } from '@/components/listing-card';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -83,13 +76,11 @@ export function GroupListings({ group }: { group: ChatGroup }) {
           <ThemedText themeColor="textSecondary" style={styles.centered}>
             {t('chats.noListingsHere', { name: group.name })}
           </ThemedText>
-          <Link href="/publish" asChild>
-            <Pressable accessibilityRole="link" hitSlop={8}>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                + {t('tabs.publish')}
-              </ThemedText>
-            </Pressable>
-          </Link>
+          <PressableLink href="/publish" accessibilityRole="link" hitSlop={8}>
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              + {t('tabs.publish')}
+            </ThemedText>
+          </PressableLink>
         </View>
       )}
       {listings?.map((listing) => (

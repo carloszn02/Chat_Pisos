@@ -1,4 +1,4 @@
-import { Link, Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { DistrictCard } from '@/components/district-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -164,23 +165,21 @@ export default function ExploreGroupsScreen() {
             ))}
           </View>
 
-          <Link href="/suggest-area" asChild>
-            <Pressable
-              accessibilityRole="link"
-              style={({ pressed }) => [
-                styles.suggestBox,
-                { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
-                pressed && styles.pressed,
-              ]}>
-              <View style={styles.flex}>
-                <ThemedText style={styles.bold}>{t('chats.suggestTitle')}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('chats.suggestHint')}
-                </ThemedText>
-              </View>
-              <ThemedText style={{ color: theme.primary }}>›</ThemedText>
-            </Pressable>
-          </Link>
+          <PressableLink
+            href="/suggest-area"
+            accessibilityRole="link"
+            style={[
+              styles.suggestBox,
+              { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+            ]}>
+            <View style={styles.flex}>
+              <ThemedText style={styles.bold}>{t('chats.suggestTitle')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('chats.suggestHint')}
+              </ThemedText>
+            </View>
+            <ThemedText style={{ color: theme.primary }}>›</ThemedText>
+          </PressableLink>
         </View>
       </ScrollView>
     </ThemedView>

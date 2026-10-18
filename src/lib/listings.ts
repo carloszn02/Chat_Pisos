@@ -5,6 +5,7 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { fetchGroups, joinGroup } from '@/lib/chat';
 import { readFileBytes } from '@/lib/file-bytes';
 import { shrinkImage } from '@/lib/images';
+import type { MapBounds } from '@/lib/map';
 import { supabase } from '@/lib/supabase';
 import type { Listing, ListingType } from '@/types/listing';
 
@@ -30,7 +31,12 @@ export type ListingFilters = {
   /** A district or neighbourhood. Listings in a district's neighbourhoods match the district too. */
   areaId: string | null;
   maxPrice: number | null;
+  /** Only listings inside this part of the map ("search this area"). */
+  bounds?: MapBounds | null;
 };
+
+/** How many listings an area search shows at most. */
+export const AREA_SEARCH_LIMIT = 200;
 
 /** Everything a listing form saves, except photos. */
 export type ListingValues = Omit<
@@ -46,7 +52,14 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
     // Your own expired listings are still readable for you, but don't belong in the list.
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
-    .limit(LISTINGS_PAGE_SIZE);
+    .limit(filters.bounds ? AREA_SEARCH_LIMIT : LISTINGS_PAGE_SIZE);
+  if (filters.bounds) {
+    query = query
+      .gte('latitude', filters.bounds.south)
+      .lte('latitude', filters.bounds.north)
+      .gte('longitude', filters.bounds.west)
+      .lte('longitude', filters.bounds.east);
+  }
   if (filters.type) query = query.eq('type', filters.type);
   if (filters.cityId) query = query.eq('city_id', filters.cityId);
   if (filters.areaId) query = query.contains('area_ids', [filters.areaId]);

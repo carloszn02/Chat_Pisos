@@ -12,7 +12,14 @@ import { loadMapLibre, type MapLibreMap, type MapLibreMarker } from '@/lib/mapli
 const STYLE_ID = 'listing-pin-style';
 
 /** Web version of ListingsMap: draws the map straight into the page. */
-export function ListingsMap({ pins, selectedId, onSelect, height }: ListingsMapProps) {
+export function ListingsMap({
+  pins,
+  selectedId,
+  onSelect,
+  onMove,
+  fitToPins,
+  style,
+}: ListingsMapProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const color = theme.primary;
@@ -21,13 +28,17 @@ export function ListingsMap({ pins, selectedId, onSelect, height }: ListingsMapP
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Keep the latest callback and selection without rebuilding the map.
+  // Keep the latest callbacks and settings without rebuilding the map.
   const onSelectRef = useRef(onSelect);
+  const onMoveRef = useRef(onMove);
   const selectedRef = useRef(selectedId);
+  const fitRef = useRef(fitToPins);
   useEffect(() => {
     onSelectRef.current = onSelect;
+    onMoveRef.current = onMove;
     selectedRef.current = selectedId;
-  }, [onSelect, selectedId]);
+    fitRef.current = fitToPins;
+  }, [onSelect, onMove, selectedId, fitToPins]);
 
   // The map itself, made once.
   useEffect(() => {
@@ -47,11 +58,20 @@ export function ListingsMap({ pins, selectedId, onSelect, height }: ListingsMapP
           center: [DEFAULT_MAP_CENTER.longitude, DEFAULT_MAP_CENTER.latitude],
           zoom: 11.5,
           attributionControl: { compact: true },
-          // Scrolling the page shouldn't zoom the map by accident (Ctrl + scroll zooms).
-          cooperativeGestures: true,
         });
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
         map.on('click', () => onSelectRef.current(null));
+        // Only report moves the person made (not the app zooming to fit the pins).
+        map.on('moveend', (event) => {
+          if (!event.originalEvent) return;
+          const b = map.getBounds();
+          onMoveRef.current({
+            north: b.getNorth(),
+            south: b.getSouth(),
+            east: b.getEast(),
+            west: b.getWest(),
+          });
+        });
         // Fold the map credits into the small (i) button so they don't cover the pins.
         map.on('load', () => {
           containerRef.current
@@ -92,9 +112,11 @@ export function ListingsMap({ pins, selectedId, onSelect, height }: ListingsMapP
       );
       bounds.extend([pin.longitude, pin.latitude]);
     }
-    if (pins.length > 1) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 });
-    else if (pins.length === 1) {
-      map.jumpTo({ center: [pins[0].longitude, pins[0].latitude], zoom: 14 });
+    if (fitRef.current) {
+      if (pins.length > 1) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 });
+      else if (pins.length === 1) {
+        map.jumpTo({ center: [pins[0].longitude, pins[0].latitude], zoom: 14 });
+      }
     }
     return () => markers.forEach((marker) => marker.remove());
   }, [pins, ready]);
@@ -112,7 +134,8 @@ export function ListingsMap({ pins, selectedId, onSelect, height }: ListingsMapP
     <View
       style={[
         styles.container,
-        { height, borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+        { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+        style,
       ]}>
       {failed ? (
         <View style={styles.failed}>

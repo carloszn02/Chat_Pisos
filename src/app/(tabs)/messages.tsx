@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -83,19 +83,14 @@ export default function MessagesScreen() {
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('messages.title')}</ThemedText>
               {section === 'groups' && (
-                <Link href="/new-private-group" asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.newGroup,
-                      { borderColor: theme.primary },
-                      pressed && styles.pressed,
-                    ]}>
-                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                      + {t('privateGroups.newButton')}
-                    </ThemedText>
-                  </Pressable>
-                </Link>
+                <PressableLink
+                  href="/new-private-group"
+                  accessibilityRole="button"
+                  style={[styles.newGroup, { borderColor: theme.primary }]}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    + {t('privateGroups.newButton')}
+                  </ThemedText>
+                </PressableLink>
               )}
             </View>
 
@@ -132,21 +127,20 @@ export default function MessagesScreen() {
                   <ThemedText type="smallBold" themeColor="textSecondary">
                     {section === 'groups' ? t('messages.yourGroups') : t('messages.yourChats')}
                   </ThemedText>
-                  <Link
+                  <PressableLink
                     href={{
                       pathname: '/message-requests',
                       params: { kind: section === 'groups' ? 'groups' : 'messages' },
                     }}
-                    asChild>
-                    <Pressable accessibilityRole="link" hitSlop={10}>
-                      <ThemedText
-                        type={pending > 0 ? 'smallBold' : 'small'}
-                        style={{ color: pending > 0 ? theme.primary : theme.textSecondary }}>
-                        {section === 'groups' ? t('messages.invitations') : t('messages.requests')}
-                        {pending > 0 ? ` (${pending})` : ''}
-                      </ThemedText>
-                    </Pressable>
-                  </Link>
+                    accessibilityRole="link"
+                    hitSlop={10}>
+                    <ThemedText
+                      type={pending > 0 ? 'smallBold' : 'small'}
+                      style={{ color: pending > 0 ? theme.primary : theme.textSecondary }}>
+                      {section === 'groups' ? t('messages.invitations') : t('messages.requests')}
+                      {pending > 0 ? ` (${pending})` : ''}
+                    </ThemedText>
+                  </PressableLink>
                 </View>
 
                 {section === 'groups' ? (

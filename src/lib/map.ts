@@ -142,7 +142,8 @@ export function parseMapMessage(data: unknown): MapMessage | null {
 }
 
 // ---------------------------------------------------------------------------
-// The map of many listings (Listings tab › Map): one price label per listing.
+// The map of many listings (Listings tab › Map): one price label per listing, and the
+// visible area reported back so the app can "search this area".
 
 /** One listing on the map. */
 export type ListingPin = {
@@ -153,16 +154,27 @@ export type ListingPin = {
   label: string;
 };
 
+/** The visible part of the map, in degrees. */
+export type MapBounds = { north: number; south: number; east: number; west: number };
+
 /** Where the map starts when there are no listings to show (central Madrid). */
 export const DEFAULT_MAP_CENTER = { latitude: 40.4168, longitude: -3.7038 };
 
-export type ListingsMapMessage = { type: 'select'; id: string | null };
+export type ListingsMapMessage =
+  { type: 'ready' } | { type: 'select'; id: string | null } | ({ type: 'moved' } & MapBounds);
 
 export function parseListingsMapMessage(data: unknown): ListingsMapMessage | null {
   if (typeof data !== 'string') return null;
   try {
     const message = JSON.parse(data);
+    if (message?.type === 'ready') return message;
     if (message?.type === 'select' && (typeof message.id === 'string' || message.id === null)) {
+      return message;
+    }
+    if (
+      message?.type === 'moved' &&
+      ['north', 'south', 'east', 'west'].every((key) => typeof message[key] === 'number')
+    ) {
       return message;
     }
   } catch {
@@ -179,9 +191,13 @@ export function listingPinCss(color: string): string {
 .pin.selected { background: ${color}; color: #FFFFFF; z-index: 2; }`;
 }
 
-/** A full web page with the listings map, for the phone WebView. */
-export function buildListingsMapHtml(pins: ListingPin[], color: string): string {
-  const config = JSON.stringify({ pins, color, style: MAP_STYLE_URL, center: DEFAULT_MAP_CENTER });
+/**
+ * A web page with the listings map, for the phone WebView. The map is made once; the app
+ * then calls window.setPins(pins, fit) and window.setSelected(id) as things change, and
+ * the page sends back 'ready', 'select' and 'moved' (only when the person moved the map).
+ */
+export function buildListingsMapHtml(color: string): string {
+  const config = JSON.stringify({ color, style: MAP_STYLE_URL, center: DEFAULT_MAP_CENTER });
   return `<!doctype html>
 <html>
 <head>
@@ -197,14 +213,14 @@ ${listingPinCss(color)}</style>
 <script src="${MAPLIBRE_JS.url}" integrity="${MAPLIBRE_JS.integrity}" crossorigin="anonymous"></script>
 <script>
   var config = ${config};
-  var elements = {};
-  function send(id) {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'select', id: id }));
+  var markers = [];
+  var selectedId = null;
+  function send(message) {
+    window.ReactNativeWebView.postMessage(JSON.stringify(message));
   }
   window.setSelected = function (id) {
-    Object.keys(elements).forEach(function (key) {
-      elements[key].classList.toggle('selected', key === id);
-    });
+    selectedId = id;
+    markers.forEach(function (m) { m.el.classList.toggle('selected', m.id === id); });
   };
   if (!window.maplibregl) {
     document.getElementById('error').style.display = 'block';
@@ -217,28 +233,40 @@ ${listingPinCss(color)}</style>
       attributionControl: { compact: true }
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.on('click', function () { send(null); window.setSelected(null); });
-    // Fold the map credits into the small (i) button so they don't cover the pins.
+    map.on('click', function () { window.setSelected(null); send({ type: 'select', id: null }); });
+    // Only report moves the person made (not the app zooming to fit the pins).
+    map.on('moveend', function (event) {
+      if (!event.originalEvent) return;
+      var b = map.getBounds();
+      send({ type: 'moved', north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() });
+    });
+    window.setPins = function (pins, fit) {
+      markers.forEach(function (m) { m.marker.remove(); });
+      markers = [];
+      var bounds = new maplibregl.LngLatBounds();
+      pins.forEach(function (pin) {
+        var el = document.createElement('div');
+        el.className = pin.id === selectedId ? 'pin selected' : 'pin';
+        el.textContent = pin.label;
+        el.addEventListener('click', function (event) {
+          event.stopPropagation();
+          window.setSelected(pin.id);
+          send({ type: 'select', id: pin.id });
+        });
+        var marker = new maplibregl.Marker({ element: el }).setLngLat([pin.longitude, pin.latitude]).addTo(map);
+        markers.push({ id: pin.id, el: el, marker: marker });
+        bounds.extend([pin.longitude, pin.latitude]);
+      });
+      if (!fit) return;
+      if (pins.length > 1) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 });
+      else if (pins.length === 1) map.jumpTo({ center: [pins[0].longitude, pins[0].latitude], zoom: 14 });
+    };
     map.on('load', function () {
+      // Fold the map credits into the small (i) button so they don't cover the pins.
       var credits = document.querySelector('.maplibregl-ctrl-attrib');
       if (credits) credits.classList.remove('maplibregl-compact-show');
+      send({ type: 'ready' });
     });
-    var bounds = new maplibregl.LngLatBounds();
-    config.pins.forEach(function (pin) {
-      var el = document.createElement('div');
-      el.className = 'pin';
-      el.textContent = pin.label;
-      el.addEventListener('click', function (event) {
-        event.stopPropagation();
-        window.setSelected(pin.id);
-        send(pin.id);
-      });
-      elements[pin.id] = el;
-      new maplibregl.Marker({ element: el }).setLngLat([pin.longitude, pin.latitude]).addTo(map);
-      bounds.extend([pin.longitude, pin.latitude]);
-    });
-    if (config.pins.length > 1) map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 0 });
-    else if (config.pins.length === 1) map.jumpTo({ center: [config.pins[0].longitude, config.pins[0].latitude], zoom: 14 });
   }
 </script>
 </body>

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ListingCard } from '@/components/listing-card';
+import { ListingCard, ListingMiniCard } from '@/components/listing-card';
 import { ListingsMap } from '@/components/listings-map';
 import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
@@ -24,7 +24,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
 import { formatPrice } from '@/lib/format';
 import { fetchListings, fetchListingsByIds, type ListingFilters } from '@/lib/listings';
-import type { ListingPin } from '@/lib/map';
+import type { ListingPin, MapBounds } from '@/lib/map';
 import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPES, type Listing, type ListingType } from '@/types/listing';
 
@@ -60,8 +60,6 @@ function ChipRow({ chips }: { chips: Chip[] }) {
   );
 }
 
-const MAP_HEIGHT = 440;
-
 export default function ListingsScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -73,6 +71,10 @@ export default function ListingsScreen() {
   // "Saved" shows only the listings you gave a heart (the other filters are hidden).
   const [savedOnly, setSavedOnly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // "Search this area": the area being searched, and where the person has moved the map to.
+  const [areaBounds, setAreaBounds] = useState<MapBounds | null>(null);
+  const [movedBounds, setMovedBounds] = useState<MapBounds | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const [type, setType] = useState<ListingType | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
@@ -85,6 +87,7 @@ export default function ListingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (filters: ListingFilters | { savedIds: string[] }) => {
+    setLoading(true);
     try {
       const found =
         'savedIds' in filters
@@ -99,6 +102,8 @@ export default function ListingsScreen() {
       setLoadError(false);
     } catch {
       setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -111,8 +116,8 @@ export default function ListingsScreen() {
     () =>
       savedOnly
         ? { savedIds: savedKey ? savedKey.split(',') : [] }
-        : { cityId, type, areaId, maxPrice },
-    [savedOnly, savedKey, cityId, type, areaId, maxPrice]
+        : { cityId, type, areaId, maxPrice, bounds: areaBounds },
+    [savedOnly, savedKey, cityId, type, areaId, maxPrice, areaBounds]
   );
 
   // Reload when the tab is shown and whenever a filter changes.
@@ -156,6 +161,18 @@ export default function ListingsScreen() {
   const withoutLocation = shown.length - pins.length;
   const selected = shown.find((listing) => listing.id === selectedId);
 
+  function searchThisArea() {
+    if (!movedBounds) return;
+    setAreaBounds(movedBounds);
+    setMovedBounds(null);
+    setSelectedId(null);
+  }
+
+  function clearArea() {
+    setAreaBounds(null);
+    setMovedBounds(null);
+  }
+
   function chooseDistrict(id: string | null) {
     setDistrictId(id);
     setNeighbourhoodId(null);
@@ -167,6 +184,17 @@ export default function ListingsScreen() {
   }
 
   const typeChips: Chip[] = [
+    // While searching a map area, a chip shows it and clears it.
+    ...(areaBounds && !savedOnly
+      ? [
+          {
+            key: 'area',
+            label: `📍 ${t('listings.mapArea')}  ✕`,
+            selected: true,
+            onPress: clearArea,
+          },
+        ]
+      : []),
     {
       key: 'saved',
       label:
@@ -229,6 +257,136 @@ export default function ListingsScreen() {
       ]
     : [];
 
+  const filtersBlock = (
+    <>
+      <View style={styles.header}>
+        <ThemedText type="subtitle">{t('listings.title')}</ThemedText>
+        <View style={styles.viewSwitch}>
+          <SegmentedControl
+            segments={[
+              { key: 'list', label: t('listings.viewList') },
+              { key: 'map', label: t('listings.viewMap') },
+            ]}
+            selected={view}
+            onChange={setView}
+          />
+        </View>
+      </View>
+
+      <ChipRow chips={typeChips} />
+      {!savedOnly && <ChipRow chips={districtChips} />}
+      {!savedOnly && neighbourhoodChips.length > 0 && <ChipRow chips={neighbourhoodChips} />}
+
+      {!savedOnly && (
+        <View style={styles.priceRow}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('listings.filters.maxPrice')}
+          </ThemedText>
+          <TextInput
+            style={[
+              styles.priceInput,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.backgroundElement,
+                color: theme.text,
+              },
+            ]}
+            value={maxPriceText}
+            onChangeText={setMaxPriceText}
+            onBlur={applyMaxPrice}
+            onSubmitEditing={applyMaxPrice}
+            placeholder="€"
+            placeholderTextColor={theme.textSecondary}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            returnKeyType="search"
+            maxLength={5}
+            accessibilityLabel={t('listings.filters.maxPrice')}
+          />
+        </View>
+      )}
+
+      {loadError && (
+        <ThemedText type="small" style={{ color: theme.danger }}>
+          {t('listings.loadError')}
+        </ThemedText>
+      )}
+    </>
+  );
+
+  // The map fills the screen; the search button floats on top, the chosen listing at the bottom.
+  if (view === 'map') {
+    const mapNote = !listings
+      ? null
+      : shown.length === 0
+        ? areaBounds
+          ? t('listings.noneInArea')
+          : savedOnly
+            ? t('listings.savedEmpty')
+            : t('listings.empty')
+        : withoutLocation > 0
+          ? t('listings.withoutLocation', { count: withoutLocation })
+          : null;
+
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.mapScreen}>
+            <View style={[styles.content, styles.mapFilters]}>{filtersBlock}</View>
+            <View style={styles.mapArea}>
+              <ListingsMap
+                pins={pins}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onMove={setMovedBounds}
+                fitToPins={!areaBounds}
+                style={styles.mapFill}
+              />
+
+              {(movedBounds || loading) && !savedOnly && (
+                <View style={styles.searchHereWrap} pointerEvents="box-none">
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={loading}
+                    onPress={searchThisArea}
+                    style={({ pressed }) => [
+                      styles.searchHere,
+                      { backgroundColor: theme.text },
+                      pressed && styles.pressed,
+                    ]}>
+                    {loading ? (
+                      <ActivityIndicator color={theme.background} size="small" />
+                    ) : (
+                      <ThemedText type="smallBold" style={{ color: theme.background }}>
+                        {t('listings.searchThisArea')}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+
+              <View style={styles.mapBottom} pointerEvents="box-none">
+                {selected ? (
+                  <ListingMiniCard listing={selected} onClose={() => setSelectedId(null)} />
+                ) : (
+                  mapNote && (
+                    <View
+                      style={[styles.mapNote, { backgroundColor: theme.backgroundElement }]}
+                      pointerEvents="none">
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+                        {mapNote}
+                      </ThemedText>
+                    </View>
+                  )
+                )}
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -239,102 +397,25 @@ export default function ListingsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <ThemedText type="subtitle">{t('listings.title')}</ThemedText>
-              <View style={styles.viewSwitch}>
-                <SegmentedControl
-                  segments={[
-                    { key: 'list', label: t('listings.viewList') },
-                    { key: 'map', label: t('listings.viewMap') },
-                  ]}
-                  selected={view}
-                  onChange={setView}
-                />
-              </View>
-            </View>
-
-            <ChipRow chips={typeChips} />
-            {!savedOnly && <ChipRow chips={districtChips} />}
-            {!savedOnly && neighbourhoodChips.length > 0 && <ChipRow chips={neighbourhoodChips} />}
-
-            {!savedOnly && (
-              <View style={styles.priceRow}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('listings.filters.maxPrice')}
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.priceInput,
-                    {
-                      borderColor: theme.border,
-                      backgroundColor: theme.backgroundElement,
-                      color: theme.text,
-                    },
-                  ]}
-                  value={maxPriceText}
-                  onChangeText={setMaxPriceText}
-                  onBlur={applyMaxPrice}
-                  onSubmitEditing={applyMaxPrice}
-                  placeholder="€"
-                  placeholderTextColor={theme.textSecondary}
-                  keyboardType="number-pad"
-                  inputMode="numeric"
-                  returnKeyType="search"
-                  maxLength={5}
-                  accessibilityLabel={t('listings.filters.maxPrice')}
-                />
-              </View>
-            )}
+            {filtersBlock}
 
             {!listings && !loadError && (
               <ActivityIndicator color={theme.primary} style={styles.loader} />
             )}
 
-            {loadError && (
-              <ThemedText type="small" style={{ color: theme.danger }}>
-                {t('listings.loadError')}
-              </ThemedText>
-            )}
-
             {listings && shown.length === 0 && (
               <ThemedText themeColor="textSecondary" style={styles.empty}>
-                {savedOnly ? t('listings.savedEmpty') : t('listings.empty')}
+                {savedOnly
+                  ? t('listings.savedEmpty')
+                  : areaBounds
+                    ? t('listings.noneInArea')
+                    : t('listings.empty')}
               </ThemedText>
             )}
 
-            {listings && shown.length > 0 && view === 'map' && (
-              <>
-                <ListingsMap
-                  pins={pins}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  height={MAP_HEIGHT}
-                />
-                {withoutLocation > 0 && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t('listings.withoutLocation', { count: withoutLocation })}
-                  </ThemedText>
-                )}
-                {selected ? (
-                  <ListingCard listing={selected} owner={owners.get(selected.user_id)} />
-                ) : (
-                  pins.length > 0 && (
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.mapHint}>
-                      {t('listings.mapHint')}
-                    </ThemedText>
-                  )
-                )}
-              </>
-            )}
-
-            {view === 'list' &&
-              shown.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  owner={owners.get(listing.user_id)}
-                />
-              ))}
+            {shown.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} owner={owners.get(listing.user_id)} />
+            ))}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -369,8 +450,59 @@ const styles = StyleSheet.create({
   viewSwitch: {
     width: 170,
   },
-  mapHint: {
+  center: {
     textAlign: 'center',
+  },
+  mapScreen: {
+    flex: 1,
+    paddingBottom: BottomTabInset + Spacing.two,
+  },
+  mapFilters: {
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.three,
+  },
+  mapArea: {
+    flex: 1,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+  },
+  mapFill: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: Spacing.four,
+    right: Spacing.four,
+  },
+  searchHereWrap: {
+    position: 'absolute',
+    top: Spacing.three,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  searchHere: {
+    minWidth: 170,
+    height: 40,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+  },
+  mapBottom: {
+    position: 'absolute',
+    left: Spacing.four + Spacing.two,
+    right: Spacing.four + Spacing.two,
+    bottom: Spacing.two,
+  },
+  mapNote: {
+    alignSelf: 'center',
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    boxShadow: '0 1px 6px rgba(0, 0, 0, 0.12)',
   },
   chipRow: {
     gap: Spacing.two,

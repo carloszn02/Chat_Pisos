@@ -235,6 +235,7 @@ const en: typeof es = {
   },
   common: {
     cancel: 'Cancel',
+    close: 'Close',
   },
   report: {
     action: 'Report',
@@ -298,6 +299,9 @@ const en: typeof es = {
     viewList: 'List',
     viewMap: 'Map',
     mapHint: 'Tap a price to see the listing.',
+    searchThisArea: 'Search this area',
+    mapArea: 'Map area',
+    noneInArea: 'No listings in this area. Try zooming out or removing filters.',
     withoutLocation_one: "{{count}} listing has no location, so it isn't on the map.",
     withoutLocation_other: "{{count}} listings have no location, so they aren't on the map.",
     approximateNote: 'Approximate area. Ask for the exact address by message.',

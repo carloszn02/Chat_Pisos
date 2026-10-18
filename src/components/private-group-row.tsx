@@ -1,7 +1,7 @@
-import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -82,55 +82,54 @@ export function PrivateGroupRow({ group, users, myUserId, muted = false }: Priva
   }
 
   return (
-    <Link href={{ pathname: '/private-group/[id]', params: { id: group.id } }} asChild>
-      <Pressable
-        accessibilityRole="link"
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        <PrivateGroupBadge name={group.name} />
-        <View style={styles.text}>
-          <ThemedText style={styles.name} numberOfLines={1}>
-            {group.name}
-            {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
+    <PressableLink
+      href={{ pathname: '/private-group/[id]', params: { id: group.id } }}
+      accessibilityRole="link"
+      style={[styles.row]}>
+      <PrivateGroupBadge name={group.name} />
+      <View style={styles.text}>
+        <ThemedText style={styles.name} numberOfLines={1}>
+          {group.name}
+          {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
+        </ThemedText>
+        <ThemedText
+          type="small"
+          themeColor={highlight ? 'text' : 'textSecondary'}
+          style={highlight && styles.bold}
+          numberOfLines={1}>
+          {preview}
+        </ThemedText>
+        {requests > 0 && (
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            {t('privateGroups.requestsBanner', { count: requests })}
           </ThemedText>
-          <ThemedText
-            type="small"
-            themeColor={highlight ? 'text' : 'textSecondary'}
-            style={highlight && styles.bold}
-            numberOfLines={1}>
-            {preview}
+        )}
+      </View>
+      <View style={styles.meta}>
+        {group.last_message_at && !invited && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {formatShortTime(group.last_message_at, i18n.language)}
           </ThemedText>
-          {requests > 0 && (
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              {t('privateGroups.requestsBanner', { count: requests })}
-            </ThemedText>
-          )}
-        </View>
-        <View style={styles.meta}>
-          {group.last_message_at && !invited && (
-            <ThemedText type="small" themeColor="textSecondary">
-              {formatShortTime(group.last_message_at, i18n.language)}
-            </ThemedText>
-          )}
-          {(unread || invited) && (
-            <View
+        )}
+        {(unread || invited) && (
+          <View
+            style={[
+              styles.count,
+              {
+                backgroundColor: muted && !invited ? theme.backgroundSelected : theme.primary,
+              },
+            ]}>
+            <ThemedText
               style={[
-                styles.count,
-                {
-                  backgroundColor: muted && !invited ? theme.backgroundSelected : theme.primary,
-                },
+                styles.countText,
+                { color: muted && !invited ? theme.textSecondary : theme.onPrimary },
               ]}>
-              <ThemedText
-                style={[
-                  styles.countText,
-                  { color: muted && !invited ? theme.textSecondary : theme.onPrimary },
-                ]}>
-                {invited ? '1' : group.unread_count > 99 ? '99+' : group.unread_count}
-              </ThemedText>
-            </View>
-          )}
-        </View>
-      </Pressable>
-    </Link>
+              {invited ? '1' : group.unread_count > 99 ? '99+' : group.unread_count}
+            </ThemedText>
+          </View>
+        )}
+      </View>
+    </PressableLink>
   );
 }
 

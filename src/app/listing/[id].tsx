@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Link, router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ListingPrice, ListingTypeTag } from '@/components/listing-card';
@@ -305,28 +306,26 @@ export default function ListingDetailScreen() {
                 styles.ownerCard,
                 { borderColor: theme.border, backgroundColor: theme.backgroundElement },
               ]}>
-              <Link href={{ pathname: '/user/[id]', params: { id: owner.id } }} asChild>
-                <Pressable
-                  accessibilityRole="link"
-                  style={({ pressed }) => [styles.ownerRow, pressed && styles.pressed]}>
-                  <Avatar uri={owner.avatar_url} name={owner.first_name} size={48} />
-                  <View style={styles.flex}>
-                    <ThemedText style={styles.bold}>
-                      {owner.first_name}, {owner.age}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {[
-                        owner.occupation &&
-                          t(`profileSetup.options.occupation.${owner.occupation}`),
-                        owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </ThemedText>
-                  </View>
-                  <ThemedText themeColor="textSecondary">›</ThemedText>
-                </Pressable>
-              </Link>
+              <PressableLink
+                href={{ pathname: '/user/[id]', params: { id: owner.id } }}
+                accessibilityRole="link"
+                style={[styles.ownerRow]}>
+                <Avatar uri={owner.avatar_url} name={owner.first_name} size={48} />
+                <View style={styles.flex}>
+                  <ThemedText style={styles.bold}>
+                    {owner.first_name}, {owner.age}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {[
+                      owner.occupation && t(`profileSetup.options.occupation.${owner.occupation}`),
+                      owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </ThemedText>
+                </View>
+                <ThemedText themeColor="textSecondary">›</ThemedText>
+              </PressableLink>
               {inCommon.length > 0 && (
                 <>
                   <ThemedText type="smallBold" themeColor="textSecondary">
@@ -379,19 +378,14 @@ export default function ListingDetailScreen() {
                   )}
                 </View>
               )}
-              <Link href={{ pathname: '/edit-listing/[id]', params: { id: listing.id } }} asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    { backgroundColor: theme.primary },
-                    pressed && styles.pressed,
-                  ]}>
-                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                    {t('listings.edit')}
-                  </ThemedText>
-                </Pressable>
-              </Link>
+              <PressableLink
+                href={{ pathname: '/edit-listing/[id]', params: { id: listing.id } }}
+                accessibilityRole="button"
+                style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+                <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                  {t('listings.edit')}
+                </ThemedText>
+              </PressableLink>
               <View style={styles.row}>
                 <Pressable
                   accessibilityRole="button"

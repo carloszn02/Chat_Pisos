@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
-import { Link, Stack } from 'expo-router';
+import { Stack, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -67,14 +68,12 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title={t('settings.account')} hint={t('settings.signedInAs', { email })}>
-            <Link href="/blocked-users" asChild>
-              <Row first accessibilityRole="link">
-                <ThemedText>{t('blocked.title')}</ThemedText>
-                <ThemedText themeColor="textSecondary">
-                  {blockedIds.size > 0 ? `${blockedIds.size}  ›` : '›'}
-                </ThemedText>
-              </Row>
-            </Link>
+            <Row first href="/blocked-users">
+              <ThemedText>{t('blocked.title')}</ThemedText>
+              <ThemedText themeColor="textSecondary">
+                {blockedIds.size > 0 ? `${blockedIds.size}  ›` : '›'}
+              </ThemedText>
+            </Row>
             <Row accessibilityRole="button" onPress={sendPasswordLink}>
               <ThemedText>{t('settings.changePassword')}</ThemedText>
               <ThemedText themeColor="textSecondary">›</ThemedText>
@@ -123,13 +122,15 @@ export default function SettingsScreen() {
             </ThemedText>
           </Pressable>
 
-          <Link href="/delete-account" asChild>
-            <Pressable accessibilityRole="link" hitSlop={8} style={styles.deleteLink}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('deleteAccount.title')}
-              </ThemedText>
-            </Pressable>
-          </Link>
+          <PressableLink
+            href="/delete-account"
+            accessibilityRole="link"
+            hitSlop={8}
+            style={styles.deleteLink}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('deleteAccount.title')}
+            </ThemedText>
+          </PressableLink>
         </View>
       </ScrollView>
 
@@ -171,27 +172,34 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 type RowProps = {
   children: ReactNode;
   first?: boolean;
+  href?: Href;
   onPress?: () => void;
   accessibilityRole?: 'button' | 'link' | 'radio';
   selected?: boolean;
 };
 
-/** One line in a settings list. Works inside <Link asChild> too (it passes onPress down). */
-function Row({ children, first = false, onPress, accessibilityRole, selected, ...rest }: RowProps) {
+/** One line in a settings list. With `href` it opens that screen. */
+function Row({ children, first = false, href, onPress, accessibilityRole, selected }: RowProps) {
   const theme = useTheme();
+  const rowStyle = [
+    styles.row,
+    { backgroundColor: theme.backgroundElement },
+    !first && { borderTopWidth: 1, borderTopColor: theme.border },
+  ];
+  if (href) {
+    return (
+      <PressableLink href={href} style={rowStyle}>
+        {children}
+      </PressableLink>
+    );
+  }
   return (
     <Pressable
-      {...rest}
       accessibilityRole={accessibilityRole}
       accessibilityState={selected === undefined ? undefined : { selected }}
       disabled={!onPress && !accessibilityRole}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: theme.backgroundElement },
-        !first && { borderTopWidth: 1, borderTopColor: theme.border },
-        pressed && styles.pressed,
-      ]}>
+      style={({ pressed }) => [rowStyle, pressed && styles.pressed]}>
       {children}
     </Pressable>
   );

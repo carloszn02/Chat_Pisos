@@ -1,4 +1,4 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PressableLink } from '@/components/pressable-link';
 import { CityBanner } from '@/components/city-banner';
 import { DistrictCard } from '@/components/district-card';
 import { GroupTile } from '@/components/group-tile';
@@ -168,56 +169,51 @@ export default function ChatsScreen() {
                       const muted = isMuted('group', group.id);
                       const highlight = unread > 0 && !muted;
                       return (
-                        <Link
+                        <PressableLink
                           key={group.id}
                           href={{ pathname: '/group/[slug]', params: { slug: group.slug } }}
-                          asChild>
-                          <Pressable
-                            accessibilityRole="link"
-                            style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-                            <GroupTile group={group} />
-                            <View style={styles.rowText}>
-                              <ThemedText style={styles.groupName} numberOfLines={1}>
-                                {group.name}
-                                {muted ? (
-                                  <ThemedText style={styles.mutedIcon}> 🔕</ThemedText>
-                                ) : null}
+                          accessibilityRole="link"
+                          style={[styles.row]}>
+                          <GroupTile group={group} />
+                          <View style={styles.rowText}>
+                            <ThemedText style={styles.groupName} numberOfLines={1}>
+                              {group.name}
+                              {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
+                            </ThemedText>
+                            <ThemedText
+                              type={highlight ? 'smallBold' : 'small'}
+                              themeColor={highlight ? 'text' : 'textSecondary'}
+                              numberOfLines={1}>
+                              {preview(group)}
+                            </ThemedText>
+                          </View>
+                          <View style={styles.meta}>
+                            {last && (
+                              <ThemedText type="small" themeColor="textSecondary">
+                                {formatShortTime(last.created_at, i18n.language)}
                               </ThemedText>
-                              <ThemedText
-                                type={highlight ? 'smallBold' : 'small'}
-                                themeColor={highlight ? 'text' : 'textSecondary'}
-                                numberOfLines={1}>
-                                {preview(group)}
-                              </ThemedText>
-                            </View>
-                            <View style={styles.meta}>
-                              {last && (
-                                <ThemedText type="small" themeColor="textSecondary">
-                                  {formatShortTime(last.created_at, i18n.language)}
-                                </ThemedText>
-                              )}
-                              {unread > 0 && (
-                                <View
+                            )}
+                            {unread > 0 && (
+                              <View
+                                style={[
+                                  styles.badge,
+                                  {
+                                    backgroundColor: muted
+                                      ? theme.backgroundSelected
+                                      : theme.primary,
+                                  },
+                                ]}>
+                                <ThemedText
                                   style={[
-                                    styles.badge,
-                                    {
-                                      backgroundColor: muted
-                                        ? theme.backgroundSelected
-                                        : theme.primary,
-                                    },
+                                    styles.badgeText,
+                                    { color: muted ? theme.textSecondary : theme.onPrimary },
                                   ]}>
-                                  <ThemedText
-                                    style={[
-                                      styles.badgeText,
-                                      { color: muted ? theme.textSecondary : theme.onPrimary },
-                                    ]}>
-                                    {unread > 99 ? '99+' : unread}
-                                  </ThemedText>
-                                </View>
-                              )}
-                            </View>
-                          </Pressable>
-                        </Link>
+                                  {unread > 99 ? '99+' : unread}
+                                </ThemedText>
+                              </View>
+                            )}
+                          </View>
+                        </PressableLink>
                       );
                     })}
                   </View>
@@ -232,13 +228,11 @@ export default function ChatsScreen() {
                         : t('chats.allJoined')}
                     </ThemedText>
                   </View>
-                  <Link href="/explore-groups" asChild>
-                    <Pressable accessibilityRole="link" hitSlop={10}>
-                      <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                        {t('chats.seeAll')} ›
-                      </ThemedText>
-                    </Pressable>
-                  </Link>
+                  <PressableLink href="/explore-groups" accessibilityRole="link" hitSlop={10}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {t('chats.seeAll')} ›
+                    </ThemedText>
+                  </PressableLink>
                 </View>
               </>
             )}
@@ -262,44 +256,39 @@ export default function ChatsScreen() {
                   width={CARD_WIDTH}
                 />
               ))}
-              <Link href="/explore-groups" asChild>
-                <Pressable
-                  accessibilityRole="link"
-                  style={({ pressed }) => [
-                    styles.seeAllCard,
-                    { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
-                    pressed && styles.pressed,
-                  ]}>
-                  <View style={[styles.seeAllCircle, { backgroundColor: theme.backgroundElement }]}>
-                    <ThemedText style={[styles.seeAllArrow, { color: theme.primary }]}>
-                      →
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="smallBold" style={styles.seeAllText}>
-                    {t('chats.exploreTitle', { city: city?.name ?? '' })}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.seeAllText}>
-                    {t('chats.exploreHint', { count: otherGroups.length })}
-                  </ThemedText>
-                </Pressable>
-              </Link>
+              <PressableLink
+                href="/explore-groups"
+                accessibilityRole="link"
+                style={[
+                  styles.seeAllCard,
+                  { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+                ]}>
+                <View style={[styles.seeAllCircle, { backgroundColor: theme.backgroundElement }]}>
+                  <ThemedText style={[styles.seeAllArrow, { color: theme.primary }]}>→</ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.seeAllText}>
+                  {t('chats.exploreTitle', { city: city?.name ?? '' })}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.seeAllText}>
+                  {t('chats.exploreHint', { count: otherGroups.length })}
+                </ThemedText>
+              </PressableLink>
             </ScrollView>
           )}
 
           {data && (
             <View style={styles.footer}>
-              <Link href="/suggest-area" asChild>
-                <Pressable
-                  accessibilityRole="link"
-                  style={({ pressed }) => [styles.suggestRow, pressed && styles.pressed]}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t('chats.suggestTitle')}{' '}
-                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                      {t('chats.suggestHint')}
-                    </ThemedText>
+              <PressableLink
+                href="/suggest-area"
+                accessibilityRole="link"
+                style={[styles.suggestRow]}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('chats.suggestTitle')}{' '}
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {t('chats.suggestHint')}
                   </ThemedText>
-                </Pressable>
-              </Link>
+                </ThemedText>
+              </PressableLink>
             </View>
           )}
         </ScrollView>

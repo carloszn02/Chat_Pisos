@@ -1,10 +1,11 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PressableLink } from '@/components/pressable-link';
 import { ListingCard } from '@/components/listing-card';
 import { ProfileSummary } from '@/components/profile-summary';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -58,39 +59,35 @@ export default function ProfileScreen() {
           <View style={styles.content}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('profileTab.title')}</ThemedText>
-              <Link href="/settings" asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('settings.title')}
-                  hitSlop={10}
-                  style={({ pressed }) => [
-                    styles.settingsButton,
-                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                    pressed && styles.pressed,
-                  ]}>
-                  <SymbolView
-                    name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-                    tintColor={theme.text}
-                    size={22}
-                    fallback={<ThemedText style={styles.gearFallback}>⚙︎</ThemedText>}
-                  />
-                </Pressable>
-              </Link>
+              <PressableLink
+                href="/settings"
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.title')}
+                hitSlop={10}
+                style={[
+                  styles.settingsButton,
+                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                ]}>
+                <SymbolView
+                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
+                  tintColor={theme.text}
+                  size={22}
+                  fallback={<ThemedText style={styles.gearFallback}>⚙︎</ThemedText>}
+                />
+              </PressableLink>
             </View>
 
             <ProfileSummary profile={summary} part="identity" />
 
-            <Link href="/edit-profile" asChild>
-              <Pressable
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.outlineButton,
-                  { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-                  pressed && styles.pressed,
-                ]}>
-                <ThemedText type="smallBold">{t('profileTab.editProfile')}</ThemedText>
-              </Pressable>
-            </Link>
+            <PressableLink
+              href="/edit-profile"
+              accessibilityRole="button"
+              style={[
+                styles.outlineButton,
+                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              ]}>
+              <ThemedText type="smallBold">{t('profileTab.editProfile')}</ThemedText>
+            </PressableLink>
 
             <SegmentedControl
               segments={[
@@ -115,31 +112,23 @@ export default function ProfileScreen() {
                   <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
                     {t('profileTab.emptyAbout')}
                   </ThemedText>
-                  <Link href="/edit-profile" asChild>
-                    <Pressable accessibilityRole="link" hitSlop={8}>
-                      <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                        {t('profileTab.addAbout')}
-                      </ThemedText>
-                    </Pressable>
-                  </Link>
+                  <PressableLink href="/edit-profile" accessibilityRole="link" hitSlop={8}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {t('profileTab.addAbout')}
+                    </ThemedText>
+                  </PressableLink>
                 </View>
               )
             ) : (
               <View style={styles.section}>
-                <Link href="/publish" asChild>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.outlineButton,
-                      styles.dashed,
-                      { borderColor: theme.primary },
-                      pressed && styles.pressed,
-                    ]}>
-                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                      + {t('listings.new')}
-                    </ThemedText>
-                  </Pressable>
-                </Link>
+                <PressableLink
+                  href="/publish"
+                  accessibilityRole="button"
+                  style={[styles.outlineButton, styles.dashed, { borderColor: theme.primary }]}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    + {t('listings.new')}
+                  </ThemedText>
+                </PressableLink>
                 {myListings && myListings.length === 0 ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
                     {t('listings.mineEmpty')}

@@ -234,6 +234,7 @@ const es = {
   },
   common: {
     cancel: 'Cancelar',
+    close: 'Cerrar',
   },
   report: {
     action: 'Denunciar',
@@ -296,6 +297,9 @@ const es = {
     viewList: 'Lista',
     viewMap: 'Mapa',
     mapHint: 'Toca un precio para ver el anuncio.',
+    searchThisArea: 'Buscar en esta zona',
+    mapArea: 'Zona del mapa',
+    noneInArea: 'No hay anuncios en esta zona. Prueba a alejar el mapa o quitar filtros.',
     withoutLocation_one: '{{count}} anuncio no tiene ubicación y no aparece en el mapa.',
     withoutLocation_other: '{{count}} anuncios no tienen ubicación y no aparecen en el mapa.',
     approximateNote: 'Zona aproximada. Pide la dirección exacta por mensaje.',

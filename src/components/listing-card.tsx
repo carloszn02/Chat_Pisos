@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { PressableLink } from '@/components/pressable-link';
 import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -71,46 +72,44 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
 
   return (
     <View>
-      <Link href={{ pathname: '/listing/[id]', params: { id: listing.id } }} asChild>
-        <Pressable
-          accessibilityRole="link"
-          style={({ pressed }) => [
-            styles.card,
-            compact && styles.compactCard,
-            {
-              borderColor: theme.border,
-              backgroundColor: compact ? theme.background : theme.backgroundElement,
-            },
-            pressed && styles.pressed,
-          ]}>
-          {!compact && photo && (
-            <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
-          )}
-          <View style={[styles.headerRow, showSave && !photo && styles.headerWithHeart]}>
-            <ListingTypeTag type={listing.type} />
-            {listing.status === 'closed' ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('listings.closed')}
+      <PressableLink
+        href={{ pathname: '/listing/[id]', params: { id: listing.id } }}
+        accessibilityRole="link"
+        style={[
+          styles.card,
+          compact && styles.compactCard,
+          {
+            borderColor: theme.border,
+            backgroundColor: compact ? theme.background : theme.backgroundElement,
+          },
+        ]}>
+        {!compact && photo && (
+          <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+        )}
+        <View style={[styles.headerRow, showSave && !photo && styles.headerWithHeart]}>
+          <ListingTypeTag type={listing.type} />
+          {listing.status === 'closed' ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('listings.closed')}
+            </ThemedText>
+          ) : (
+            new Date(listing.expires_at) <= new Date() && (
+              <ThemedText type="small" style={{ color: theme.danger }}>
+                {t('listings.expired')}
               </ThemedText>
-            ) : (
-              new Date(listing.expires_at) <= new Date() && (
-                <ThemedText type="small" style={{ color: theme.danger }}>
-                  {t('listings.expired')}
-                </ThemedText>
-              )
-            )}
-          </View>
-          <ThemedText
-            style={[styles.title, showSave && !photo && styles.headerWithHeart]}
-            numberOfLines={2}>
-            {listing.title}
-          </ThemedText>
-          <ListingPrice listing={listing} />
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-            {details}
-          </ThemedText>
-        </Pressable>
-      </Link>
+            )
+          )}
+        </View>
+        <ThemedText
+          style={[styles.title, showSave && !photo && styles.headerWithHeart]}
+          numberOfLines={2}>
+          {listing.title}
+        </ThemedText>
+        <ListingPrice listing={listing} />
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+          {details}
+        </ThemedText>
+      </PressableLink>
       {/* Next to the link rather than inside it, so tapping the heart doesn't open the listing. */}
       {showSave && (
         <View style={[styles.heart, photo ? styles.heartOnPhoto : styles.heartNoPhoto]}>
@@ -188,5 +187,102 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+});
+
+/**
+ * A small card with a thumbnail, used at the bottom of the map when a price is tapped.
+ * Tapping it opens the listing.
+ */
+export function ListingMiniCard({ listing, onClose }: { listing: Listing; onClose: () => void }) {
+  const { placeLabel } = usePlaces();
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const { session } = useSession();
+  const photo = listing.photo_urls[0];
+  const isMine = listing.user_id === session?.user.id;
+
+  return (
+    <View
+      style={[
+        miniStyles.card,
+        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+      ]}>
+      {/* A plain button (not <Link asChild>): on the web the link wrapper drops these styles. */}
+      <Pressable
+        accessibilityRole="link"
+        onPress={() => router.push({ pathname: '/listing/[id]', params: { id: listing.id } })}
+        style={[miniStyles.link]}>
+        {photo ? (
+          <Image source={{ uri: photo }} style={miniStyles.photo} contentFit="cover" />
+        ) : (
+          <View
+            style={[
+              miniStyles.photo,
+              { backgroundColor: LISTING_TYPE_COLORS[listing.type].background },
+            ]}
+          />
+        )}
+        <View style={miniStyles.text}>
+          <ListingTypeTag type={listing.type} />
+          <ThemedText style={styles.title} numberOfLines={1}>
+            {listing.title}
+          </ThemedText>
+          <ListingPrice listing={listing} />
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {placeLabel(listing.area_ids)}
+          </ThemedText>
+        </View>
+      </Pressable>
+      <View style={miniStyles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          onPress={onClose}
+          hitSlop={10}
+          style={miniStyles.close}>
+          <ThemedText themeColor="textSecondary">✕</ThemedText>
+        </Pressable>
+        {!isMine && <SaveButton listingId={listing.id} variant="plain" />}
+      </View>
+    </View>
+  );
+}
+
+const miniStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: Spacing.two,
+    gap: Spacing.two,
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+  },
+  link: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: Spacing.three,
+    minWidth: 0,
+  },
+  photo: {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
+  },
+  text: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+    justifyContent: 'center',
+  },
+  actions: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  close: {
+    width: 36,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
