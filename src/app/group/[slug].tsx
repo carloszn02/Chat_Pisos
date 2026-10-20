@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: '#EFE7DE',
+    borderColor: 'rgba(120, 100, 85, 0.18)',
   },
   body: {
     fontSize: 15,

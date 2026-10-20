@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: AppFonts.headingSemiBold,
+    fontWeight: 700,
     fontSize: 17,
     lineHeight: 22,
   },

@@ -488,6 +488,12 @@ const es = {
     signedInAs: 'Has iniciado sesión como {{email}}',
     signOut: 'Cerrar sesión',
     signOutConfirm: '¿Cerrar sesión en este dispositivo?',
+    appearance: 'Apariencia',
+    appearanceOptions: {
+      system: 'Automático (como el móvil)',
+      light: 'Claro',
+      dark: 'Oscuro',
+    },
     changePassword: 'Cambiar contraseña',
     passwordLinkSent: 'Te hemos enviado un enlace a {{email}} para elegir una contraseña nueva.',
     passwordLinkError: 'No se ha podido enviar el enlace. Inténtalo de nuevo más tarde.',

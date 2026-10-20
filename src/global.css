@@ -1,8 +1,8 @@
-/* Web only. The app's own fonts (DM Sans, Bricolage Grotesque) are loaded in src/app/_layout.tsx. */
+/* Web only. The app uses the system font, like the phone versions. */
 :root {
-  --font-display: 'DMSans_400Regular', ui-sans-serif, system-ui, sans-serif;
+  --font-display: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'DMSans_400Regular', ui-sans-serif, system-ui, sans-serif;
+  --font-rounded: ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }

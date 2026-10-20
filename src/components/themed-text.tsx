@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { AppFonts, bodyFontFor, Fonts, ThemeColor } from '@/constants/theme';
+import { AppFonts, Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -24,26 +24,15 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
     style,
   ]);
 
-  // Headings use Bricolage Grotesque, everything else DM Sans in the matching weight.
-  // fontWeight is reset because each weight is its own font file.
-  const isHeading = type === 'title' || type === 'subtitle';
-  const fontFamily =
-    type === 'code'
-      ? flat.fontFamily
-      : isHeading
-        ? Number(flat.fontWeight ?? 600) >= 700
-          ? AppFonts.heading
-          : AppFonts.headingSemiBold
-        : bodyFontFor(flat.fontWeight);
-
-  return <Text style={[flat, type !== 'code' && { fontFamily, fontWeight: 'normal' }]} {...rest} />;
+  // The phone's own font (San Francisco, Roboto…); the weight comes from fontWeight.
+  return <Text style={[type !== 'code' && { fontFamily: AppFonts.regular }, flat]} {...rest} />;
 }
 
 const styles = StyleSheet.create({
   small: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 500,
+    fontWeight: 400,
   },
   smallBold: {
     fontSize: 14,
@@ -53,17 +42,19 @@ const styles = StyleSheet.create({
   default: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
+    fontWeight: 400,
   },
   title: {
     fontSize: 44,
-    fontWeight: 700,
+    fontWeight: 800,
     lineHeight: 50,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 30,
     lineHeight: 38,
-    fontWeight: 700,
+    fontWeight: 800,
+    letterSpacing: -0.6,
   },
   link: {
     lineHeight: 30,

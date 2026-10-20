@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     justifyContent: 'flex-end',
-    backgroundColor: '#8E6A52',
+    backgroundColor: '#4A3426',
   },
   shade: {
     backgroundColor: 'rgba(30, 20, 14, 0.38)',
@@ -55,6 +55,8 @@ const styles = StyleSheet.create({
   name: {
     color: '#FFFFFF',
     fontFamily: AppFonts.heading,
+    fontWeight: 800,
+    letterSpacing: -0.6,
     fontSize: 30,
     lineHeight: 36,
   },

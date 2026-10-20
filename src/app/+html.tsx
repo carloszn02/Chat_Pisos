@@ -17,7 +17,8 @@ export default function Root({ children }: PropsWithChildren) {
           name="description"
           content="Encuentra habitación, piso o compañeros de piso en Madrid. Chats por barrio, anuncios con mapa y mensajes privados. / Find a room, a flat or flatmates in Madrid."
         />
-        <meta name="theme-color" content="#FBF8F4" />
+        <meta name="theme-color" content="#FAF8F5" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#14110F" media="(prefers-color-scheme: dark)" />
         <meta property="og:title" content="Chat Pisos" />
         <meta
           property="og:description"

@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: '#EFE7DE',
+    borderColor: 'rgba(120, 100, 85, 0.18)',
   },
   body: {
     fontSize: 15,

@@ -1,20 +1,14 @@
 import '@/i18n';
 
-// Import each weight on its own so only these five font files end up in the app.
-import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
-import { DMSans_400Regular } from '@expo-google-fonts/dm-sans/400Regular';
-import { DMSans_500Medium } from '@expo-google-fonts/dm-sans/500Medium';
-import { DMSans_700Bold } from '@expo-google-fonts/dm-sans/700Bold';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
-import { useFonts } from 'expo-font';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 
 import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AppearanceProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import { InboxProvider } from '@/hooks/use-inbox';
 import { MutesProvider } from '@/hooks/use-mutes';
 import { usePendingLinks } from '@/hooks/use-pending-links';
@@ -41,10 +35,10 @@ function navigationTheme(scheme: 'light' | 'dark'): Theme {
     },
     fonts: {
       ...base.fonts,
-      regular: { fontFamily: AppFonts.regular, fontWeight: 'normal' },
-      medium: { fontFamily: AppFonts.medium, fontWeight: 'normal' },
-      bold: { fontFamily: AppFonts.bold, fontWeight: 'normal' },
-      heavy: { fontFamily: AppFonts.heading, fontWeight: 'normal' },
+      regular: { fontFamily: AppFonts.regular, fontWeight: '400' },
+      medium: { fontFamily: AppFonts.medium, fontWeight: '500' },
+      bold: { fontFamily: AppFonts.bold, fontWeight: '700' },
+      heavy: { fontFamily: AppFonts.heading, fontWeight: '800' },
     },
   };
 }
@@ -52,30 +46,18 @@ function navigationTheme(scheme: 'light' | 'dark'): Theme {
 const headerOptions = {
   headerShown: true,
   headerBackTitle: '',
-  headerTitleStyle: { fontFamily: AppFonts.headingSemiBold },
+  headerTitleStyle: { fontFamily: AppFonts.headingSemiBold, fontWeight: '700' as const },
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [fontsLoaded, fontError] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_700Bold,
-    BricolageGrotesque_600SemiBold,
-    BricolageGrotesque_700Bold,
-  });
-
-  // Keep the splash screen until the fonts are ready (or failed: then system fonts are used).
-  const ready = fontsLoaded || !!fontError;
-
   return (
     <>
       {/* Browser tab title on the web (ignored on phones). */}
       <Head>
         <title>Chat Pisos · Habitaciones y compañeros de piso en Madrid</title>
       </Head>
-      {ready && (
-        <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
+      <AppearanceProvider>
+        <ThemedNavigation>
           <SessionProvider>
             <ProfileProvider>
               <BlocksProvider>
@@ -92,9 +74,20 @@ export default function RootLayout() {
               </BlocksProvider>
             </ProfileProvider>
           </SessionProvider>
-        </ThemeProvider>
-      )}
+        </ThemedNavigation>
+      </AppearanceProvider>
     </>
+  );
+}
+
+/** Navigation colours and the status bar follow the chosen look (light or dark). */
+function ThemedNavigation({ children }: { children: React.ReactNode }) {
+  const colorScheme = useColorScheme();
+  return (
+    <ThemeProvider value={navigationTheme(colorScheme)}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      {children}
+    </ThemeProvider>
   );
 }
 

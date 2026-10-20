@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useAppearance, type AppearancePreference } from '@/hooks/use-color-scheme';
 import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
@@ -23,6 +24,8 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { blockedIds } = useBlocks();
+  const { preference, setPreference } = useAppearance();
+  const appearanceOptions: AppearancePreference[] = ['system', 'light', 'dark'];
   const { city } = usePlaces();
   const email = session?.user.email ?? '';
 
@@ -62,6 +65,25 @@ export default function SettingsScreen() {
                   selected={selected}
                   onPress={() => i18n.changeLanguage(lang)}>
                   <ThemedText>{t(`languages.${lang}`)}</ThemedText>
+                  {selected && (
+                    <Icon name="check" size={20} color={theme.primary} strokeWidth={2.4} />
+                  )}
+                </Row>
+              );
+            })}
+          </Section>
+
+          <Section title={t('settings.appearance')}>
+            {appearanceOptions.map((option, index) => {
+              const selected = preference === option;
+              return (
+                <Row
+                  key={option}
+                  first={index === 0}
+                  accessibilityRole="radio"
+                  selected={selected}
+                  onPress={() => setPreference(option)}>
+                  <ThemedText>{t(`settings.appearanceOptions.${option}`)}</ThemedText>
                   {selected && (
                     <Icon name="check" size={20} color={theme.primary} strokeWidth={2.4} />
                   )}

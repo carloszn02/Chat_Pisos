@@ -24,14 +24,13 @@ export function ListingTypeTag({
   onPhoto?: boolean;
 }) {
   const { t } = useTranslation();
-  const theme = useTheme();
   const colors = LISTING_TYPE_COLORS[type];
   return (
     <View
       style={[
         styles.tag,
         // On a photo: a white label so it stays readable on any picture.
-        { backgroundColor: onPhoto ? theme.backgroundElement : colors.background },
+        { backgroundColor: onPhoto ? '#FFFFFF' : colors.background },
       ]}>
       <ThemedText style={[styles.tagText, { color: colors.text }]}>
         {t(`listings.types.${type}`)}

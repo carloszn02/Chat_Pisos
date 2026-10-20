@@ -489,6 +489,12 @@ const en: typeof es = {
     signedInAs: 'Signed in as {{email}}',
     signOut: 'Log out',
     signOutConfirm: 'Log out on this device?',
+    appearance: 'Appearance',
+    appearanceOptions: {
+      system: 'Automatic (like the phone)',
+      light: 'Light',
+      dark: 'Dark',
+    },
     changePassword: 'Change password',
     passwordLinkSent: 'We sent a link to {{email}} to choose a new password.',
     passwordLinkError: "The link couldn't be sent. Please try again later.",
