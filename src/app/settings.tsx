@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { ThemedText } from '@/components/themed-text';
@@ -61,7 +62,9 @@ export default function SettingsScreen() {
                   selected={selected}
                   onPress={() => i18n.changeLanguage(lang)}>
                   <ThemedText>{t(`languages.${lang}`)}</ThemedText>
-                  {selected && <ThemedText style={{ color: theme.primary }}>✓</ThemedText>}
+                  {selected && (
+                    <Icon name="check" size={20} color={theme.primary} strokeWidth={2.4} />
+                  )}
                 </Row>
               );
             })}
@@ -70,13 +73,16 @@ export default function SettingsScreen() {
           <Section title={t('settings.account')} hint={t('settings.signedInAs', { email })}>
             <Row first href="/blocked-users">
               <ThemedText>{t('blocked.title')}</ThemedText>
-              <ThemedText themeColor="textSecondary">
-                {blockedIds.size > 0 ? `${blockedIds.size}  ›` : '›'}
-              </ThemedText>
+              <View style={styles.rowEnd}>
+                {blockedIds.size > 0 && (
+                  <ThemedText themeColor="textSecondary">{blockedIds.size}</ThemedText>
+                )}
+                <Icon name="chevron-right" size={18} color={theme.textSecondary} />
+              </View>
             </Row>
             <Row accessibilityRole="button" onPress={sendPasswordLink}>
               <ThemedText>{t('settings.changePassword')}</ThemedText>
-              <ThemedText themeColor="textSecondary">›</ThemedText>
+              <Icon name="chevron-right" size={18} color={theme.textSecondary} />
             </Row>
           </Section>
           {passwordMessage && (
@@ -240,6 +246,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Spacing.two,
     gap: 2,
+  },
+  rowEnd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   signOut: {
     height: 50,

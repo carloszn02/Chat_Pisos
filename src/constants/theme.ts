@@ -16,6 +16,13 @@ export const Colors = {
     backgroundSelected: '#F4ECE4',
     textSecondary: '#75685F',
     border: '#E6DDD2',
+    /** Outlined buttons: a little stronger than border. */
+    borderStrong: '#D9CCBE',
+    /** Thin lines between rows in lists. */
+    divider: '#EFE7DE',
+    /** District tiles and other soft warm surfaces, with their text colour. */
+    tile: '#F1E7DD',
+    onTile: '#6E5040',
     primary: '#8E6A52',
     onPrimary: '#FFFFFF',
     danger: '#B3261E',
@@ -27,6 +34,10 @@ export const Colors = {
     backgroundSelected: '#3A2F28',
     textSecondary: '#BFB1A6',
     border: '#4A3D34',
+    borderStrong: '#5A4A3F',
+    divider: '#3A2F28',
+    tile: '#3A2F28',
+    onTile: '#E3CDBD',
     primary: '#C9A188',
     onPrimary: '#1A1512',
     danger: '#F2B8B5',

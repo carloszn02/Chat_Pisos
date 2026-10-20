@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   button: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,

@@ -1,13 +1,14 @@
-import { useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PressableLink } from '@/components/pressable-link';
+import { Button, IconButton } from '@/components/button';
 import { ListingCard } from '@/components/listing-card';
 import { ProfileSummary } from '@/components/profile-summary';
+import { ScreenHeader } from '@/components/screen-header';
 import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -57,37 +58,24 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <ThemedText type="subtitle">{t('profileTab.title')}</ThemedText>
-              <PressableLink
-                href="/settings"
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.title')}
-                hitSlop={10}
-                style={[
-                  styles.settingsButton,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                ]}>
-                <SymbolView
-                  name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-                  tintColor={theme.text}
-                  size={22}
-                  fallback={<ThemedText style={styles.gearFallback}>⚙︎</ThemedText>}
+            <ScreenHeader
+              title={t('profileTab.title')}
+              actions={
+                <IconButton
+                  icon="settings"
+                  label={t('settings.title')}
+                  onPress={() => router.push('/settings')}
                 />
-              </PressableLink>
-            </View>
+              }
+            />
 
             <ProfileSummary profile={summary} part="identity" />
 
-            <PressableLink
-              href="/edit-profile"
-              accessibilityRole="button"
-              style={[
-                styles.outlineButton,
-                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-              ]}>
-              <ThemedText type="smallBold">{t('profileTab.editProfile')}</ThemedText>
-            </PressableLink>
+            <Button
+              label={t('profileTab.editProfile')}
+              variant="secondary"
+              onPress={() => router.push('/edit-profile')}
+            />
 
             <SegmentedControl
               segments={[
@@ -121,14 +109,12 @@ export default function ProfileScreen() {
               )
             ) : (
               <View style={styles.section}>
-                <PressableLink
-                  href="/publish"
-                  accessibilityRole="button"
-                  style={[styles.outlineButton, styles.dashed, { borderColor: theme.primary }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    + {t('listings.new')}
-                  </ThemedText>
-                </PressableLink>
+                <Button
+                  label={t('listings.new')}
+                  icon="plus"
+                  variant="secondary"
+                  onPress={() => router.push('/publish')}
+                />
                 {myListings && myListings.length === 0 ? (
                   <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
                     {t('listings.mineEmpty')}
@@ -181,8 +167,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   outlineButton: {
-    height: 44,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

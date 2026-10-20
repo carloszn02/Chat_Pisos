@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -80,7 +81,7 @@ export function PhotoViewer({ url, onClose }: { url: string | null; onClose: () 
         accessibilityLabel={t('chats.closePhoto')}>
         {url && <Image source={{ uri: url }} style={styles.full} contentFit="contain" />}
         <View style={[styles.close, { top: insets.top + Spacing.three }]}>
-          <ThemedText style={styles.closeText}>✕</ThemedText>
+          <Icon name="close" size={20} color="#FFFFFF" strokeWidth={2.2} />
         </View>
       </Pressable>
     </Modal>

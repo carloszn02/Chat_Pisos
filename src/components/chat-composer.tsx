@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { IconButton } from '@/components/button';
+import { Icon } from '@/components/icon';
 import { ReplyBar } from '@/components/message-reply';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -56,7 +57,7 @@ export function ChatComposer({
               onPress={onRemovePhoto}
               hitSlop={8}
               style={[styles.removePhoto, { backgroundColor: theme.text }]}>
-              <ThemedText style={[styles.removeText, { color: theme.background }]}>✕</ThemedText>
+              <Icon name="close" size={13} color={theme.background} strokeWidth={2.6} />
             </Pressable>
           )}
           <ThemedText type="small" themeColor="textSecondary" style={styles.previewHint}>
@@ -65,51 +66,48 @@ export function ChatComposer({
         </View>
       )}
       <View style={styles.row}>
-        {onPickPhoto && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('chats.addPhoto')}
-            disabled={sending}
-            onPress={onPickPhoto}
-            hitSlop={6}
-            style={({ pressed }) => [
-              styles.photoButton,
-              { borderColor: theme.border, backgroundColor: theme.background },
-              pressed && styles.dimmed,
-            ]}>
-            <SymbolView
-              name={{ ios: 'photo', android: 'image', web: 'image' }}
-              tintColor={theme.textSecondary}
-              size={22}
-              fallback={<ThemedText>📷</ThemedText>}
-            />
-          </Pressable>
-        )}
-        <TextInput
+        <View
           style={[
-            styles.input,
-            { borderColor: theme.border, backgroundColor: theme.background, color: theme.text },
-          ]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={photoUri ? t('chats.photoCaptionPlaceholder') : placeholder}
-          placeholderTextColor={theme.textSecondary}
-          multiline
-          maxLength={2000}
-          accessibilityLabel={placeholder}
-          // On a computer, Enter sends and Shift+Enter starts a new line (like WhatsApp Web).
-          onKeyPress={
-            Platform.OS === 'web'
-              ? (event) => {
-                  const key = event.nativeEvent as { key: string; shiftKey?: boolean };
-                  if (key.key === 'Enter' && !key.shiftKey) {
-                    event.preventDefault();
-                    if (canSend) onSend();
+            styles.field,
+            { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+          ]}>
+          <TextInput
+            style={[styles.input, { color: theme.text }]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={photoUri ? t('chats.photoCaptionPlaceholder') : placeholder}
+            placeholderTextColor={theme.textSecondary}
+            multiline
+            // Starts as one line and grows as you type (the web would otherwise show two).
+            numberOfLines={1}
+            maxLength={2000}
+            accessibilityLabel={placeholder}
+            // On a computer, Enter sends and Shift+Enter starts a new line (like WhatsApp Web).
+            onKeyPress={
+              Platform.OS === 'web'
+                ? (event) => {
+                    const key = event.nativeEvent as { key: string; shiftKey?: boolean };
+                    if (key.key === 'Enter' && !key.shiftKey) {
+                      event.preventDefault();
+                      if (canSend) onSend();
+                    }
                   }
-                }
-              : undefined
-          }
-        />
+                : undefined
+            }
+          />
+          {onPickPhoto && (
+            <View style={styles.photoButton}>
+              <IconButton
+                icon="image"
+                label={t('chats.addPhoto')}
+                variant="plain"
+                size={38}
+                disabled={sending}
+                onPress={onPickPhoto}
+              />
+            </View>
+          )}
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('chats.send')}
@@ -123,7 +121,7 @@ export function ChatComposer({
           {sending ? (
             <ActivityIndicator color={theme.onPrimary} />
           ) : (
-            <ThemedText style={{ color: theme.onPrimary, fontWeight: 700 }}>➤</ThemedText>
+            <Icon name="arrow-up" size={21} color={theme.onPrimary} strokeWidth={2.4} />
           )}
         </Pressable>
       </View>
@@ -155,11 +153,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: {
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: 700,
-  },
   previewHint: {
     flex: 1,
   },
@@ -169,29 +162,33 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   photoButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    alignSelf: 'flex-end',
+    paddingBottom: 3,
+  },
+  field: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    minHeight: 46,
+    maxHeight: 124,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 23,
+    paddingLeft: 16,
+    paddingRight: 4,
   },
   input: {
     fontFamily: AppFonts.regular,
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    borderWidth: 1,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingTop: 11,
-    paddingBottom: 11,
+    paddingTop: 12,
+    paddingBottom: 12,
     fontSize: 15,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
   },

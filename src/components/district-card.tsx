@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useGroupTint } from '@/components/group-tile';
+import { Button } from '@/components/button';
+import { TileInitials, useGroupTint } from '@/components/group-tile';
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
@@ -57,11 +59,9 @@ export function DistrictCard({ group, stats, joined, joining, onJoin, width }: D
         onPress={() => router.push({ pathname: '/group/[slug]', params: { slug: group.slug } })}
         style={({ pressed }) => pressed && styles.pressed}>
         <View style={[styles.band, { backgroundColor: tint.background }]}>
-          <ThemedText style={[styles.bandCode, { color: tint.text }]}>
-            {group.short_code}
-          </ThemedText>
+          <TileInitials text={group.short_code} color={tint.text} size={24} />
           {stats && stats.member_count > 0 && (
-            <View style={styles.members}>
+            <View style={[styles.members, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText style={[styles.membersText, { color: tint.text }]}>
                 {t('chats.memberCount', { count: stats.member_count })}
               </ThemedText>
@@ -81,7 +81,11 @@ export function DistrictCard({ group, stats, joined, joining, onJoin, width }: D
               style={[
                 styles.dot,
                 {
-                  backgroundColor: activeToday ? '#2E9D6A' : weekly > 0 ? '#D9A441' : theme.border,
+                  backgroundColor: activeToday
+                    ? '#2E9D6A'
+                    : weekly > 0
+                      ? '#D9A441'
+                      : theme.borderStrong,
                 },
               ]}
             />
@@ -94,30 +98,21 @@ export function DistrictCard({ group, stats, joined, joining, onJoin, width }: D
 
       <View style={styles.footer}>
         {joined ? (
-          <View style={[styles.joinButton, { backgroundColor: theme.backgroundSelected }]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              ✓ {t('chats.joined')}
+          <View style={[styles.joined, { backgroundColor: theme.tile }]}>
+            <Icon name="check" size={16} color={theme.onTile} strokeWidth={2.2} />
+            <ThemedText type="smallBold" style={{ color: theme.onTile }}>
+              {t('chats.joined')}
             </ThemedText>
           </View>
         ) : (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={t('chats.join')}
             accessibilityLabel={`${t('chats.join')} ${group.name}`}
-            disabled={joining}
+            variant="secondary"
+            size="small"
+            loading={joining}
             onPress={onJoin}
-            style={({ pressed }) => [
-              styles.joinButton,
-              { backgroundColor: theme.primary },
-              (pressed || joining) && styles.pressed,
-            ]}>
-            {joining ? (
-              <ActivityIndicator color={theme.onPrimary} size="small" />
-            ) : (
-              <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                {t('chats.join')}
-              </ThemedText>
-            )}
-          </Pressable>
+          />
         )}
       </View>
     </View>
@@ -131,22 +126,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   band: {
-    height: 72,
+    height: 64,
     paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.one,
-    justifyContent: 'flex-end',
-  },
-  bandCode: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: 700,
-    letterSpacing: 0.5,
+    paddingTop: Spacing.two,
+    justifyContent: 'flex-start',
   },
   members: {
     position: 'absolute',
-    top: Spacing.two,
+    top: Spacing.three,
     right: Spacing.two,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 999,
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
@@ -180,11 +168,13 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
   },
-  joinButton: {
-    height: 34,
+  joined: {
+    minHeight: 36,
     borderRadius: 999,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.one,
   },
   pressed: {
     opacity: 0.7,

@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { PressableLink } from '@/components/pressable-link';
 import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
@@ -15,11 +16,23 @@ import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPE_COLORS, type Listing, type ListingType } from '@/types/listing';
 
 /** The small colored label: "Offering room", "Looking for room" or "Whole flat". */
-export function ListingTypeTag({ type }: { type: ListingType }) {
+export function ListingTypeTag({
+  type,
+  onPhoto = false,
+}: {
+  type: ListingType;
+  onPhoto?: boolean;
+}) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const colors = LISTING_TYPE_COLORS[type];
   return (
-    <View style={[styles.tag, { backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.tag,
+        // On a photo: a white label so it stays readable on any picture.
+        { backgroundColor: onPhoto ? theme.backgroundElement : colors.background },
+      ]}>
       <ThemedText style={[styles.tagText, { color: colors.text }]}>
         {t(`listings.types.${type}`)}
       </ThemedText>
@@ -27,16 +40,31 @@ export function ListingTypeTag({ type }: { type: ListingType }) {
   );
 }
 
-/** "€620 /month" for rooms and flats, "Up to €550" for people looking. */
-export function ListingPrice({ listing, large = false }: { listing: Listing; large?: boolean }) {
+/**
+ * "€620 /month" for rooms and flats, "Up to €550" for people looking.
+ * 'card' and 'large' use the heading font, for listing cards and the listing page.
+ */
+export function ListingPrice({
+  listing,
+  size = 'regular',
+}: {
+  listing: Listing;
+  size?: 'regular' | 'card' | 'large';
+}) {
   const { t, i18n } = useTranslation();
   const price = formatPrice(listing.price_eur, i18n.language);
-  const size = large ? styles.priceLarge : styles.price;
+  const heading = size !== 'regular';
+  const style =
+    size === 'large' ? styles.priceLarge : size === 'card' ? styles.priceCard : styles.price;
   if (listing.type === 'seeking_room') {
-    return <ThemedText style={size}>{t('listings.budgetUpTo', { price })}</ThemedText>;
+    return (
+      <ThemedText type={heading ? 'subtitle' : 'default'} style={style}>
+        {t('listings.budgetUpTo', { price })}
+      </ThemedText>
+    );
   }
   return (
-    <ThemedText style={size}>
+    <ThemedText type={heading ? 'subtitle' : 'default'} style={style}>
       {price}
       <ThemedText type="small" themeColor="textSecondary">
         {' '}
@@ -70,6 +98,41 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
     .filter(Boolean)
     .join(' · ');
 
+  const status =
+    listing.status === 'closed' ? (
+      <ThemedText type="smallBold" themeColor="textSecondary">
+        {t('listings.closed')}
+      </ThemedText>
+    ) : new Date(listing.expires_at) <= new Date() ? (
+      <ThemedText type="smallBold" style={{ color: theme.danger }}>
+        {t('listings.expired')}
+      </ThemedText>
+    ) : null;
+
+  if (compact) {
+    return (
+      <PressableLink
+        href={{ pathname: '/listing/[id]', params: { id: listing.id } }}
+        accessibilityRole="link"
+        style={[
+          styles.compactCard,
+          { borderColor: theme.border, backgroundColor: theme.background },
+        ]}>
+        <View style={styles.tagRow}>
+          <ListingTypeTag type={listing.type} />
+          {status}
+        </View>
+        <ThemedText style={styles.title} numberOfLines={2}>
+          {listing.title}
+        </ThemedText>
+        <ListingPrice listing={listing} />
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          {placeLabel(listing.area_ids)}
+        </ThemedText>
+      </PressableLink>
+    );
+  }
+
   return (
     <View>
       <PressableLink
@@ -77,42 +140,40 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
         accessibilityRole="link"
         style={[
           styles.card,
-          compact && styles.compactCard,
-          {
-            borderColor: theme.border,
-            backgroundColor: compact ? theme.background : theme.backgroundElement,
-          },
+          { borderColor: theme.border, backgroundColor: theme.backgroundElement },
         ]}>
-        {!compact && photo && (
-          <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+        {photo && (
+          <View>
+            <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+            <View style={styles.tagOnPhoto}>
+              <ListingTypeTag type={listing.type} onPhoto />
+            </View>
+          </View>
         )}
-        <View style={[styles.headerRow, showSave && !photo && styles.headerWithHeart]}>
-          <ListingTypeTag type={listing.type} />
-          {listing.status === 'closed' ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('listings.closed')}
+        <View style={[styles.body, showSave && !photo && styles.bodyWithHeart]}>
+          {!photo && <ListingTypeTag type={listing.type} />}
+          <View style={styles.tagRow}>
+            <ListingPrice listing={listing} size="card" />
+            {status}
+          </View>
+          <ThemedText style={styles.title} numberOfLines={2}>
+            {listing.title}
+          </ThemedText>
+          <View style={styles.details}>
+            <Icon name="map-pin" size={14} color={theme.textSecondary} strokeWidth={2} />
+            <ThemedText
+              type="small"
+              themeColor="textSecondary"
+              numberOfLines={1}
+              style={styles.flex}>
+              {details}
             </ThemedText>
-          ) : (
-            new Date(listing.expires_at) <= new Date() && (
-              <ThemedText type="small" style={{ color: theme.danger }}>
-                {t('listings.expired')}
-              </ThemedText>
-            )
-          )}
+          </View>
         </View>
-        <ThemedText
-          style={[styles.title, showSave && !photo && styles.headerWithHeart]}
-          numberOfLines={2}>
-          {listing.title}
-        </ThemedText>
-        <ListingPrice listing={listing} />
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-          {details}
-        </ThemedText>
       </PressableLink>
       {/* Next to the link rather than inside it, so tapping the heart doesn't open the listing. */}
       {showSave && (
-        <View style={[styles.heart, photo ? styles.heartOnPhoto : styles.heartNoPhoto]}>
+        <View style={styles.heart}>
           <SaveButton listingId={listing.id} />
         </View>
       )}
@@ -123,46 +184,58 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: Spacing.two,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   compactCard: {
+    borderWidth: 1,
+    borderRadius: 14,
     padding: Spacing.two,
     gap: Spacing.one,
     marginTop: Spacing.one,
   },
   photo: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: 10,
+    aspectRatio: 16 / 10,
   },
-  headerRow: {
+  tagOnPhoto: {
+    position: 'absolute',
+    left: Spacing.three - 4,
+    top: Spacing.three - 4,
+  },
+  body: {
+    padding: Spacing.three,
+    paddingTop: Spacing.three - 2,
+    gap: 4,
+  },
+  // Room for the heart in the top corner when there's no photo.
+  bodyWithHeart: {
+    paddingRight: 56,
+  },
+  tagRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.two,
   },
-  headerWithHeart: {
-    paddingRight: 40,
+  details: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  flex: {
+    flex: 1,
   },
   heart: {
     position: 'absolute',
-  },
-  // On top of the photo's corner.
-  heartOnPhoto: {
-    top: Spacing.three + Spacing.two,
-    right: Spacing.three + Spacing.two,
-  },
-  // Level with the type label.
-  heartNoPhoto: {
-    top: 10,
-    right: 10,
+    top: Spacing.three - 4,
+    right: Spacing.three - 4,
   },
   tag: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
-    height: 24,
-    borderRadius: 12,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
   },
   tagText: {
@@ -180,13 +253,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
-  priceLarge: {
-    fontWeight: 700,
-    fontSize: 24,
-    lineHeight: 30,
+  priceCard: {
+    fontSize: 22,
+    lineHeight: 28,
   },
-  pressed: {
-    opacity: 0.7,
+  priceLarge: {
+    fontSize: 28,
+    lineHeight: 34,
   },
 });
 
@@ -241,7 +314,7 @@ export function ListingMiniCard({ listing, onClose }: { listing: Listing; onClos
           onPress={onClose}
           hitSlop={10}
           style={miniStyles.close}>
-          <ThemedText themeColor="textSecondary">✕</ThemedText>
+          <Icon name="close" size={18} color={theme.textSecondary} />
         </Pressable>
         {!isMine && <SaveButton listingId={listing.id} variant="plain" />}
       </View>

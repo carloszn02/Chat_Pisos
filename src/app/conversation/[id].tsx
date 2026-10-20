@@ -8,10 +8,12 @@ import { ChatSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
+import { IconButton } from '@/components/button';
 import { ChatComposer } from '@/components/chat-composer';
 import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { ListingCard } from '@/components/listing-card';
+import { SafetyTip } from '@/components/safety-tip';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
@@ -277,14 +279,13 @@ export default function ConversationScreen() {
           ) : null,
         headerRight: () =>
           otherUser ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('messages.options')}
+            <IconButton
+              icon="more"
+              label={t('messages.options')}
+              variant="plain"
+              size={40}
               onPress={() => setMenuOpen(true)}
-              hitSlop={8}
-              style={styles.headerButton}>
-              <ThemedText style={styles.menuDots}>⋯</ThemedText>
-            </Pressable>
+            />
           ) : null,
       }}
     />
@@ -450,11 +451,7 @@ export default function ConversationScreen() {
     <ThemedView style={styles.screen}>
       {header}
       <View style={styles.screen}>
-        <View style={[styles.banner, { backgroundColor: theme.backgroundSelected }]}>
-          <ThemedText type="small" style={styles.bannerText}>
-            {t('messages.safetyTip')}
-          </ThemedText>
-        </View>
+        <SafetyTip text={t('messages.safetyTip')} />
 
         {messages.length === 0 ? (
           <View style={[styles.screen, styles.centered]}>
@@ -704,10 +701,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  menuDots: {
-    fontSize: 20,
-    fontWeight: 700,
-  },
   banner: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
@@ -732,7 +725,9 @@ const styles = StyleSheet.create({
   },
   theirBubble: {
     alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    borderColor: '#EFE7DE',
   },
   body: {
     fontSize: 15,
@@ -771,7 +766,7 @@ const styles = StyleSheet.create({
   requestButton: {
     flex: 1,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

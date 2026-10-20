@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ActionSheet } from '@/components/action-sheet';
 import { GroupTile } from '@/components/group-tile';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
@@ -241,7 +242,7 @@ function Row({
         ]}>
         {label}
       </ThemedText>
-      {!danger && !accent && <ThemedText themeColor="textSecondary">›</ThemedText>}
+      {!danger && !accent && <Icon name="chevron-right" size={18} color={theme.textSecondary} />}
     </Pressable>
   );
 }

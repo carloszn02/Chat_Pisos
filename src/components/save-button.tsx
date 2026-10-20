@@ -1,8 +1,7 @@
-import { SymbolView } from 'expo-symbols';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
+import { Icon } from '@/components/icon';
 import { useSaved } from '@/hooks/use-saved';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -36,16 +35,7 @@ export function SaveButton({ listingId, variant = 'floating' }: SaveButtonProps)
         variant === 'floating' && [styles.floating, { backgroundColor: theme.backgroundElement }],
         pressed && styles.pressed,
       ]}>
-      <SymbolView
-        name={
-          saved
-            ? { ios: 'heart.fill', android: 'favorite', web: 'favorite' }
-            : { ios: 'heart', android: 'favorite_border', web: 'favorite_border' }
-        }
-        tintColor={color}
-        size={20}
-        fallback={<ThemedText style={{ color, fontSize: 18 }}>{saved ? '♥︎' : '♡'}</ThemedText>}
-      />
+      <Icon name="heart" size={19} color={color} filled={saved} strokeWidth={2} />
     </Pressable>
   );
 }

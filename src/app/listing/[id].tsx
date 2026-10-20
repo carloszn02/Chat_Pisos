@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { DetailSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
@@ -264,7 +265,7 @@ export default function ListingDetailScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             {placeLabel(listing.area_ids)}
           </ThemedText>
-          <ListingPrice listing={listing} large />
+          <ListingPrice listing={listing} size="large" />
 
           {facts.length > 0 && (
             <View style={styles.facts}>
@@ -325,7 +326,7 @@ export default function ListingDetailScreen() {
                       .join(' · ')}
                   </ThemedText>
                 </View>
-                <ThemedText themeColor="textSecondary">›</ThemedText>
+                <Icon name="chevron-right" size={18} color={theme.textSecondary} />
               </PressableLink>
               {inCommon.length > 0 && (
                 <>
@@ -558,8 +559,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -577,8 +578,8 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

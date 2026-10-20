@@ -1,9 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { IconButton } from '@/components/button';
+import { ScreenHeader } from '@/components/screen-header';
 import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ConversationRow } from '@/components/conversation-row';
@@ -74,19 +77,18 @@ export default function MessagesScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }>
           <View style={styles.content}>
-            <View style={styles.header}>
-              <ThemedText type="subtitle">{t('messages.title')}</ThemedText>
-              {section === 'groups' && (
-                <PressableLink
-                  href="/new-private-group"
-                  accessibilityRole="button"
-                  style={[styles.newGroup, { borderColor: theme.primary }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    + {t('privateGroups.newButton')}
-                  </ThemedText>
-                </PressableLink>
-              )}
-            </View>
+            <ScreenHeader
+              title={t('messages.title')}
+              actions={
+                section === 'groups' ? (
+                  <IconButton
+                    icon="plus"
+                    label={t('privateGroups.newTitle')}
+                    onPress={() => router.push('/new-private-group')}
+                  />
+                ) : undefined
+              }
+            />
 
             <SegmentedControl
               segments={[

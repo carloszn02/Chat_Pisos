@@ -186,8 +186,8 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

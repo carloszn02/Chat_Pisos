@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -77,8 +78,9 @@ export default function SuggestAreaScreen() {
             : { borderColor: theme.border },
           pressed && styles.pressed,
         ]}>
+        {chosen && <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={2.6} />}
         <ThemedText type="smallBold" style={{ color: chosen ? theme.onPrimary : theme.text }}>
-          {chosen ? `✓ ${t('chats.interested')}` : t('chats.wantGroup')}
+          {chosen ? t('chats.interested') : t('chats.wantGroup')}
         </ThemedText>
       </Pressable>
     );

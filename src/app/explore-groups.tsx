@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { CardGridSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { DistrictCard } from '@/components/district-card';
@@ -116,7 +117,7 @@ export default function ExploreGroupsScreen() {
               styles.searchBox,
               { borderColor: theme.border, backgroundColor: theme.backgroundElement },
             ]}>
-            <ThemedText themeColor="textSecondary">⌕</ThemedText>
+            <Icon name="search" size={18} color={theme.textSecondary} />
             <TextInput
               value={search}
               onChangeText={setSearch}
@@ -133,7 +134,7 @@ export default function ExploreGroupsScreen() {
                 accessibilityLabel={t('chats.clearSearch')}
                 onPress={() => setSearch('')}
                 hitSlop={10}>
-                <ThemedText themeColor="textSecondary">✕</ThemedText>
+                <Icon name="close" size={18} color={theme.textSecondary} />
               </Pressable>
             )}
           </View>
@@ -178,7 +179,7 @@ export default function ExploreGroupsScreen() {
                 {t('chats.suggestHint')}
               </ThemedText>
             </View>
-            <ThemedText style={{ color: theme.primary }}>›</ThemedText>
+            <Icon name="chevron-right" size={18} color={theme.primary} />
           </PressableLink>
         </View>
       </ScrollView>

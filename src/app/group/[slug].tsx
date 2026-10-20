@@ -8,12 +8,15 @@ import { ChatSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
+import { IconButton } from '@/components/button';
 import { ChatComposer } from '@/components/chat-composer';
 import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { GroupListings } from '@/components/group-listings';
 import { GroupTile } from '@/components/group-tile';
 import { ListingCard } from '@/components/listing-card';
+import { SafetyTip } from '@/components/safety-tip';
+import { SegmentedControl } from '@/components/segmented-control';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
@@ -544,14 +547,13 @@ export default function GroupChatScreen() {
           ) : undefined,
         headerRight: () =>
           group ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('messages.options')}
+            <IconButton
+              icon="more"
+              label={t('messages.options')}
+              variant="plain"
+              size={40}
               onPress={() => setMenuOpen(true)}
-              hitSlop={10}
-              style={styles.headerButton}>
-              <ThemedText style={styles.menuDots}>⋯</ThemedText>
-            </Pressable>
+            />
           ) : null,
       }}
     />
@@ -574,37 +576,22 @@ export default function GroupChatScreen() {
     <ThemedView style={styles.screen}>
       {header}
       <View style={styles.screen}>
-        <View
-          style={[styles.tabs, { borderBottomColor: theme.border }]}
-          accessibilityRole="tablist">
-          {(['chat', 'listings'] as const).map((option) => {
-            const selected = tab === option;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="tab"
-                accessibilityState={{ selected }}
-                onPress={() => setTab(option)}
-                style={[styles.tab, selected && { borderBottomColor: theme.primary }]}>
-                <ThemedText
-                  type={selected ? 'smallBold' : 'small'}
-                  style={{ color: selected ? theme.primary : theme.textSecondary }}>
-                  {option === 'chat' ? t('chats.tabChat') : t('chats.tabListings')}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
+        <View style={styles.tabs}>
+          <SegmentedControl
+            segments={[
+              { key: 'chat', label: t('chats.tabChat') },
+              { key: 'listings', label: t('chats.tabListings') },
+            ]}
+            selected={tab}
+            onChange={setTab}
+          />
         </View>
 
         {tab === 'listings' ? (
           <GroupListings group={group} />
         ) : (
           <>
-            <View style={[styles.safetyBanner, { backgroundColor: theme.backgroundSelected }]}>
-              <ThemedText type="small" style={styles.safetyText}>
-                {t('chats.safetyTip')}
-              </ThemedText>
-            </View>
+            <SafetyTip text={t('chats.safetyTip')} />
 
             {visibleMessages.length === 0 ? (
               <View style={[styles.screen, styles.centered]}>
@@ -832,28 +819,9 @@ const styles = StyleSheet.create({
   highlight: {
     boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
   },
-  menuDots: {
-    fontSize: 22,
-    fontWeight: 700,
-  },
   tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  safetyBanner: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  safetyText: {
-    textAlign: 'center',
+    paddingTop: Spacing.one,
   },
   messageList: {
     padding: Spacing.three,
@@ -881,8 +849,10 @@ const styles = StyleSheet.create({
   },
   theirBubble: {
     flexShrink: 1,
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
+    borderRadius: 18,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    borderColor: '#EFE7DE',
   },
   body: {
     fontSize: 15,
@@ -905,7 +875,7 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     height: 48,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

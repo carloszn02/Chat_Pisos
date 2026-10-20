@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -185,9 +186,7 @@ export default function ReportScreen() {
                         alsoBlock && { backgroundColor: theme.primary },
                       ]}>
                       {alsoBlock && (
-                        <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                          ✓
-                        </ThemedText>
+                        <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
                       )}
                     </View>
                     <View style={styles.checkboxText}>
@@ -294,8 +293,8 @@ const styles = StyleSheet.create({
     fontWeight: 700,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

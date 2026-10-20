@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,12 +11,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button, IconButton } from '@/components/button';
+import { Icon, type IconName } from '@/components/icon';
+import { ScreenHeader } from '@/components/screen-header';
 import { ListingCardsSkeleton } from '@/components/skeleton';
 import { ListingCard, ListingMiniCard } from '@/components/listing-card';
 import { ListingsMap } from '@/components/listings-map';
-import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,35 +32,67 @@ import type { ListingPin, MapBounds } from '@/lib/map';
 import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPES, type Listing, type ListingType } from '@/types/listing';
 
-type Chip = { key: string; label: string; selected: boolean; onPress: () => void };
+type Chip = {
+  key: string;
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  /** An icon before the text (e.g. the filters icon). */
+  icon?: IconName;
+  /** Shows a small ✕ after the text: tapping the chip removes that filter. */
+  removable?: boolean;
+  /** Outlined in dark instead of filled (for the "Filters" button). */
+  outlined?: boolean;
+};
 
-function ChipRow({ chips }: { chips: Chip[] }) {
+function ChipView({ chip }: { chip: Chip }) {
   const theme = useTheme();
+  const filled = chip.selected && !chip.outlined;
+  const color = filled ? theme.onPrimary : theme.text;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: chip.selected }}
+      onPress={chip.onPress}
+      style={({ pressed }) => [
+        styles.chip,
+        {
+          borderColor: filled ? theme.primary : chip.outlined ? theme.text : theme.border,
+          backgroundColor: filled ? theme.primary : theme.backgroundElement,
+        },
+        pressed && styles.pressed,
+      ]}>
+      {chip.icon && <Icon name={chip.icon} size={16} color={color} strokeWidth={2} />}
+      <ThemedText type={filled || chip.outlined ? 'smallBold' : 'small'} style={{ color }}>
+        {chip.label}
+      </ThemedText>
+      {chip.removable && <Icon name="close" size={14} color={color} strokeWidth={2.2} />}
+    </Pressable>
+  );
+}
+
+/** Chips in a row that scrolls sideways. */
+function ChipRow({ chips }: { chips: Chip[] }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.chipRow}>
       {chips.map((chip) => (
-        <Pressable
-          key={chip.key}
-          accessibilityRole="button"
-          accessibilityState={{ selected: chip.selected }}
-          onPress={chip.onPress}
-          style={({ pressed }) => [
-            styles.chip,
-            {
-              borderColor: chip.selected ? theme.text : theme.border,
-              backgroundColor: chip.selected ? theme.text : theme.backgroundElement,
-            },
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText type="small" style={{ color: chip.selected ? theme.background : theme.text }}>
-            {chip.label}
-          </ThemedText>
-        </Pressable>
+        <ChipView key={chip.key} chip={chip} />
       ))}
     </ScrollView>
+  );
+}
+
+/** Chips that wrap onto several lines (inside the filters panel). */
+function ChipWrap({ chips }: { chips: Chip[] }) {
+  return (
+    <View style={styles.chipWrap}>
+      {chips.map((chip) => (
+        <ChipView key={chip.key} chip={chip} />
+      ))}
+    </View>
   );
 }
 
@@ -69,6 +104,8 @@ export default function ListingsScreen() {
   const cityId = city?.id ?? null;
 
   const [view, setView] = useState<'list' | 'map'>('list');
+  // The panel with districts, neighbourhoods and price.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // "Saved" shows only the listings you gave a heart (the other filters are hidden).
   const [savedOnly, setSavedOnly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -184,46 +221,64 @@ export default function ListingsScreen() {
     setMaxPrice(maxPriceText.trim() && Number.isInteger(value) && value > 0 ? value : null);
   }
 
-  const typeChips: Chip[] = [
-    // While searching a map area, a chip shows it and clears it.
-    ...(areaBounds && !savedOnly
-      ? [
-          {
-            key: 'area',
-            label: `📍 ${t('listings.mapArea')}  ✕`,
-            selected: true,
-            onPress: clearArea,
+  // How many filters from the panel are on (a place and/or a price).
+  const panelFilterCount = (districtId ? 1 : 0) + (maxPrice ? 1 : 0);
+  const typeChips: Chip[] = savedOnly
+    ? [
+        // Showing saved listings: one chip to go back to all of them.
+        {
+          key: 'saved',
+          label: `${t('listings.saved')} · ${savedIds.length}`,
+          icon: 'heart',
+          selected: true,
+          removable: true,
+          onPress: () => setSavedOnly(false),
+        },
+      ]
+    : [
+        {
+          key: 'filters',
+          label:
+            panelFilterCount > 0
+              ? `${t('listings.filters.title')} · ${panelFilterCount}`
+              : t('listings.filters.title'),
+          icon: 'filters',
+          selected: panelFilterCount > 0,
+          outlined: true,
+          onPress: () => setFiltersOpen(true),
+        },
+        // While searching a map area, a chip shows it and clears it.
+        ...(areaBounds
+          ? [
+              {
+                key: 'area',
+                label: t('listings.mapArea'),
+                icon: 'map-pin' as const,
+                selected: true,
+                removable: true,
+                onPress: clearArea,
+              },
+            ]
+          : []),
+        {
+          key: 'all',
+          label: t('listings.filters.all'),
+          selected: !savedOnly && type === null,
+          onPress: () => {
+            setSavedOnly(false);
+            setType(null);
           },
-        ]
-      : []),
-    {
-      key: 'saved',
-      label:
-        savedIds.length > 0
-          ? `♥ ${t('listings.saved')} · ${savedIds.length}`
-          : `♡ ${t('listings.saved')}`,
-      selected: savedOnly,
-      onPress: () => setSavedOnly((current) => !current),
-    },
-    {
-      key: 'all',
-      label: t('listings.filters.all'),
-      selected: !savedOnly && type === null,
-      onPress: () => {
-        setSavedOnly(false);
-        setType(null);
-      },
-    },
-    ...LISTING_TYPES.map((option) => ({
-      key: option,
-      label: t(`listings.filters.types.${option}`),
-      selected: !savedOnly && type === option,
-      onPress: () => {
-        setSavedOnly(false);
-        setType(option);
-      },
-    })),
-  ];
+        },
+        ...LISTING_TYPES.map((option) => ({
+          key: option,
+          label: t(`listings.filters.types.${option}`),
+          selected: !savedOnly && type === option,
+          onPress: () => {
+            setSavedOnly(false);
+            setType(option);
+          },
+        })),
+      ];
 
   const districtChips: Chip[] = [
     {
@@ -258,60 +313,72 @@ export default function ListingsScreen() {
       ]
     : [];
 
+  // "24 listings · Malasaña · Up to 700 €"
+  const placeName = neighbourhoodId
+    ? neighbourhoodsOf(districtId ?? '').find((h) => h.id === neighbourhoodId)?.name
+    : districts.find((d) => d.id === districtId)?.name;
+  const summary = [
+    listings ? t('listings.count', { count: shown.length }) : null,
+    !savedOnly ? placeName : null,
+    !savedOnly && maxPrice
+      ? t('listings.filters.upTo', { price: formatPrice(maxPrice, i18n.language) })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   const filtersBlock = (
     <>
-      <View style={styles.header}>
-        <ThemedText type="subtitle">{t('listings.title')}</ThemedText>
-        <View style={styles.viewSwitch}>
-          <SegmentedControl
-            segments={[
-              { key: 'list', label: t('listings.viewList') },
-              { key: 'map', label: t('listings.viewMap') },
-            ]}
-            selected={view}
-            onChange={setView}
-          />
-        </View>
-      </View>
+      <ScreenHeader
+        title={t('listings.title')}
+        actions={
+          <>
+            <IconButton
+              icon={view === 'list' ? 'map' : 'list'}
+              label={view === 'list' ? t('listings.viewMap') : t('listings.viewList')}
+              onPress={() => setView(view === 'list' ? 'map' : 'list')}
+            />
+            <IconButton
+              icon="heart"
+              label={t('listings.saved')}
+              variant={savedOnly ? 'filled' : 'outlined'}
+              badge={savedOnly ? undefined : savedIds.length}
+              onPress={() => setSavedOnly((current) => !current)}
+            />
+          </>
+        }
+      />
 
       <ChipRow chips={typeChips} />
-      {!savedOnly && <ChipRow chips={districtChips} />}
-      {!savedOnly && neighbourhoodChips.length > 0 && <ChipRow chips={neighbourhoodChips} />}
-
-      {!savedOnly && (
-        <View style={styles.priceRow}>
-          <ThemedText type="small" themeColor="textSecondary">
-            {t('listings.filters.maxPrice')}
-          </ThemedText>
-          <TextInput
-            style={[
-              styles.priceInput,
-              {
-                borderColor: theme.border,
-                backgroundColor: theme.backgroundElement,
-                color: theme.text,
-              },
-            ]}
-            value={maxPriceText}
-            onChangeText={setMaxPriceText}
-            onBlur={applyMaxPrice}
-            onSubmitEditing={applyMaxPrice}
-            placeholder="€"
-            placeholderTextColor={theme.textSecondary}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            returnKeyType="search"
-            maxLength={5}
-            accessibilityLabel={t('listings.filters.maxPrice')}
-          />
-        </View>
-      )}
+      {summary ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {summary}
+        </ThemedText>
+      ) : null}
 
       {loadError && (
         <ThemedText type="small" style={{ color: theme.danger }}>
           {t('listings.loadError')}
         </ThemedText>
       )}
+
+      <FiltersPanel
+        visible={filtersOpen}
+        onClose={() => {
+          applyMaxPrice();
+          setFiltersOpen(false);
+        }}
+        onClear={() => {
+          chooseDistrict(null);
+          setMaxPriceText('');
+          setMaxPrice(null);
+        }}
+        districtChips={districtChips}
+        neighbourhoodChips={neighbourhoodChips}
+        maxPriceText={maxPriceText}
+        onChangeMaxPrice={setMaxPriceText}
+        onSubmitMaxPrice={applyMaxPrice}
+      />
     </>
   );
 
@@ -422,7 +489,146 @@ export default function ListingsScreen() {
   );
 }
 
+type FiltersPanelProps = {
+  visible: boolean;
+  onClose: () => void;
+  onClear: () => void;
+  districtChips: Chip[];
+  neighbourhoodChips: Chip[];
+  maxPriceText: string;
+  onChangeMaxPrice: (text: string) => void;
+  onSubmitMaxPrice: () => void;
+};
+
+/** Districts, neighbourhoods and the top price, in a panel that slides up. */
+function FiltersPanel({
+  visible,
+  onClose,
+  onClear,
+  districtChips,
+  neighbourhoodChips,
+  maxPriceText,
+  onChangeMaxPrice,
+  onSubmitMaxPrice,
+}: FiltersPanelProps) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('common.close')}
+        style={styles.backdrop}
+        onPress={onClose}
+      />
+      <View
+        style={[
+          styles.panel,
+          {
+            backgroundColor: theme.background,
+            paddingBottom: Math.max(insets.bottom, Spacing.three),
+          },
+        ]}>
+        <View style={styles.panelHeader}>
+          <ThemedText type="subtitle" style={styles.panelTitle}>
+            {t('listings.filters.title')}
+          </ThemedText>
+          <IconButton icon="close" label={t('common.close')} variant="plain" onPress={onClose} />
+        </View>
+        <ScrollView contentContainerStyle={styles.panelContent} keyboardShouldPersistTaps="handled">
+          <ThemedText style={styles.panelSection}>{t('listings.filters.where')}</ThemedText>
+          <ChipWrap chips={districtChips} />
+          {neighbourhoodChips.length > 0 && (
+            <>
+              <ThemedText style={styles.panelSection}>
+                {t('listings.filters.neighbourhood')}
+              </ThemedText>
+              <ChipWrap chips={neighbourhoodChips} />
+            </>
+          )}
+          <ThemedText style={styles.panelSection}>{t('listings.filters.maxPrice')}</ThemedText>
+          <TextInput
+            style={[
+              styles.priceInput,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.backgroundElement,
+                color: theme.text,
+              },
+            ]}
+            value={maxPriceText}
+            onChangeText={onChangeMaxPrice}
+            onBlur={onSubmitMaxPrice}
+            onSubmitEditing={onSubmitMaxPrice}
+            placeholder="€"
+            placeholderTextColor={theme.textSecondary}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            returnKeyType="done"
+            maxLength={5}
+            accessibilityLabel={t('listings.filters.maxPrice')}
+          />
+        </ScrollView>
+        <View style={[styles.panelFooter, { borderTopColor: theme.border }]}>
+          <Button label={t('listings.filters.clear')} variant="text" onPress={onClear} />
+          <Button label={t('listings.filters.show')} onPress={onClose} style={styles.panelShow} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  panel: {
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '80%',
+    alignSelf: 'center',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: Spacing.three,
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
+  },
+  panelTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+  panelContent: {
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.three,
+    gap: Spacing.two,
+  },
+  panelSection: {
+    fontWeight: 700,
+    marginTop: Spacing.three,
+  },
+  panelFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    borderTopWidth: 1,
+  },
+  panelShow: {
+    flex: 1,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
   container: {
     flex: 1,
   },
@@ -445,9 +651,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.three,
-  },
-  viewSwitch: {
-    width: 170,
   },
   center: {
     textAlign: 'center',
@@ -511,12 +714,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,
-    justifyContent: 'center',
-  },
-  priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 6,
   },
   priceInput: {
     fontFamily: AppFonts.regular,

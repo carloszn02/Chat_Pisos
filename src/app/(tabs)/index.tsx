@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -6,9 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
+import { IconButton } from '@/components/button';
+import { ChatRow } from '@/components/chat-row';
 import { CityBanner } from '@/components/city-banner';
 import { DistrictCard } from '@/components/district-card';
 import { GroupTile } from '@/components/group-tile';
+import { Icon } from '@/components/icon';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -110,7 +114,7 @@ export default function ChatsScreen() {
       last.user_id === userId
         ? t('chats.you')
         : (data?.authors.get(last.user_id)?.first_name ?? '');
-    // A photo sent without text shows as "📷 Photo".
+    // A photo sent without text shows as "Photo".
     const text = last.body || t('chats.photoPreview');
     return author ? `${author}: ${text}` : text;
   }
@@ -124,9 +128,16 @@ export default function ChatsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }>
           <View style={styles.content}>
-            <ThemedText type="subtitle" style={styles.header}>
-              {t('chats.title')}
-            </ThemedText>
+            <ScreenHeader
+              title={t('chats.title')}
+              actions={
+                <IconButton
+                  icon="search"
+                  label={t('chats.searchPlaceholder')}
+                  onPress={() => router.push('/explore-groups')}
+                />
+              }
+            />
             {city && <CityBanner city={city} subtitle={t('chats.citySubtitle')} />}
 
             {!data && !loadError && <RowsSkeleton count={3} shape="square" />}
@@ -146,9 +157,7 @@ export default function ChatsScreen() {
 
             {data && (
               <>
-                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-                  {t('chats.yourGroups')}
-                </ThemedText>
+                <ThemedText style={styles.sectionTitle}>{t('chats.yourGroups')}</ThemedText>
                 {myGroups.length === 0 ? (
                   <ThemedText type="small" themeColor="textSecondary">
                     {t('chats.noGroupsYet')}
@@ -157,55 +166,17 @@ export default function ChatsScreen() {
                   <View style={styles.list}>
                     {myGroups.map((group) => {
                       const last = data.lastMessages.get(group.id);
-                      const unread = data.unread.get(group.id) ?? 0;
-                      const muted = isMuted('group', group.id);
-                      const highlight = unread > 0 && !muted;
                       return (
-                        <PressableLink
+                        <ChatRow
                           key={group.id}
                           href={{ pathname: '/group/[slug]', params: { slug: group.slug } }}
-                          accessibilityRole="link"
-                          style={[styles.row]}>
-                          <GroupTile group={group} />
-                          <View style={styles.rowText}>
-                            <ThemedText style={styles.groupName} numberOfLines={1}>
-                              {group.name}
-                              {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
-                            </ThemedText>
-                            <ThemedText
-                              type={highlight ? 'smallBold' : 'small'}
-                              themeColor={highlight ? 'text' : 'textSecondary'}
-                              numberOfLines={1}>
-                              {preview(group)}
-                            </ThemedText>
-                          </View>
-                          <View style={styles.meta}>
-                            {last && (
-                              <ThemedText type="small" themeColor="textSecondary">
-                                {formatShortTime(last.created_at, i18n.language)}
-                              </ThemedText>
-                            )}
-                            {unread > 0 && (
-                              <View
-                                style={[
-                                  styles.badge,
-                                  {
-                                    backgroundColor: muted
-                                      ? theme.backgroundSelected
-                                      : theme.primary,
-                                  },
-                                ]}>
-                                <ThemedText
-                                  style={[
-                                    styles.badgeText,
-                                    { color: muted ? theme.textSecondary : theme.onPrimary },
-                                  ]}>
-                                  {unread > 99 ? '99+' : unread}
-                                </ThemedText>
-                              </View>
-                            )}
-                          </View>
-                        </PressableLink>
+                          picture={<GroupTile group={group} size={50} />}
+                          title={group.name}
+                          time={last ? formatShortTime(last.created_at, i18n.language) : null}
+                          preview={preview(group)}
+                          unread={data.unread.get(group.id) ?? 0}
+                          muted={isMuted('group', group.id)}
+                        />
                       );
                     })}
                   </View>
@@ -213,17 +184,24 @@ export default function ChatsScreen() {
 
                 <View style={styles.discoverHeader}>
                   <View style={styles.rowText}>
-                    <ThemedText style={styles.discoverTitle}>{t('chats.discoverTitle')}</ThemedText>
+                    <ThemedText type="subtitle" style={styles.discoverTitle}>
+                      {t('chats.discoverTitle')}
+                    </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
                       {otherGroups.length > 0
                         ? t('chats.discoverHint', { city: city?.name ?? '' })
                         : t('chats.allJoined')}
                     </ThemedText>
                   </View>
-                  <PressableLink href="/explore-groups" accessibilityRole="link" hitSlop={10}>
+                  <PressableLink
+                    href="/explore-groups"
+                    accessibilityRole="link"
+                    hitSlop={10}
+                    style={styles.seeAll}>
                     <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                      {t('chats.seeAll')} ›
+                      {t('chats.seeAll')}
                     </ThemedText>
+                    <Icon name="chevron-right" size={16} color={theme.primary} strokeWidth={2} />
                   </PressableLink>
                 </View>
               </>
@@ -253,10 +231,10 @@ export default function ChatsScreen() {
                 accessibilityRole="link"
                 style={[
                   styles.seeAllCard,
-                  { borderColor: theme.border, backgroundColor: theme.backgroundSelected },
+                  { borderColor: theme.borderStrong, backgroundColor: theme.tile },
                 ]}>
                 <View style={[styles.seeAllCircle, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText style={[styles.seeAllArrow, { color: theme.primary }]}>→</ThemedText>
+                  <Icon name="arrow-right" size={20} color={theme.primary} strokeWidth={2} />
                 </View>
                 <ThemedText type="smallBold" style={styles.seeAllText}>
                   {t('chats.exploreTitle', { city: city?.name ?? '' })}
@@ -317,9 +295,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginTop: Spacing.three,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: 700,
+  },
+  seeAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   list: {
     gap: Spacing.one,
@@ -368,7 +350,6 @@ const styles = StyleSheet.create({
   discoverTitle: {
     fontSize: 20,
     lineHeight: 26,
-    fontWeight: 700,
   },
   carousel: {
     width: '100%',

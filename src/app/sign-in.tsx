@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -302,9 +303,7 @@ export default function SignInScreen() {
                       accepted && { backgroundColor: theme.primary },
                     ]}>
                     {accepted && (
-                      <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                        ✓
-                      </ThemedText>
+                      <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
                     )}
                   </View>
                   <ThemedText type="small" style={styles.flex}>
@@ -469,8 +468,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.one,

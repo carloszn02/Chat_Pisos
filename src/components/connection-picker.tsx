@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { RowsSkeleton } from '@/components/skeleton';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
@@ -105,11 +106,7 @@ export function ConnectionPicker({
                 { borderColor: chosen ? theme.primary : theme.border },
                 chosen && { backgroundColor: theme.primary },
               ]}>
-              {chosen && (
-                <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                  ✓
-                </ThemedText>
-              )}
+              {chosen && <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />}
             </View>
           </Pressable>
         );

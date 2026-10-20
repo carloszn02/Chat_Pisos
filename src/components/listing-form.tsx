@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { AreaPicker } from '@/components/area-picker';
 import { ChoiceChips } from '@/components/choice-chips';
 import { LocationMap } from '@/components/location-map';
@@ -621,9 +622,7 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
                   shareInGroups && { backgroundColor: theme.primary },
                 ]}>
                 {shareInGroups && (
-                  <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                    ✓
-                  </ThemedText>
+                  <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
                 )}
               </View>
               <View style={styles.flex}>
@@ -733,7 +732,7 @@ const styles = StyleSheet.create({
   searchButton: {
     height: 48,
     paddingHorizontal: Spacing.three,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -798,8 +797,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

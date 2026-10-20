@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -80,9 +81,7 @@ export default function DeleteAccountScreen() {
                 understood && { backgroundColor: theme.danger },
               ]}>
               {understood && (
-                <ThemedText type="smallBold" style={{ color: theme.onPrimary }}>
-                  ✓
-                </ThemedText>
+                <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
               )}
             </View>
             <ThemedText style={styles.flex}>{t('deleteAccount.confirmCheckbox')}</ThemedText>
@@ -163,8 +162,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   deleteButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,

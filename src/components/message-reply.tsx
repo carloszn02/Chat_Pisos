@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -96,7 +97,7 @@ export function ReplyBar({
         accessibilityLabel={t('chats.cancelReply')}
         onPress={onCancel}
         hitSlop={10}>
-        <ThemedText themeColor="textSecondary">✕</ThemedText>
+        <Icon name="close" size={18} color={theme.textSecondary} />
       </Pressable>
     </View>
   );

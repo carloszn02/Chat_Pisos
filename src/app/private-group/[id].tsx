@@ -8,10 +8,12 @@ import { ChatSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
+import { IconButton } from '@/components/button';
 import { ChatComposer } from '@/components/chat-composer';
 import { ChatHeaderTitle } from '@/components/chat-header-title';
 import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
+import { Icon } from '@/components/icon';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { PrivateGroupBadge } from '@/components/private-group-row';
@@ -393,14 +395,13 @@ export default function PrivateGroupScreen() {
           ) : undefined,
         headerRight: () =>
           isMember ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('messages.options')}
+            <IconButton
+              icon="more"
+              label={t('messages.options')}
+              variant="plain"
+              size={40}
               onPress={() => setMenuOpen(true)}
-              hitSlop={10}
-              style={styles.headerButton}>
-              <ThemedText style={styles.menuDots}>⋯</ThemedText>
-            </Pressable>
+            />
           ) : null,
       }}
     />
@@ -627,8 +628,9 @@ export default function PrivateGroupScreen() {
               {t('privateGroups.requestsBanner', { count: pendingRequests })}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {t('privateGroups.review')} ›
+              {t('privateGroups.review')}
             </ThemedText>
+            <Icon name="chevron-right" size={16} color={theme.textSecondary} />
           </Pressable>
         )}
 
@@ -805,10 +807,6 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingHorizontal: Spacing.two,
   },
-  menuDots: {
-    fontSize: 22,
-    fontWeight: 700,
-  },
   inviteBox: {
     width: '100%',
     maxWidth: 440,
@@ -829,7 +827,7 @@ const styles = StyleSheet.create({
   inviteButton: {
     flex: 1,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -884,8 +882,10 @@ const styles = StyleSheet.create({
   },
   theirBubble: {
     flexShrink: 1,
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
+    borderRadius: 18,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    borderColor: '#EFE7DE',
   },
   body: {
     fontSize: 15,

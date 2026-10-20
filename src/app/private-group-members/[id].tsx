@@ -572,8 +572,8 @@ const styles = StyleSheet.create({
     fontWeight: 700,
   },
   primaryButton: {
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -4,20 +4,15 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { ChatGroup } from '@/types/chat';
 
-// Soft tints so neighbouring groups are easy to tell apart.
-const TINTS = [
-  { background: '#FBE9DC', text: '#8A3D10' },
-  { background: '#E3ECFB', text: '#1E4FB8' },
-  { background: '#DFF0E8', text: '#185C45' },
-  { background: '#F3EAE3', text: '#5C3F2F' },
-];
-
-/** The soft colour of a district group (the city-wide group uses the main colour). */
+/**
+ * The colours of a district group's tile: one calm warm beige for every district (the
+ * city-wide group uses the main mocha colour).
+ */
 export function useGroupTint(group: ChatGroup): { background: string; text: string } {
   const theme = useTheme();
   return group.is_city_wide
     ? { background: theme.primary, text: theme.onPrimary }
-    : TINTS[group.sort_order % TINTS.length];
+    : { background: theme.tile, text: theme.onTile };
 }
 
 /** The square badge with the group's initials (e.g. "ML" for Malasaña). */
@@ -30,10 +25,18 @@ export function GroupTile({ group, size = 48 }: { group: ChatGroup; size?: numbe
         styles.tile,
         { width: size, height: size, borderRadius: size * 0.3, backgroundColor: tint.background },
       ]}>
-      <ThemedText style={{ color: tint.text, fontWeight: 700, fontSize: size * 0.32 }}>
-        {group.short_code}
-      </ThemedText>
+      {/* "subtitle" gives the heading font; the size is set here. */}
+      <TileInitials text={group.short_code} color={tint.text} size={size * 0.34} />
     </View>
+  );
+}
+
+/** Initials in the heading font, for tiles and badges. */
+export function TileInitials({ text, color, size }: { text: string; color: string; size: number }) {
+  return (
+    <ThemedText type="subtitle" style={{ color, fontSize: size, lineHeight: size * 1.25 }}>
+      {text}
+    </ThemedText>
   );
 }
 

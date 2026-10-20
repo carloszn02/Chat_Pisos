@@ -1,11 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
 
-import { PressableLink } from '@/components/pressable-link';
 import { Avatar } from '@/components/avatar';
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ChatRow } from '@/components/chat-row';
 import { formatShortTime } from '@/lib/format';
 import type { InboxItem, PublicProfile } from '@/types/chat';
 
@@ -25,11 +21,9 @@ export function ConversationRow({
   muted = false,
 }: ConversationRowProps) {
   const { t, i18n } = useTranslation();
-  const theme = useTheme();
   const name = otherUser?.first_name ?? '…';
-  const unread = item.unread_count > 0;
 
-  // A photo sent without text shows as "📷 Photo".
+  // A photo sent without text shows as "Photo".
   let preview = item.last_message_deleted
     ? t('chats.messageDeleted')
     : item.last_message_at && !item.last_message_body
@@ -40,92 +34,16 @@ export function ConversationRow({
   const isSentRequest = item.status === 'pending' && !item.is_incoming_request;
 
   return (
-    <PressableLink
+    <ChatRow
       href={{ pathname: '/conversation/[id]', params: { id: item.id } }}
-      accessibilityRole="link"
-      style={[styles.row]}>
-      <Avatar uri={otherUser?.avatar_url ?? null} name={name} size={48} />
-      <View style={styles.text}>
-        <ThemedText style={styles.name} numberOfLines={1}>
-          {otherUser ? `${otherUser.first_name}, ${otherUser.age}` : name}
-          {muted ? <ThemedText style={styles.mutedIcon}> 🔕</ThemedText> : null}
-        </ThemedText>
-        {isSentRequest && (
-          <ThemedText type="small" style={{ color: theme.primary }}>
-            {t('messages.requestSent')}
-          </ThemedText>
-        )}
-        <ThemedText
-          type="small"
-          themeColor={unread && !muted ? 'text' : 'textSecondary'}
-          style={unread && !muted && styles.unreadText}
-          numberOfLines={1}>
-          {preview}
-        </ThemedText>
-      </View>
-      <View style={styles.meta}>
-        {item.last_message_at && (
-          <ThemedText type="small" themeColor="textSecondary">
-            {formatShortTime(item.last_message_at, i18n.language)}
-          </ThemedText>
-        )}
-        {unread && (
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: muted ? theme.backgroundSelected : theme.primary },
-            ]}>
-            <ThemedText
-              style={[styles.badgeText, { color: muted ? theme.textSecondary : theme.onPrimary }]}>
-              {item.unread_count}
-            </ThemedText>
-          </View>
-        )}
-      </View>
-    </PressableLink>
+      picture={<Avatar uri={otherUser?.avatar_url ?? null} name={name} size={50} />}
+      title={otherUser ? `${otherUser.first_name}, ${otherUser.age}` : name}
+      time={item.last_message_at ? formatShortTime(item.last_message_at, i18n.language) : null}
+      preview={preview}
+      unread={item.unread_count}
+      muted={muted}
+      highlight={item.is_incoming_request}
+      note={isSentRequest ? t('messages.requestSent') : undefined}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  text: {
-    flex: 1,
-    minWidth: 0,
-  },
-  name: {
-    fontWeight: 700,
-  },
-  unreadText: {
-    fontWeight: 700,
-  },
-  mutedIcon: {
-    fontSize: 12,
-  },
-  meta: {
-    alignItems: 'flex-end',
-    alignSelf: 'flex-start',
-    gap: Spacing.one,
-    paddingTop: 2,
-  },
-  badge: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 6,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: 700,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});
