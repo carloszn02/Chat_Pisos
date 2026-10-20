@@ -204,6 +204,10 @@ const en: typeof es = {
       generic: 'Something went wrong. Please try again.',
     },
   },
+  chatActions: {
+    markRead: 'Mark as read',
+    hint: 'Long-press for the chat options',
+  },
   mute: {
     menu: 'Mute',
     unmuteMenu: 'Unmute',

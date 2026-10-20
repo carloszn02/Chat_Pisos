@@ -9,6 +9,7 @@ import { IconButton } from '@/components/button';
 import { ScreenHeader } from '@/components/screen-header';
 import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
+import { ChatActions, type ChatActionsTarget } from '@/components/chat-actions';
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -34,6 +35,8 @@ export default function MessagesScreen() {
   const myUserId = session?.user.id ?? '';
   const [refreshing, setRefreshing] = useState(false);
   const [section, setSection] = useState<Section>('private');
+  // The chat whose options are open (long-press on a row).
+  const [actionsFor, setActionsFor] = useState<ChatActionsTarget | null>(null);
 
   // Open on the section used last time.
   useEffect(() => {
@@ -151,6 +154,14 @@ export default function MessagesScreen() {
                           users={data.users}
                           myUserId={myUserId}
                           muted={isMuted('private_group', group.id)}
+                          onLongPress={() =>
+                            setActionsFor({
+                              kind: 'private_group',
+                              id: group.id,
+                              name: group.name,
+                              unread: group.unread_count,
+                            })
+                          }
                         />
                       ))}
                     </View>
@@ -168,6 +179,15 @@ export default function MessagesScreen() {
                         otherUser={data.users.get(item.other_user_id)}
                         myUserId={myUserId}
                         muted={isMuted('conversation', item.id)}
+                        onLongPress={() =>
+                          setActionsFor({
+                            kind: 'conversation',
+                            id: item.id,
+                            otherUserId: item.other_user_id,
+                            name: data.users.get(item.other_user_id)?.first_name ?? '',
+                            unread: item.unread_count,
+                          })
+                        }
                       />
                     ))}
                   </View>
@@ -177,6 +197,11 @@ export default function MessagesScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <ChatActions
+        target={actionsFor}
+        onClose={() => setActionsFor(null)}
+        onChanged={() => void reload()}
+      />
     </ThemedView>
   );
 }

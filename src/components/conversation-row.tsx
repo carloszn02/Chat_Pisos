@@ -11,6 +11,8 @@ type ConversationRowProps = {
   myUserId: string;
   /** Muted chats show a bell icon and a grey counter. */
   muted?: boolean;
+  /** Long-press: the chat's options. */
+  onLongPress?: () => void;
 };
 
 /** One conversation in the Messages list or the requests list. */
@@ -19,6 +21,7 @@ export function ConversationRow({
   otherUser,
   myUserId,
   muted = false,
+  onLongPress,
 }: ConversationRowProps) {
   const { t, i18n } = useTranslation();
   const name = otherUser?.first_name ?? '…';
@@ -44,6 +47,7 @@ export function ConversationRow({
       muted={muted}
       highlight={item.is_incoming_request}
       note={isSentRequest ? t('messages.requestSent') : undefined}
+      onLongPress={onLongPress}
     />
   );
 }

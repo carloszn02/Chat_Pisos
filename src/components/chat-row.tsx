@@ -24,6 +24,8 @@ type ChatRowProps = {
   highlight?: boolean;
   /** A short coloured line under the preview (e.g. "Request sent", "2 requests to join"). */
   note?: string;
+  /** Long-press (or hold the mouse button): the chat's options. */
+  onLongPress?: () => void;
 };
 
 /**
@@ -40,13 +42,19 @@ export function ChatRow({
   muted = false,
   highlight = false,
   note,
+  onLongPress,
 }: ChatRowProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const strong = (unread > 0 && !muted) || highlight;
 
   return (
-    <PressableLink href={href} style={[styles.row, { borderBottomColor: theme.divider }]}>
+    <PressableLink
+      href={href}
+      onLongPress={onLongPress}
+      delayLongPress={400}
+      accessibilityHint={onLongPress ? t('chatActions.hint') : undefined}
+      style={[styles.row, { borderBottomColor: theme.divider }]}>
       {picture}
       <View style={styles.text}>
         <View style={styles.line}>

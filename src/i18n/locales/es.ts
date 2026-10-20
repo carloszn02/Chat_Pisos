@@ -203,6 +203,10 @@ const es = {
       generic: 'Algo ha fallado. Inténtalo de nuevo.',
     },
   },
+  chatActions: {
+    markRead: 'Marcar como leído',
+    hint: 'Mantén pulsado para ver las opciones del chat',
+  },
   mute: {
     menu: 'Silenciar',
     unmuteMenu: 'Quitar silencio',

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { IconButton } from '@/components/button';
+import { ChatActions, type ChatActionsTarget } from '@/components/chat-actions';
 import { ChatRow } from '@/components/chat-row';
 import { CityBanner } from '@/components/city-banner';
 import { DistrictCard } from '@/components/district-card';
@@ -56,6 +57,8 @@ export default function ChatsScreen() {
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
+  // The chat whose options are open (long-press on a row).
+  const [actionsFor, setActionsFor] = useState<ChatActionsTarget | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -176,6 +179,13 @@ export default function ChatsScreen() {
                           preview={preview(group)}
                           unread={data.unread.get(group.id) ?? 0}
                           muted={isMuted('group', group.id)}
+                          onLongPress={() =>
+                            setActionsFor({
+                              kind: 'group',
+                              group,
+                              unread: data.unread.get(group.id) ?? 0,
+                            })
+                          }
                         />
                       );
                     })}
@@ -263,6 +273,12 @@ export default function ChatsScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+      <ChatActions
+        target={actionsFor}
+        onClose={() => setActionsFor(null)}
+        onChanged={() => void load()}
+        onError={() => setLoadError(true)}
+      />
     </ThemedView>
   );
 }

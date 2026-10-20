@@ -14,6 +14,8 @@ type PrivateGroupRowProps = {
   myUserId: string;
   /** Muted chats show a bell icon and a grey counter. */
   muted?: boolean;
+  /** Long-press: the chat's options. */
+  onLongPress?: () => void;
 };
 
 /** The round badge with a group's initials, e.g. "FH" for "Flat hunting". */
@@ -37,7 +39,13 @@ export function PrivateGroupBadge({ name, size = 48 }: { name: string; size?: nu
 }
 
 /** One private group in the Messages list (or an invitation in the requests list). */
-export function PrivateGroupRow({ group, users, myUserId, muted = false }: PrivateGroupRowProps) {
+export function PrivateGroupRow({
+  group,
+  users,
+  myUserId,
+  muted = false,
+  onLongPress,
+}: PrivateGroupRowProps) {
   const { t, i18n } = useTranslation();
   const invited = group.my_status === 'invited';
   const requests = invited ? 0 : (group.pending_requests ?? 0);
@@ -85,6 +93,7 @@ export function PrivateGroupRow({ group, users, myUserId, muted = false }: Priva
       muted={muted && !invited}
       highlight={invited}
       note={requests > 0 ? t('privateGroups.requestsBanner', { count: requests }) : undefined}
+      onLongPress={invited ? undefined : onLongPress}
     />
   );
 }
