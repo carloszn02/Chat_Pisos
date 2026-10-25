@@ -694,8 +694,10 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
+  // minWidth 0: on the web, text boxes otherwise refuse to shrink and overflow the row.
   flex: {
     flex: 1,
+    minWidth: 0,
   },
   bold: {
     fontWeight: 700,
@@ -712,6 +714,7 @@ const styles = StyleSheet.create({
   },
   yearInput: {
     flex: 1.5,
+    minWidth: 0,
   },
   input: {
     fontFamily: AppFonts.regular,

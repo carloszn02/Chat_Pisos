@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
@@ -19,11 +20,13 @@ import { useTheme } from '@/hooks/use-theme';
 import { createProfile, type ProfileFormValues } from '@/lib/profiles';
 import { supabase } from '@/lib/supabase';
 
+/** Sign-up: the profile form in three steps (the form shows the progress and titles). */
 export default function CreateProfileScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const { session } = useSession();
   const { refresh } = useProfile();
+  const scrollRef = useRef<ScrollView>(null);
 
   async function save(values: ProfileFormValues) {
     if (!session) return 'generic' as const;
@@ -39,32 +42,13 @@ export default function CreateProfileScreen() {
         <KeyboardAvoidingView
           style={styles.screen}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView keyboardShouldPersistTaps="handled">
+          <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
-              <View style={styles.progress}>
-                <View style={styles.progressLabels}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t('profileSetup.progress')}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {t('profileSetup.duration')}
-                  </ThemedText>
-                </View>
-                <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
-                  <View style={[styles.progressFill, { backgroundColor: theme.primary }]} />
-                </View>
-              </View>
-
-              <View style={styles.header}>
-                <ThemedText type="subtitle" style={styles.title}>
-                  {t('profileSetup.title')}
-                </ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.bodyText}>
-                  {t('profileSetup.intro')}
-                </ThemedText>
-              </View>
-
-              <ProfileForm submitLabel={t('profileSetup.submit')} onSubmit={save} />
+              <ProfileForm
+                submitLabel={t('profileSetup.submit')}
+                onSubmit={save}
+                onStepChange={() => scrollRef.current?.scrollTo({ y: 0, animated: false })}
+              />
 
               <View style={styles.signOutRow}>
                 <ThemedText type="small" themeColor="textSecondary">
@@ -98,32 +82,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.four,
     gap: Spacing.four,
-  },
-  progress: {
-    gap: Spacing.two,
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-  },
-  progressFill: {
-    width: '60%',
-    height: 6,
-    borderRadius: 999,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-  title: {
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  bodyText: {
-    lineHeight: 24,
   },
   signOutRow: {
     flexDirection: 'row',

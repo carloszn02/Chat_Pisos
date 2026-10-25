@@ -2,8 +2,9 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -12,22 +13,27 @@ import { useTheme } from '@/hooks/use-theme';
 import { isAdult, parseBirthDate } from '@/lib/age';
 import type { ProfileErrorKey, ProfileFormValues } from '@/lib/profiles';
 import {
+  DAILY_LIFE_QUESTIONS,
+  HABIT_QUESTIONS,
+  INTERESTS,
+  LIVING_TOGETHER_QUESTIONS,
+  MAX_INTERESTS,
   OCCUPATIONS,
-  PETS,
-  SCHEDULES,
-  SMOKING,
   SPOKEN_LANGUAGES,
   TIDINESS,
+  type HabitQuestion,
+  type Habits,
+  type Interest,
   type Occupation,
-  type Pets,
   type Profile,
-  type Schedule,
-  type Smoking,
   type SpokenLanguage,
   type Tidiness,
 } from '@/types/profile';
 
 const LANGUAGE_CODES = Object.keys(SPOKEN_LANGUAGES) as SpokenLanguage[];
+
+const STEPS = ['basics', 'daily', 'together'] as const;
+type Step = (typeof STEPS)[number];
 
 // Tapping the selected option again clears it, so optional answers can be undone.
 function toggle<T>(current: T | null, option: T): T | null {
@@ -39,19 +45,44 @@ function formatDate(isoDate: string): string {
   return `${day}/${month}/${year}`;
 }
 
+function habitsFrom(profile?: Profile): Habits {
+  return {
+    schedule: profile?.schedule ?? null,
+    tidiness: profile?.tidiness ?? null,
+    smoking: profile?.smoking ?? null,
+    pets: profile?.pets ?? null,
+    weekends: profile?.weekends ?? null,
+    work_from_home: profile?.work_from_home ?? null,
+    cooking: profile?.cooking ?? null,
+    diet: profile?.diet ?? null,
+    guests: profile?.guests ?? null,
+    overnight_guests: profile?.overnight_guests ?? null,
+    noise: profile?.noise ?? null,
+    social: profile?.social ?? null,
+    food_sharing: profile?.food_sharing ?? null,
+    interests: profile?.interests ?? [],
+  };
+}
+
 type ProfileFormProps = {
   /** The current profile when editing; omit when creating a new one. */
   initial?: Profile;
   submitLabel: string;
   onSubmit: (values: ProfileFormValues) => Promise<ProfileErrorKey | null>;
+  /** Called when moving to another sign-up step (e.g. to scroll back to the top). */
+  onStepChange?: () => void;
 };
 
-/** All profile fields, shared by the create-profile and edit-profile screens. */
-export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps) {
+/**
+ * All profile fields, shared by the create-profile and edit-profile screens.
+ * Creating goes in three short steps (the last two can be skipped); editing shows everything.
+ */
+export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: ProfileFormProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isEditing = !!initial;
 
+  const [step, setStep] = useState<Step>('basics');
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [firstName, setFirstName] = useState(initial?.first_name ?? '');
   const [day, setDay] = useState('');
@@ -62,10 +93,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
     initial?.languages ?? (i18n.language === 'en' ? ['en'] : ['es'])
   );
   const [about, setAbout] = useState(initial?.about ?? '');
-  const [schedule, setSchedule] = useState<Schedule | null>(initial?.schedule ?? null);
-  const [tidiness, setTidiness] = useState<Tidiness | null>(initial?.tidiness ?? null);
-  const [smoking, setSmoking] = useState<Smoking | null>(initial?.smoking ?? null);
-  const [pets, setPets] = useState<Pets | null>(initial?.pets ?? null);
+  const [habits, setHabits] = useState<Habits>(() => habitsFrom(initial));
   const [districtIds, setDistrictIds] = useState<string[]>([]);
   // The district chats people can join straight away when signing up.
   const districts = useOpenGroups();
@@ -92,31 +120,72 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
     );
   }
 
-  async function submit() {
-    if (!firstName.trim()) return setError('nameRequired');
+  function toggleInterest(interest: Interest) {
+    setHabits((current) => {
+      if (current.interests.includes(interest)) {
+        return { ...current, interests: current.interests.filter((i) => i !== interest) };
+      }
+      if (current.interests.length >= MAX_INTERESTS) return current;
+      return { ...current, interests: [...current.interests, interest] };
+    });
+  }
 
+  function answer(question: HabitQuestion, option: string) {
+    setHabits((current) => ({
+      ...current,
+      [question]: toggle(current[question] as string | null, option),
+    }));
+  }
+
+  /** Checks the required basics. Returns the birth date (null when editing). */
+  function checkBasics(): { ok: true; birthDate: Date | null } | { ok: false } {
+    if (!firstName.trim()) {
+      setError('nameRequired');
+      return { ok: false };
+    }
     let birthDate: Date | null = null;
     if (!isEditing) {
       birthDate = parseBirthDate(day, month, year);
-      if (!birthDate) return setError('invalidDate');
-      if (!isAdult(birthDate)) return setError('underage');
+      if (!birthDate) {
+        setError('invalidDate');
+        return { ok: false };
+      }
+      if (!isAdult(birthDate)) {
+        setError('underage');
+        return { ok: false };
+      }
     }
-    if (languages.length === 0) return setError('languagesRequired');
-
+    if (languages.length === 0) {
+      setError('languagesRequired');
+      return { ok: false };
+    }
     setError(null);
+    return { ok: true, birthDate };
+  }
+
+  function goTo(next: Step) {
+    if (step === 'basics' && !checkBasics().ok) return;
+    setError(null);
+    setStep(next);
+    onStepChange?.();
+  }
+
+  async function submit() {
+    const basics = checkBasics();
+    if (!basics.ok) {
+      setStep('basics');
+      return;
+    }
     setBusy(true);
     try {
       const result = await onSubmit({
         photo,
         firstName,
-        birthDate,
+        birthDate: basics.birthDate,
         occupation,
         languages,
         about,
-        schedule,
-        tidiness,
-        smoking,
-        pets,
+        habits,
         districtIds,
       });
       setError(result);
@@ -132,8 +201,31 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
     { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
-  return (
-    <View style={styles.form}>
+  function question(key: HabitQuestion) {
+    const value = habits[key] as string | null;
+    if (key === 'tidiness') {
+      return (
+        <TidinessScale
+          key={key}
+          value={habits.tidiness}
+          onChange={(option) => answer('tidiness', option)}
+        />
+      );
+    }
+    return (
+      <ChoiceChips
+        key={key}
+        label={t(`profileSetup.questions.${key}`)}
+        options={HABIT_QUESTIONS[key] as readonly string[]}
+        getLabel={(o) => t(`profileSetup.options.${key}.${o}` as never)}
+        value={value}
+        onChange={(o) => answer(key, o)}
+      />
+    );
+  }
+
+  const basicsFields = (
+    <>
       <View style={styles.photoRow}>
         <Pressable
           accessibilityRole="button"
@@ -240,26 +332,6 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
         onChange={toggleLanguage}
       />
 
-      <View style={styles.field}>
-        <ThemedText type="smallBold">
-          {t('profileSetup.about')}{' '}
-          <ThemedText type="small" themeColor="textSecondary">
-            · {t('profileSetup.optional')}
-          </ThemedText>
-        </ThemedText>
-        <TextInput
-          style={[inputStyle, styles.textArea]}
-          value={about}
-          onChangeText={setAbout}
-          placeholder={t('profileSetup.aboutPlaceholder')}
-          placeholderTextColor={theme.textSecondary}
-          multiline
-          maxLength={1000}
-          textAlignVertical="top"
-          accessibilityLabel={t('profileSetup.about')}
-        />
-      </View>
-
       {!isEditing && districts.length > 0 && (
         <View style={styles.field}>
           <ChoiceChips
@@ -278,67 +350,203 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
           </ThemedText>
         </View>
       )}
+    </>
+  );
 
-      <View style={styles.habits}>
-        <ThemedText style={styles.sectionTitle}>
-          {t('profileSetup.habits')}{' '}
-          <ThemedText type="small" themeColor="textSecondary">
-            · {t('profileSetup.optional')}
-          </ThemedText>
+  const aboutField = (
+    <View style={styles.field}>
+      <ThemedText type="smallBold">
+        {t('profileSetup.about')}{' '}
+        <ThemedText type="small" themeColor="textSecondary">
+          · {t('profileSetup.optional')}
         </ThemedText>
-        <ChoiceChips
-          label={t('profileSetup.schedule')}
-          options={SCHEDULES}
-          getLabel={(o) => t(`profileSetup.options.schedule.${o}`)}
-          value={schedule}
-          onChange={(o) => setSchedule(toggle(schedule, o))}
-        />
-        <ChoiceChips
-          label={t('profileSetup.tidiness')}
-          options={TIDINESS}
-          getLabel={(o) => t(`profileSetup.options.tidiness.${o}`)}
-          value={tidiness}
-          onChange={(o) => setTidiness(toggle(tidiness, o))}
-        />
-        <ChoiceChips
-          label={t('profileSetup.smoking')}
-          options={SMOKING}
-          getLabel={(o) => t(`profileSetup.options.smoking.${o}`)}
-          value={smoking}
-          onChange={(o) => setSmoking(toggle(smoking, o))}
-        />
-        <ChoiceChips
-          label={t('profileSetup.pets')}
-          options={PETS}
-          getLabel={(o) => t(`profileSetup.options.pets.${o}`)}
-          value={pets}
-          onChange={(o) => setPets(toggle(pets, o))}
-        />
+      </ThemedText>
+      <TextInput
+        style={[inputStyle, styles.textArea]}
+        value={about}
+        onChangeText={setAbout}
+        placeholder={t('profileSetup.aboutPlaceholder')}
+        placeholderTextColor={theme.textSecondary}
+        multiline
+        maxLength={1000}
+        textAlignVertical="top"
+        accessibilityLabel={t('profileSetup.about')}
+      />
+    </View>
+  );
+
+  const dailyFields = <>{DAILY_LIFE_QUESTIONS.map(question)}</>;
+
+  const togetherFields = (
+    <>
+      {LIVING_TOGETHER_QUESTIONS.map(question)}
+      <ChoiceChips
+        label={`${t('profileSetup.interests')} · ${t('profileSetup.interestsHint', { max: MAX_INTERESTS })}`}
+        options={INTERESTS}
+        getLabel={(o) => t(`profileSetup.options.interests.${o}`)}
+        value={habits.interests}
+        onChange={toggleInterest}
+      />
+    </>
+  );
+
+  const errorText = error && (
+    <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
+      {t(`profileSetup.errors.${error}`)}
+    </ThemedText>
+  );
+
+  if (isEditing) {
+    return (
+      <View style={styles.form}>
+        {basicsFields}
+        {aboutField}
+        <SectionTitle title={t('profileSetup.steps.daily')} />
+        {dailyFields}
+        <SectionTitle title={t('profileSetup.steps.together')} />
+        {togetherFields}
+        {errorText}
+        <Button label={submitLabel} onPress={submit} loading={busy} />
+      </View>
+    );
+  }
+
+  // Creating: one step at a time, with a progress bar.
+  const index = STEPS.indexOf(step);
+  const isLast = index === STEPS.length - 1;
+  return (
+    <View style={styles.form}>
+      <View style={styles.progress}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {t('profileSetup.stepOf', { step: index + 1, total: STEPS.length })}
+        </ThemedText>
+        <View style={styles.progressTrack}>
+          {STEPS.map((s, i) => (
+            <View
+              key={s}
+              style={[
+                styles.progressPart,
+                { backgroundColor: i <= index ? theme.primary : theme.border },
+              ]}
+            />
+          ))}
+        </View>
       </View>
 
-      {error && (
-        <ThemedText type="small" style={{ color: theme.danger }} accessibilityLiveRegion="polite">
-          {t(`profileSetup.errors.${error}`)}
+      <View style={styles.header}>
+        <ThemedText type="subtitle" style={styles.title}>
+          {t(`profileSetup.steps.${step}`)}
         </ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.bodyText}>
+          {t(`profileSetup.stepIntros.${step}`)}
+        </ThemedText>
+      </View>
+
+      {step === 'basics' && basicsFields}
+      {step === 'daily' && dailyFields}
+      {step === 'together' && (
+        <>
+          {togetherFields}
+          {aboutField}
+        </>
       )}
 
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy}
-        onPress={submit}
-        style={({ pressed }) => [
-          styles.primaryButton,
-          { backgroundColor: theme.primary },
-          (pressed || busy) && styles.pressed,
-        ]}>
-        {busy ? (
-          <ActivityIndicator color={theme.onPrimary} />
-        ) : (
-          <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-            {submitLabel}
+      {errorText}
+
+      <View style={styles.navRow}>
+        {index > 0 && (
+          <Button
+            label={t('profileSetup.back')}
+            variant="secondary"
+            onPress={() => goTo(STEPS[index - 1])}
+            style={styles.flex}
+          />
+        )}
+        <Button
+          label={isLast ? submitLabel : t('profileSetup.next')}
+          onPress={isLast ? submit : () => goTo(STEPS[index + 1])}
+          loading={busy}
+          style={styles.flex}
+        />
+      </View>
+      {index > 0 && (
+        <Button
+          label={t('profileSetup.skip')}
+          variant="text"
+          onPress={isLast ? submit : () => goTo(STEPS[index + 1])}
+        />
+      )}
+    </View>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <ThemedText style={styles.sectionTitle}>{title}</ThemedText>;
+}
+
+/** Tidiness from 1 (very relaxed) to 5 (spotless), as five dots on a line. */
+function TidinessScale({
+  value,
+  onChange,
+}: {
+  value: Tidiness | null;
+  onChange: (option: Tidiness) => void;
+}) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const selectedIndex = value ? TIDINESS.indexOf(value) : -1;
+  return (
+    <View
+      style={styles.field}
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t('profileSetup.questions.tidiness')}>
+      <ThemedText type="smallBold">{t('profileSetup.questions.tidiness')}</ThemedText>
+      <View style={styles.scale}>
+        <View style={[styles.scaleLine, { backgroundColor: theme.border }]} />
+        {TIDINESS.map((option, i) => {
+          const selected = i === selectedIndex;
+          return (
+            <Pressable
+              key={option}
+              accessibilityRole="radio"
+              accessibilityLabel={t(`profileSetup.options.tidiness.${option}`)}
+              accessibilityState={{ selected }}
+              onPress={() => onChange(option)}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.scaleDot,
+                {
+                  borderColor: i <= selectedIndex ? theme.primary : theme.borderStrong,
+                  backgroundColor: selected
+                    ? theme.primary
+                    : i < selectedIndex
+                      ? theme.backgroundSelected
+                      : theme.backgroundElement,
+                },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText
+                type="smallBold"
+                style={{ color: selected ? theme.onPrimary : theme.textSecondary }}>
+                {i + 1}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={styles.scaleLabels}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {t('profileSetup.options.tidiness.very_relaxed')}
+        </ThemedText>
+        {value && (
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            {t(`profileSetup.options.tidiness.${value}`)}
           </ThemedText>
         )}
-      </Pressable>
+        <ThemedText type="small" themeColor="textSecondary">
+          {t('profileSetup.options.tidiness.very_tidy')}
+        </ThemedText>
+      </View>
     </View>
   );
 }
@@ -346,6 +554,28 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
 const styles = StyleSheet.create({
   form: {
     gap: Spacing.four,
+  },
+  progress: {
+    gap: Spacing.two,
+  },
+  progressTrack: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  progressPart: {
+    flex: 1,
+    height: 6,
+    borderRadius: 999,
+  },
+  header: {
+    gap: Spacing.two,
+  },
+  title: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  bodyText: {
+    lineHeight: 24,
   },
   photoRow: {
     flexDirection: 'row',
@@ -390,33 +620,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
   },
+  // minWidth 0: on the web, text boxes otherwise refuse to shrink and overflow the row.
   dateShort: {
     flex: 1,
+    minWidth: 0,
   },
   dateLong: {
     flex: 1.5,
+    minWidth: 0,
   },
   textArea: {
     height: 120,
     paddingTop: 12,
     lineHeight: 22,
   },
-  habits: {
-    gap: Spacing.three,
-  },
   sectionTitle: {
     fontSize: 20,
+    lineHeight: 26,
     fontWeight: 700,
+    marginTop: Spacing.two,
   },
-  primaryButton: {
-    height: 48,
-    borderRadius: 999,
+  navRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  flex: {
+    flex: 1,
+  },
+  scale: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  scaleLine: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    height: 2,
+  },
+  scaleDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: 700,
+  scaleLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

@@ -16,6 +16,7 @@ import { DetailSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
+import { CompatibilityBox } from '@/components/compatibility-box';
 import { ListingPrice, ListingTypeTag } from '@/components/listing-card';
 import { ListingContactCard } from '@/components/listing-contact';
 import { MetroBadge } from '@/components/metro-badge';
@@ -250,23 +251,6 @@ export default function ListingDetailScreen() {
   const hasTransport =
     listing.metro_lines.length > 0 || !!listing.metro_station || !!listing.transport_notes;
 
-  // Habits both people chose the same answer for.
-  const inCommon: string[] = [];
-  if (me && owner && !isOwner) {
-    if (me.schedule && me.schedule === owner.schedule) {
-      inCommon.push(t(`profileSetup.options.schedule.${me.schedule}`));
-    }
-    if (me.tidiness && me.tidiness === owner.tidiness) {
-      inCommon.push(t(`profileSetup.options.tidiness.${me.tidiness}`));
-    }
-    if (me.smoking && me.smoking === owner.smoking) {
-      inCommon.push(t(`profileSetup.options.smoking.${me.smoking}`));
-    }
-    if (me.pets && me.pets === owner.pets) {
-      inCommon.push(t(`profileSetup.options.pets.${me.pets}`));
-    }
-  }
-
   const photoWidth = Math.min(width, MaxContentWidth);
 
   return (
@@ -422,22 +406,7 @@ export default function ListingDetailScreen() {
                 </View>
                 <Icon name="chevron-right" size={18} color={theme.textSecondary} />
               </PressableLink>
-              {inCommon.length > 0 && (
-                <>
-                  <ThemedText type="smallBold" themeColor="textSecondary">
-                    {t('listings.inCommon')}
-                  </ThemedText>
-                  <View style={styles.pills}>
-                    {inCommon.map((habit) => (
-                      <View
-                        key={habit}
-                        style={[styles.pill, { backgroundColor: theme.backgroundSelected }]}>
-                        <ThemedText type="small">{habit}</ThemedText>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
+              {me && !isOwner && <CompatibilityBox me={me} other={owner} bordered={false} />}
             </View>
           )}
 

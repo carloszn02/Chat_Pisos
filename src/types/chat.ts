@@ -1,11 +1,4 @@
-import type {
-  Occupation,
-  Pets,
-  Schedule,
-  Smoking,
-  SpokenLanguage,
-  Tidiness,
-} from '@/types/profile';
+import type { Habits, Occupation, SpokenLanguage } from '@/types/profile';
 
 export type ChatGroup = {
   id: string;
@@ -47,7 +40,7 @@ export type GroupMessage = {
 };
 
 /** A profile as other users see it (the public_profiles view): age, never date of birth. */
-export type PublicProfile = {
+export type PublicProfile = Habits & {
   id: string;
   first_name: string;
   age: number;
@@ -55,10 +48,6 @@ export type PublicProfile = {
   languages: SpokenLanguage[];
   about: string | null;
   avatar_url: string | null;
-  schedule: Schedule | null;
-  tidiness: Tidiness | null;
-  smoking: Smoking | null;
-  pets: Pets | null;
 };
 
 export type ConversationStatus = 'pending' | 'accepted' | 'declined';

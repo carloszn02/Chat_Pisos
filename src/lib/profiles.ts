@@ -9,15 +9,7 @@ import type es from '@/i18n/locales/es';
 import { deleteAvatar, uploadAvatar } from '@/lib/avatars';
 import { fetchGroups, joinGroup } from '@/lib/chat';
 import { supabase } from '@/lib/supabase';
-import type {
-  Occupation,
-  Pets,
-  Profile,
-  Schedule,
-  Smoking,
-  SpokenLanguage,
-  Tidiness,
-} from '@/types/profile';
+import type { Habits, Occupation, Profile, SpokenLanguage } from '@/types/profile';
 
 export type ProfileErrorKey = keyof typeof es.profileSetup.errors;
 
@@ -30,10 +22,8 @@ export type ProfileFormValues = {
   occupation: Occupation | null;
   languages: SpokenLanguage[];
   about: string;
-  schedule: Schedule | null;
-  tidiness: Tidiness | null;
-  smoking: Smoking | null;
-  pets: Pets | null;
+  /** Answers to the daily-life and living-together questions. */
+  habits: Habits;
   /** Districts picked during sign-up; their chats (and Madrid General) are joined automatically. */
   districtIds: string[];
 };
@@ -44,10 +34,7 @@ function editableFields(values: ProfileFormValues) {
     occupation: values.occupation,
     languages: values.languages,
     about: values.about.trim() || null,
-    schedule: values.schedule,
-    tidiness: values.tidiness,
-    smoking: values.smoking,
-    pets: values.pets,
+    ...values.habits,
   };
 }
 

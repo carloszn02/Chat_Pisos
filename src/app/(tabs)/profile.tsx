@@ -16,6 +16,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { ageFromBirthDate } from '@/lib/age';
+import { profileCompletion } from '@/lib/compatibility';
 import { fetchMyListings } from '@/lib/listings';
 import type { Listing } from '@/types/listing';
 
@@ -49,8 +50,11 @@ export default function ProfileScreen() {
   if (!profile) return null;
 
   const summary = { ...profile, age: ageFromBirthDate(profile.birth_date) };
+  const completion = profileCompletion(profile);
   const hasDetails =
-    !!profile.about || !!(profile.schedule || profile.tidiness || profile.smoking || profile.pets);
+    !!profile.about ||
+    profile.interests.length > 0 ||
+    !!(profile.schedule || profile.tidiness || profile.smoking || profile.pets);
   const listingCount = myListings?.length ?? 0;
 
   return (
@@ -70,6 +74,36 @@ export default function ProfileScreen() {
             />
 
             <ProfileSummary profile={summary} part="identity" />
+
+            {completion < 100 && (
+              <View
+                style={[
+                  styles.completion,
+                  { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                ]}>
+                <View style={styles.completionHeader}>
+                  <ThemedText type="smallBold">
+                    {t('profileTab.completion', { percent: completion })}
+                  </ThemedText>
+                  <PressableLink href="/edit-profile" accessibilityRole="link" hitSlop={8}>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {t('profileTab.completeNow')}
+                    </ThemedText>
+                  </PressableLink>
+                </View>
+                <View style={[styles.completionTrack, { backgroundColor: theme.border }]}>
+                  <View
+                    style={[
+                      styles.completionFill,
+                      { width: `${completion}%`, backgroundColor: theme.primary },
+                    ]}
+                  />
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('profileTab.completionHint')}
+                </ThemedText>
+              </View>
+            )}
 
             <Button
               label={t('profileTab.editProfile')}
@@ -132,6 +166,27 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  completion: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  completionTrack: {
+    height: 6,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  completionFill: {
+    height: 6,
+    borderRadius: 999,
+  },
   container: {
     flex: 1,
   },

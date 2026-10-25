@@ -6,26 +6,22 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  DAILY_LIFE_QUESTIONS,
+  LIVING_TOGETHER_QUESTIONS,
   SPOKEN_LANGUAGES,
+  type HabitQuestion,
+  type Habits,
   type Occupation,
-  type Pets,
-  type Schedule,
-  type Smoking,
   type SpokenLanguage,
-  type Tidiness,
 } from '@/types/profile';
 
-export type ProfileSummaryData = {
+export type ProfileSummaryData = Habits & {
   first_name: string;
   age: number;
   avatar_url: string | null;
   occupation: Occupation | null;
   languages: SpokenLanguage[];
   about: string | null;
-  schedule: Schedule | null;
-  tidiness: Tidiness | null;
-  smoking: Smoking | null;
-  pets: Pets | null;
 };
 
 /**
@@ -49,12 +45,24 @@ export function ProfileSummary({
     .filter(Boolean)
     .join(' · ');
 
-  const habits = [
-    profile.schedule && t(`profileSetup.options.schedule.${profile.schedule}`),
-    profile.tidiness && t(`profileSetup.options.tidiness.${profile.tidiness}`),
-    profile.smoking && t(`profileSetup.options.smoking.${profile.smoking}`),
-    profile.pets && t(`profileSetup.options.pets.${profile.pets}`),
-  ].filter((habit): habit is string => !!habit);
+  const tags = (questions: HabitQuestion[]) =>
+    questions.flatMap((question) => {
+      const value = profile[question];
+      return value ? [t(`profileSetup.tags.${question}.${value}` as never) as string] : [];
+    });
+  const groups = [
+    { key: 'daily', title: t('profileSetup.sections.daily'), items: tags(DAILY_LIFE_QUESTIONS) },
+    {
+      key: 'together',
+      title: t('profileSetup.sections.together'),
+      items: tags(LIVING_TOGETHER_QUESTIONS),
+    },
+    {
+      key: 'interests',
+      title: t('profileSetup.sections.interests'),
+      items: profile.interests.map((interest) => t(`profileSetup.options.interests.${interest}`)),
+    },
+  ].filter((group) => group.items.length > 0);
 
   return (
     <View style={styles.container}>
@@ -78,20 +86,26 @@ export function ProfileSummary({
         <ThemedText style={styles.about}>{profile.about}</ThemedText>
       ) : null}
 
-      {part !== 'identity' && habits.length > 0 && (
-        <View style={styles.pills}>
-          {habits.map((habit) => (
-            <View
-              key={habit}
-              style={[
-                styles.pill,
-                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-              ]}>
-              <ThemedText type="small">{habit}</ThemedText>
+      {part !== 'identity' &&
+        groups.map((group) => (
+          <View key={group.key} style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              {group.title}
+            </ThemedText>
+            <View style={styles.pills}>
+              {group.items.map((item) => (
+                <View
+                  key={item}
+                  style={[
+                    styles.pill,
+                    { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                  ]}>
+                  <ThemedText type="small">{item}</ThemedText>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
-      )}
+          </View>
+        ))}
     </View>
   );
 }
@@ -115,6 +129,14 @@ const styles = StyleSheet.create({
   },
   about: {
     lineHeight: 24,
+  },
+  group: {
+    gap: Spacing.two,
+  },
+  groupTitle: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontSize: 12,
   },
   pills: {
     flexDirection: 'row',

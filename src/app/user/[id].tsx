@@ -5,11 +5,13 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { DetailSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
+import { CompatibilityBox } from '@/components/compatibility-box';
 import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useProfile } from '@/hooks/use-profile';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPublicProfile } from '@/lib/chat';
@@ -23,6 +25,7 @@ export default function UserProfileScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { blockedIds, block, unblock } = useBlocks();
+  const { profile: me } = useProfile();
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,6 +97,8 @@ export default function UserProfileScreen() {
         <ScrollView>
           <View style={styles.content}>
             <ProfileSummary profile={profile} />
+
+            {me && !isMe && <CompatibilityBox me={me} other={profile} />}
 
             {error && (
               <ThemedText type="small" style={{ color: theme.danger }}>

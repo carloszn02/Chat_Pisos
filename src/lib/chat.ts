@@ -9,8 +9,9 @@ export const MESSAGES_PAGE_SIZE = 50;
 const GROUP_MESSAGE_COLUMNS =
   'id, group_id, user_id, body, listing_id, image_path, image_width, image_height, reply_to_id, deleted_at, created_at';
 
+// One string (not joined with +) so the database types can read it.
 const PUBLIC_PROFILE_COLUMNS =
-  'id, first_name, age, occupation, languages, about, avatar_url, schedule, tidiness, smoking, pets';
+  'id, first_name, age, occupation, languages, about, avatar_url, schedule, tidiness, smoking, pets, weekends, work_from_home, cooking, diet, guests, overnight_guests, noise, social, food_sharing, interests';
 
 export async function fetchGroups(): Promise<ChatGroup[]> {
   const { data, error } = await supabase
