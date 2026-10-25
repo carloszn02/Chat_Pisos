@@ -1,6 +1,9 @@
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { PhotoViewer } from '@/components/chat-photo';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -8,15 +11,20 @@ type AvatarProps = {
   uri: string | null;
   name: string;
   size: number;
+  /** Tapping the photo opens it big, full screen (like WhatsApp). */
+  zoomable?: boolean;
 };
 
 /** A round profile photo, or the person's initial when there is no photo. */
-export function Avatar({ uri, name, size }: AvatarProps) {
+export function Avatar({ uri, name, size, zoomable = false }: AvatarProps) {
   const theme = useTheme();
   const shape = { width: size, height: size, borderRadius: size / 2 };
 
   if (uri) {
-    return <Image source={{ uri }} style={shape} contentFit="cover" accessibilityLabel={name} />;
+    const image = (
+      <Image source={{ uri }} style={shape} contentFit="cover" accessibilityLabel={name} />
+    );
+    return zoomable ? <ZoomablePhoto url={uri}>{image}</ZoomablePhoto> : image;
   }
   return (
     <View style={[styles.fallback, shape, { backgroundColor: theme.primary }]}>
@@ -33,7 +41,28 @@ export function Avatar({ uri, name, size }: AvatarProps) {
   );
 }
 
+/** Wraps a small photo so tapping it shows it full screen. */
+export function ZoomablePhoto({ url, children }: { url: string; children: ReactNode }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Pressable
+        accessibilityRole="imagebutton"
+        accessibilityLabel={t('chats.openPhoto')}
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => pressed && styles.pressed}>
+        {children}
+      </Pressable>
+      <PhotoViewer url={open ? url : null} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
+  pressed: {
+    opacity: 0.8,
+  },
   fallback: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -668,6 +668,56 @@ const en: typeof es = {
     completionHint: 'Answer a few more questions to find more compatible flatmates.',
     completeNow: 'Complete profile',
   },
+  tutorial: {
+    progress: '{{step}} of {{total}}',
+    skip: 'Skip',
+    next: 'Next',
+    back: 'Back',
+    start: 'Get started',
+    again: 'See the tutorial',
+    slides: {
+      welcome: {
+        title: 'Welcome to Chat Pisos',
+        body: 'Find a room, a flat or flatmates in Madrid, organised by district. Here are the basics in one minute.',
+      },
+      chats: {
+        title: 'District chats',
+        body: 'Join the groups for the districts you like to ask questions, share listings and meet people. Tap the group name to see its info and who takes part.',
+      },
+      listings: {
+        title: 'Listings and map',
+        body: 'Filter by district, price, metro line and more. See listings on the map, search a specific area and save your favourites with the heart.',
+      },
+      publish: {
+        title: 'Publish in seconds',
+        body: 'With the centre button you can offer your room, look for one or rent out a flat. You can have several listings at once and share them in the district chat.',
+      },
+      messages: {
+        title: 'Messages and private groups',
+        body: 'Message whoever posted a listing: first conversations arrive as a request. Create private groups to flat-hunt with friends and send photos.',
+      },
+      profile: {
+        title: 'Your profile and compatibility',
+        body: 'Answer the living-together questions and you’ll see your compatibility on every profile and listing. Complete profiles get many more replies.',
+      },
+      safety: {
+        title: 'Your safety first',
+        body: 'Never pay or send documents before seeing the flat. You can block and report anyone from their profile or from the chat.',
+      },
+    },
+  },
+  participants: {
+    title: 'Participants',
+    you: 'You',
+    showMe: 'Show me in participants',
+    showMeOn: 'Others can see you in this list.',
+    showMeOff: "You don't appear in the list, but your messages are still visible.",
+    hiddenYou: 'Hidden from others',
+    empty: 'Nobody has chosen to appear yet.',
+    seeAll: 'See all {{count}}',
+    hidden_one: '{{count}} more person prefers not to appear.',
+    hidden_other: '{{count}} more people prefer not to appear.',
+  },
   compatibility: {
     title: 'Compatibility',
     high: 'High compatibility',

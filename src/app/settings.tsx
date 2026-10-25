@@ -119,7 +119,11 @@ export default function SettingsScreen() {
           )}
 
           <Section title={t('settings.about')}>
-            <Row first>
+            <Row first href="/tutorial">
+              <ThemedText>{t('tutorial.again')}</ThemedText>
+              <Icon name="chevron-right" size={18} color={theme.textSecondary} />
+            </Row>
+            <Row>
               <ThemedText>{t('settings.version')}</ThemedText>
               <ThemedText themeColor="textSecondary">
                 {Constants.expoConfig?.version ?? '1.0.0'}

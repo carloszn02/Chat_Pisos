@@ -68,7 +68,7 @@ export function ProfileSummary({
     <View style={styles.container}>
       {part !== 'details' && (
         <View style={styles.identity}>
-          <Avatar uri={profile.avatar_url} name={profile.first_name} size={80} />
+          <Avatar uri={profile.avatar_url} name={profile.first_name} size={80} zoomable />
           <View style={styles.identityText}>
             <ThemedText type="subtitle" style={styles.name}>
               {profile.first_name}, {profile.age}

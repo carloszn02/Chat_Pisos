@@ -251,7 +251,7 @@ export default function PrivateGroupMembersScreen() {
         <View style={styles.content}>
           {group && (
             <View style={styles.groupHeader}>
-              <PrivateGroupBadge name={group.name} photoUrl={group.photo_url} size={96} />
+              <PrivateGroupBadge name={group.name} photoUrl={group.photo_url} size={96} zoomable />
               <ThemedText type="subtitle" style={styles.groupName}>
                 {group.name}
               </ThemedText>

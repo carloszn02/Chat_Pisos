@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
+import { ZoomablePhoto } from '@/components/avatar';
 import { ChatRow } from '@/components/chat-row';
 import { TileInitials } from '@/components/group-tile';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,14 +25,17 @@ export function PrivateGroupBadge({
   name,
   photoUrl,
   size = 48,
+  zoomable = false,
 }: {
   name: string;
   photoUrl?: string | null;
   size?: number;
+  /** Tapping the photo opens it big. */
+  zoomable?: boolean;
 }) {
   const theme = useTheme();
   if (photoUrl) {
-    return (
+    const image = (
       <Image
         source={{ uri: photoUrl }}
         style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.tile }}
@@ -39,6 +43,7 @@ export function PrivateGroupBadge({
         accessibilityIgnoresInvertColors
       />
     );
+    return zoomable ? <ZoomablePhoto url={photoUrl}>{image}</ZoomablePhoto> : image;
   }
   const initials = name
     .trim()

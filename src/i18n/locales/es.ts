@@ -666,6 +666,56 @@ const es = {
     completionHint: 'Responde unas preguntas más para encontrar compañeros más compatibles.',
     completeNow: 'Completar perfil',
   },
+  tutorial: {
+    progress: '{{step}} de {{total}}',
+    skip: 'Saltar',
+    next: 'Siguiente',
+    back: 'Atrás',
+    start: 'Empezar',
+    again: 'Ver el tutorial',
+    slides: {
+      welcome: {
+        title: 'Bienvenido/a a Chat Pisos',
+        body: 'Encuentra habitación, piso o compañeros de piso en Madrid, organizado por barrios. Te enseñamos lo básico en un minuto.',
+      },
+      chats: {
+        title: 'Chats de barrio',
+        body: 'Únete a los grupos de los barrios que te interesan para preguntar, compartir anuncios y conocer gente. Toca el nombre del grupo para ver su información y quién participa.',
+      },
+      listings: {
+        title: 'Anuncios y mapa',
+        body: 'Filtra por barrio, precio, línea de metro y más. Mira los anuncios en el mapa, busca en una zona concreta y guarda tus favoritos con el corazón.',
+      },
+      publish: {
+        title: 'Publica en segundos',
+        body: 'Con el botón central ofreces tu habitación, buscas una o alquilas un piso. Puedes tener varios anuncios a la vez y compartirlos en el chat del barrio.',
+      },
+      messages: {
+        title: 'Mensajes y grupos privados',
+        body: 'Escribe a quien publicó un anuncio: las primeras conversaciones llegan como solicitud. Crea grupos privados para buscar piso con amigos y envía fotos.',
+      },
+      profile: {
+        title: 'Tu perfil y la compatibilidad',
+        body: 'Responde las preguntas de convivencia y verás vuestra compatibilidad en cada perfil y anuncio. Un perfil completo recibe muchas más respuestas.',
+      },
+      safety: {
+        title: 'Tu seguridad primero',
+        body: 'Nunca pagues ni envíes documentos sin haber visto el piso. Puedes bloquear y denunciar a cualquiera desde su perfil o desde el chat.',
+      },
+    },
+  },
+  participants: {
+    title: 'Participantes',
+    you: 'Tú',
+    showMe: 'Aparecer en participantes',
+    showMeOn: 'Los demás pueden verte en esta lista.',
+    showMeOff: 'No apareces en la lista, pero tus mensajes se siguen viendo.',
+    hiddenYou: 'Oculto/a para los demás',
+    empty: 'Nadie ha elegido aparecer todavía.',
+    seeAll: 'Ver los {{count}}',
+    hidden_one: '{{count}} persona más prefiere no aparecer.',
+    hidden_other: '{{count}} personas más prefieren no aparecer.',
+  },
   compatibility: {
     title: 'Compatibilidad',
     high: 'Compatibilidad alta',

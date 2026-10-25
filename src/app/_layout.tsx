@@ -140,6 +140,7 @@ function RootNavigator() {
         <Stack.Screen name="private-group/[id]" options={headerOptions} />
         <Stack.Screen name="private-group-members/[id]" options={headerOptions} />
         <Stack.Screen name="join/[token]" options={headerOptions} />
+        <Stack.Screen name="tutorial" options={{ presentation: 'fullScreenModal' }} />
       </Stack.Protected>
       <Stack.Protected guard={inApp && !hasProfile && !isLoading}>
         <Stack.Screen name="create-profile" />

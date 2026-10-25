@@ -15,6 +15,7 @@ import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import Ellipsis from 'lucide-react-native/icons/ellipsis';
 import Heart from 'lucide-react-native/icons/heart';
+import House from 'lucide-react-native/icons/house';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Link from 'lucide-react-native/icons/link';
 import List from 'lucide-react-native/icons/list';
@@ -27,7 +28,9 @@ import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import TrainFront from 'lucide-react-native/icons/train-front';
+import Users from 'lucide-react-native/icons/users';
 import X from 'lucide-react-native/icons/x';
 
 import { Platform } from 'react-native';
@@ -46,6 +49,7 @@ const ICONS = {
   'chevron-right': ChevronRight,
   close: X,
   heart: Heart,
+  house: House,
   image: ImageIcon,
   link: Link,
   list: List,
@@ -59,6 +63,8 @@ const ICONS = {
   search: Search,
   settings: Settings,
   shield: ShieldCheck,
+  sparkles: Sparkles,
+  users: Users,
   filters: SlidersHorizontal,
 } as const;
 

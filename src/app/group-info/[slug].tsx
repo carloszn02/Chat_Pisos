@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { ActionSheet } from '@/components/action-sheet';
+import { GroupParticipants } from '@/components/group-participants';
 import { GroupTile } from '@/components/group-tile';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { DetailSkeleton } from '@/components/skeleton';
@@ -186,6 +187,15 @@ export default function GroupInfoScreen() {
               <Row label={t('chats.joinGroup')} accent disabled={busy} onPress={join} />
             )}
           </View>
+
+          {userId && (
+            <GroupParticipants
+              groupId={group.id}
+              memberCount={stats?.member_count}
+              myUserId={userId}
+              isMember={isMember}
+            />
+          )}
         </View>
       </ScrollView>
 

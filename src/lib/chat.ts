@@ -62,6 +62,29 @@ export async function fetchMyGroupIds(userId: string): Promise<Set<string>> {
   return new Set(data.map((row) => row.group_id as string));
 }
 
+export type GroupParticipant = {
+  user_id: string;
+  joined_at: string;
+  /** False only for yourself when you chose not to appear. */
+  show_in_members: boolean;
+};
+
+/** People in a district group who chose to appear (you first), newest first. */
+export async function fetchGroupParticipants(groupId: string): Promise<GroupParticipant[]> {
+  const { data, error } = await supabase.rpc('group_participants', { target_group: groupId });
+  if (error) throw error;
+  return data as GroupParticipant[];
+}
+
+/** Appear (or not) in a group's list of participants. */
+export async function setGroupVisibility(groupId: string, visible: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_group_visibility', {
+    target_group: groupId,
+    visible,
+  });
+  if (error) throw error;
+}
+
 export async function joinGroup(groupId: string): Promise<void> {
   const { error } = await supabase.from('group_members').insert({ group_id: groupId });
   // 23505 = already a member; that's fine.
