@@ -113,6 +113,7 @@ export type PrivateGroupSummary = {
   /** Join requests (through the invite link) waiting for a member to answer. */
   pending_requests: number;
   invite_link_enabled: boolean;
+  photo_url: string | null;
 };
 
 export type PrivateGroup = {
@@ -120,6 +121,7 @@ export type PrivateGroup = {
   name: string;
   created_by: string;
   invite_link_enabled: boolean;
+  photo_url: string | null;
 };
 
 /** What someone sees when they open a private group's invite link. */
@@ -129,6 +131,7 @@ export type PrivateGroupLinkPreview = {
   member_ids: string[];
   my_status: 'member' | 'invited' | 'requested' | null;
   is_full: boolean;
+  photo_url: string | null;
 };
 
 export type JoinRequest = {
@@ -146,7 +149,7 @@ export type PrivateGroupMember = {
 export type PrivateGroupMessageKind = 'message' | 'event';
 /** Notices written by the database when membership changes. */
 export type PrivateGroupEvent =
-  'created' | 'joined' | 'left' | 'removed' | 'requested' | 'accepted';
+  'created' | 'joined' | 'left' | 'removed' | 'requested' | 'accepted' | 'photo';
 
 export type PrivateGroupMessage = {
   id: string;

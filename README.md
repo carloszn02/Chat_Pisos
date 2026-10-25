@@ -49,6 +49,7 @@ The database lives in Supabase. Every change to its structure is a SQL file in `
 19. `20261022100000_message_replies.sql` — replying to (quoting) a message in the same chat.
 20. `20261025100000_listing_details_contact.sql` — more listing details (who it's for, the flat, rules, transport) and optional contact details.
 21. `20261026100000_richer_profiles.sql` — more answers per habit and new living-together questions and interests.
+22. `20261027100000_private_group_photos.sql` — a photo for each private group (any member can change it).
 
 In Supabase, also set **Authentication → URL Configuration → Site URL** (and Redirect URLs) to the app's address, e.g. `http://localhost:8081` while developing.
 

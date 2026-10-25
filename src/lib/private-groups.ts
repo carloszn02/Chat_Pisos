@@ -1,10 +1,13 @@
 /** Private group chats between connected people (invitations, members, messages). */
 
+import type { ImagePickerAsset } from 'expo-image-picker';
 import type { TFunction } from 'i18next';
 
 import { MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import type { ChatPhoto } from '@/lib/chat-photos';
 import { fetchInbox } from '@/lib/direct-messages';
+import { readFileBytes } from '@/lib/file-bytes';
+import { shrinkImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import type {
   JoinRequest,
@@ -83,11 +86,52 @@ export async function markPrivateGroupRead(groupId: string): Promise<void> {
 export async function fetchPrivateGroup(groupId: string): Promise<PrivateGroup | null> {
   const { data, error } = await supabase
     .from('private_groups')
-    .select('id, name, created_by, invite_link_enabled')
+    .select('id, name, created_by, invite_link_enabled, photo_url')
     .eq('id', groupId)
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+const GROUP_PHOTOS_BUCKET = 'group-photos';
+const GROUP_PHOTO_PATH_MARKER = `/storage/v1/object/public/${GROUP_PHOTOS_BUCKET}/`;
+
+/**
+ * Changes the group photo (any member can), or removes it with null.
+ * The chat shows "Ana changed the group photo". The old file is deleted afterwards.
+ */
+export async function changePrivateGroupPhoto(
+  group: PrivateGroup,
+  asset: ImagePickerAsset | null
+): Promise<void> {
+  let url: string | null = null;
+  if (asset) {
+    const image = await shrinkImage(asset, 800);
+    const extension = image.mimeType.split('/')[1] ?? 'jpg';
+    // A new name each time, so nobody sees an old cached photo.
+    const path = `${group.id}/photo-${Date.now()}.${extension}`;
+    const body = await readFileBytes(image.uri);
+    const { error: uploadError } = await supabase.storage
+      .from(GROUP_PHOTOS_BUCKET)
+      .upload(path, body, { contentType: image.mimeType });
+    if (uploadError) throw uploadError;
+    url = supabase.storage.from(GROUP_PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+  const { error } = await supabase.rpc('set_private_group_photo', {
+    target_group: group.id,
+    new_photo_url: url,
+  });
+  if (error) throw error;
+  const index = group.photo_url?.indexOf(GROUP_PHOTO_PATH_MARKER) ?? -1;
+  if (group.photo_url && index !== -1) {
+    const oldPath = decodeURIComponent(
+      group.photo_url.slice(index + GROUP_PHOTO_PATH_MARKER.length)
+    );
+    const { error: removeError } = await supabase.storage
+      .from(GROUP_PHOTOS_BUCKET)
+      .remove([oldPath]);
+    if (removeError) console.warn('Could not delete the old group photo', removeError.message);
+  }
 }
 
 /** When you last read a private group. Used for the "new messages" line. */
@@ -256,6 +300,10 @@ export function eventText(
         : t('privateGroups.events.removed', { name: name(actorId), removed: name(subjectId) });
     case 'requested':
       return t('privateGroups.events.requested', { name: name(actorId) });
+    case 'photo':
+      return byMe
+        ? t('privateGroups.events.photoByMe')
+        : t('privateGroups.events.photo', { name: name(actorId) });
     case 'accepted':
       if (subjectId === myUserId) {
         return t('privateGroups.events.acceptedMe', { name: name(actorId) });

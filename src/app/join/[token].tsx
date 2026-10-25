@@ -135,7 +135,7 @@ export default function JoinGroupScreen() {
     <ThemedView style={[styles.screen, styles.centered]}>
       {title}
       <View style={styles.box}>
-        <PrivateGroupBadge name={preview.name} size={72} />
+        <PrivateGroupBadge name={preview.name} photoUrl={preview.photo_url} size={72} />
         <ThemedText type="subtitle" style={styles.heading}>
           {preview.name}
         </ThemedText>

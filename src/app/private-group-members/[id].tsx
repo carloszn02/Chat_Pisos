@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { RowsSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ConnectionPicker } from '@/components/connection-picker';
+import { PrivateGroupBadge } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -16,6 +18,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
 import { appUrl } from '@/lib/links';
 import {
+  changePrivateGroupPhoto,
   fetchJoinRequests,
   fetchPrivateGroup,
   fetchPrivateGroupMembers,
@@ -57,6 +60,9 @@ export default function PrivateGroupMembersScreen() {
   const [linkBusy, setLinkBusy] = useState(false);
   const [error, setError] = useState<'notConnected' | 'groupFull' | 'generic' | null>(null);
   const [invited, setInvited] = useState(false);
+  const [photoMenu, setPhotoMenu] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
 
   // Applies a loaded result, unless the screen has moved on (`isCurrent` returns false).
   const load = useCallback(
@@ -120,6 +126,33 @@ export default function PrivateGroupMembersScreen() {
   const group = data?.group;
   const isOwner = members.some((m) => m.user_id === userId && m.role === 'owner');
   const freePlaces = PRIVATE_GROUP_MAX_PEOPLE - members.length;
+
+  const isMember = members.some((m) => m.user_id === userId && m.status === 'member');
+
+  async function changePhoto(pick: boolean) {
+    if (!group) return;
+    let asset: ImagePicker.ImagePickerAsset | null = null;
+    if (pick) {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (result.canceled) return;
+      asset = result.assets[0];
+    }
+    setPhotoBusy(true);
+    setPhotoError(false);
+    try {
+      await changePrivateGroupPhoto(group, asset);
+      await load();
+    } catch {
+      setPhotoError(true);
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
 
   async function invite() {
     if (!id || toInvite.length === 0) return;
@@ -216,6 +249,43 @@ export default function PrivateGroupMembersScreen() {
       <Stack.Screen options={{ title: t('privateGroups.members') }} />
       <ScrollView>
         <View style={styles.content}>
+          {group && (
+            <View style={styles.groupHeader}>
+              <PrivateGroupBadge name={group.name} photoUrl={group.photo_url} size={96} />
+              <ThemedText type="subtitle" style={styles.groupName}>
+                {group.name}
+              </ThemedText>
+              {isMember && (
+                <>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={photoBusy}
+                    onPress={() => (group.photo_url ? setPhotoMenu(true) : changePhoto(true))}
+                    hitSlop={8}
+                    style={({ pressed }) => (pressed || photoBusy) && styles.pressed}>
+                    {photoBusy ? (
+                      <ActivityIndicator color={theme.primary} />
+                    ) : (
+                      <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                        {group.photo_url
+                          ? t('privateGroups.groupPhoto.change')
+                          : t('privateGroups.groupPhoto.add')}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('privateGroups.groupPhoto.hint')}
+                  </ThemedText>
+                </>
+              )}
+              {photoError && (
+                <ThemedText type="small" style={{ color: theme.danger }}>
+                  {t('privateGroups.groupPhoto.error')}
+                </ThemedText>
+              )}
+            </View>
+          )}
+
           {error && (
             <ThemedText
               type="small"
@@ -484,12 +554,34 @@ export default function PrivateGroupMembersScreen() {
         }
         onClose={() => setToRemove(null)}
       />
+      <ActionSheet
+        visible={photoMenu}
+        title={t('privateGroups.groupPhoto.title')}
+        options={[
+          { label: t('privateGroups.groupPhoto.choose'), onPress: () => changePhoto(true) },
+          {
+            label: t('privateGroups.groupPhoto.remove'),
+            destructive: true,
+            onPress: () => changePhoto(false),
+          },
+        ]}
+        onClose={() => setPhotoMenu(false)}
+      />
       {toast}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  groupHeader: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  groupName: {
+    fontSize: 24,
+    lineHeight: 30,
+    textAlign: 'center',
+  },
   screen: {
     flex: 1,
   },

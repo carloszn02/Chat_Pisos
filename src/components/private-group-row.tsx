@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -18,9 +19,27 @@ type PrivateGroupRowProps = {
   onLongPress?: () => void;
 };
 
-/** The round badge with a group's initials, e.g. "FH" for "Flat hunting". */
-export function PrivateGroupBadge({ name, size = 48 }: { name: string; size?: number }) {
+/** The group's photo, or a round badge with its initials (e.g. "FH" for "Flat hunting"). */
+export function PrivateGroupBadge({
+  name,
+  photoUrl,
+  size = 48,
+}: {
+  name: string;
+  photoUrl?: string | null;
+  size?: number;
+}) {
   const theme = useTheme();
+  if (photoUrl) {
+    return (
+      <Image
+        source={{ uri: photoUrl }}
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.tile }}
+        contentFit="cover"
+        accessibilityIgnoresInvertColors
+      />
+    );
+  }
   const initials = name
     .trim()
     .split(/\s+/)
@@ -81,7 +100,7 @@ export function PrivateGroupRow({
   return (
     <ChatRow
       href={{ pathname: '/private-group/[id]', params: { id: group.id } }}
-      picture={<PrivateGroupBadge name={group.name} size={50} />}
+      picture={<PrivateGroupBadge name={group.name} photoUrl={group.photo_url} size={50} />}
       title={group.name}
       time={
         group.last_message_at && !invited

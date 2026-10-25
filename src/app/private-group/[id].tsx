@@ -190,6 +190,8 @@ export default function PrivateGroupScreen() {
         (payload) => {
           const message = payload.new as PrivateGroupMessage;
           setMessages((current) => mergeMessages(current, [message]));
+          // Someone changed the group photo: show the new one at the top.
+          if (message.event === 'photo') loadGroup().catch(() => {});
           addPeople([message.sender_id, ...(message.subject_id ? [message.subject_id] : [])]);
           markPrivateGroupRead(id);
         }
@@ -387,7 +389,7 @@ export default function PrivateGroupScreen() {
             <ChatHeaderTitle
               title={group.name}
               subtitle={headerMembers}
-              picture={<PrivateGroupBadge name={group.name} size={34} />}
+              picture={<PrivateGroupBadge name={group.name} photoUrl={group.photo_url} size={34} />}
               onPress={() =>
                 router.push({ pathname: '/private-group-members/[id]', params: { id: group.id } })
               }

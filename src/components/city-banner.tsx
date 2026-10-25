@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -7,21 +7,28 @@ import type { City } from '@/types/places';
 
 // City photos shipped with the app, by city slug. The credit text lives in the database and
 // is shown in Settings › About (the photo licence asks for it).
-const CITY_PHOTOS: Record<string, ImageSourcePropType> = {
-  madrid: require('@/assets/images/cities/madrid.jpg'),
+const CITY_PHOTOS: Record<string, { source: ImageSourcePropType; focus: string }> = {
+  // A tall photo shown as a wide strip: focus on the angel and the top of the Metrópolis dome,
+  // so phones and computers both show the best part (not a slice from the middle).
+  madrid: { source: require('@/assets/images/cities/madrid.jpg'), focus: '13%' },
 };
+
+/** Wider screens (computers, tablets) get a taller banner, so the photo isn't a thin slice. */
+const WIDE_SCREEN = 700;
 
 /** A wide photo of the city with its name, shown at the top of the Chats tab. */
 export function CityBanner({ city, subtitle }: { city: City; subtitle: string }) {
   const photo = CITY_PHOTOS[city.slug];
+  const { width } = useWindowDimensions();
 
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, width >= WIDE_SCREEN && styles.bannerWide]}>
       {photo && (
         <Image
-          source={photo}
+          source={photo.source}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
+          contentPosition={{ top: photo.focus, left: '50%' }}
           accessibilityIgnoresInvertColors
         />
       )}
@@ -44,6 +51,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'flex-end',
     backgroundColor: '#4A3426',
+  },
+  bannerWide: {
+    height: 210,
   },
   shade: {
     backgroundColor: 'rgba(30, 20, 14, 0.38)',
