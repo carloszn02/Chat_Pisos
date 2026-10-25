@@ -17,6 +17,8 @@ import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ListingPrice, ListingTypeTag } from '@/components/listing-card';
+import { ListingContactCard } from '@/components/listing-contact';
+import { MetroBadge } from '@/components/metro-badge';
 import { LocationMap } from '@/components/location-map';
 import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
@@ -28,7 +30,7 @@ import { useShare } from '@/hooks/use-share';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPublicProfile } from '@/lib/chat';
 import { startConversation } from '@/lib/direct-messages';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatPrice } from '@/lib/format';
 import { appUrl } from '@/lib/links';
 import {
   daysUntilExpiry,
@@ -173,7 +175,19 @@ export default function ListingDetailScreen() {
 
   const yesNo = (value: boolean | null) =>
     value === null ? null : t(value ? 'listings.yes' : 'listings.no');
+  const genderText =
+    listing.gender === null
+      ? null
+      : listing.type === 'seeking_room'
+        ? listing.gender !== 'any' && t(`listings.seekerGenders.${listing.gender}`)
+        : t(`listings.genderTags.${listing.gender}`);
   const facts = [
+    [
+      listing.type === 'seeking_room'
+        ? t('listings.detail.whoIsLooking')
+        : t('listings.detail.forWho'),
+      genderText,
+    ],
     [t('listings.facts.availableFrom'), formatDate(listing.available_from, i18n.language)],
     [
       t('listings.facts.minStay'),
@@ -181,10 +195,60 @@ export default function ListingDetailScreen() {
     ],
     [t('listings.facts.billsIncluded'), yesNo(listing.bills_included)],
     [t('listings.facts.furnished'), yesNo(listing.furnished)],
-    [t('listings.facts.roomSize'), listing.room_size_m2 && `${listing.room_size_m2} m²`],
-    [t('listings.facts.flatmates'), listing.flatmates != null ? String(listing.flatmates) : null],
+    [
+      t('listings.facts.billsEstimate'),
+      listing.bills_estimate_eur &&
+        t('listings.facts.billsPerMonth', {
+          price: formatPrice(listing.bills_estimate_eur, i18n.language),
+        }),
+    ],
+    [
+      t('listings.facts.deposit'),
+      listing.deposit_months === null
+        ? null
+        : listing.deposit_months === 0
+          ? t('listings.facts.noDeposit')
+          : t('listings.months', { count: listing.deposit_months }),
+    ],
+    [
+      listing.type === 'whole_flat' ? t('listings.facts.flatSize') : t('listings.facts.roomSize'),
+      listing.room_size_m2 && `${listing.room_size_m2} m²`,
+    ],
     [t('listings.facts.bedrooms'), listing.bedrooms && String(listing.bedrooms)],
+    [t('listings.facts.bathrooms'), listing.bathrooms && String(listing.bathrooms)],
+    [t('listings.facts.flatmates'), listing.flatmates != null ? String(listing.flatmates) : null],
+    [
+      t('listings.facts.floor'),
+      listing.floor === null
+        ? null
+        : listing.floor === 0
+          ? t('listings.facts.groundFloor')
+          : t('listings.facts.floorNumber', { floor: listing.floor }),
+    ],
   ].filter((fact): fact is [string, string] => !!fact[1]);
+
+  const yesNoRule = (
+    value: boolean | null,
+    rule: 'registration' | 'pets' | 'smoking' | 'couples'
+  ) => (value === null ? null : t(`listings.rules.${rule}_${value ? 'yes' : 'no'}`));
+  const rules = [
+    yesNoRule(listing.registration_allowed, 'registration'),
+    yesNoRule(listing.pets_allowed, 'pets'),
+    yesNoRule(listing.smoking_allowed, 'smoking'),
+    yesNoRule(listing.couples_allowed, 'couples'),
+  ].filter((rule): rule is string => !!rule);
+  const ideal = [
+    listing.age_min && listing.age_max
+      ? t('listings.detail.ageRange', { min: listing.age_min, max: listing.age_max })
+      : listing.age_min
+        ? t('listings.detail.ageFrom', { min: listing.age_min })
+        : listing.age_max
+          ? t('listings.detail.ageTo', { max: listing.age_max })
+          : null,
+    listing.ideal_occupation && t(`listings.occupations.${listing.ideal_occupation}`),
+  ].filter((item): item is string => !!item);
+  const hasTransport =
+    listing.metro_lines.length > 0 || !!listing.metro_station || !!listing.transport_notes;
 
   // Habits both people chose the same answer for.
   const inCommon: string[] = [];
@@ -289,6 +353,36 @@ export default function ListingDetailScreen() {
             <ThemedText style={styles.description}>{listing.description}</ThemedText>
           ) : null}
 
+          {listing.features.length > 0 && (
+            <PillSection
+              title={t('listings.detail.features')}
+              items={listing.features.map((feature) => t(`listings.features.${feature}`))}
+              check
+            />
+          )}
+          {rules.length > 0 && <PillSection title={t('listings.detail.rules')} items={rules} />}
+          {ideal.length > 0 && <PillSection title={t('listings.detail.ideal')} items={ideal} />}
+
+          {hasTransport && (
+            <View style={styles.locationSection}>
+              <ThemedText style={styles.sectionTitle}>{t('listings.detail.transport')}</ThemedText>
+              {(listing.metro_lines.length > 0 || listing.metro_station) && (
+                <View style={styles.metroRow}>
+                  <Icon name="metro" size={18} color={theme.textSecondary} />
+                  {listing.metro_lines.map((line) => (
+                    <MetroBadge key={line} line={line} size="small" />
+                  ))}
+                  {listing.metro_station ? (
+                    <ThemedText style={styles.bold}>{listing.metro_station}</ThemedText>
+                  ) : null}
+                </View>
+              )}
+              {listing.transport_notes ? (
+                <ThemedText themeColor="textSecondary">{listing.transport_notes}</ThemedText>
+              ) : null}
+            </View>
+          )}
+
           {listing.latitude != null && listing.longitude != null && (
             <View style={styles.locationSection}>
               <ThemedText style={styles.sectionTitle}>{t('listings.location')}</ThemedText>
@@ -346,6 +440,8 @@ export default function ListingDetailScreen() {
               )}
             </View>
           )}
+
+          {listing.has_contact && <ListingContactCard listingId={listing.id} />}
 
           {actionError && (
             <ThemedText type="small" style={{ color: theme.danger }}>
@@ -462,9 +558,48 @@ export default function ListingDetailScreen() {
   );
 }
 
+/** A titled group of small labels (what the flat has, house rules…). */
+function PillSection({
+  title,
+  items,
+  check = false,
+}: {
+  title: string;
+  items: string[];
+  check?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={styles.locationSection}>
+      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+      <View style={styles.pills}>
+        {items.map((item) => (
+          <View
+            key={item}
+            style={[styles.pill, styles.pillRow, { backgroundColor: theme.backgroundSelected }]}>
+            {check && <Icon name="check" size={14} color={theme.primary} strokeWidth={2.4} />}
+            <ThemedText type="small">{item}</ThemedText>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  metroRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   headerButton: {
     paddingHorizontal: Spacing.two,

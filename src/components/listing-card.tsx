@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { MetroBadge } from '@/components/metro-badge';
 import { PressableLink } from '@/components/pressable-link';
 import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
@@ -97,6 +98,12 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
     .filter(Boolean)
     .join(' · ');
 
+  // "Girls only" / "Boys only" on rooms (not "anyone", which is the usual case).
+  const genderTag =
+    listing.type === 'offering_room' && (listing.gender === 'female' || listing.gender === 'male')
+      ? t(`listings.genderTags.${listing.gender}`)
+      : null;
+
   const status =
     listing.status === 'closed' ? (
       <ThemedText type="smallBold" themeColor="textSecondary">
@@ -168,6 +175,20 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
               {details}
             </ThemedText>
           </View>
+          {(listing.metro_lines.length > 0 || genderTag) && (
+            <View style={styles.highlights}>
+              {listing.metro_lines.slice(0, 4).map((line) => (
+                <MetroBadge key={line} line={line} size="small" />
+              ))}
+              {genderTag && (
+                <View style={[styles.genderTag, { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText type="small" style={styles.genderText}>
+                    {genderTag}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </PressableLink>
       {/* Next to the link rather than inside it, so tapping the heart doesn't open the listing. */}
@@ -224,6 +245,25 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  highlights: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  genderTag: {
+    height: 20,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  genderText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: 600,
   },
   heart: {
     position: 'absolute',

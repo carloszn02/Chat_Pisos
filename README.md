@@ -47,6 +47,7 @@ The database lives in Supabase. Every change to its structure is a SQL file in `
 17. `20261020100000_saved_listings.sql` — favourite (saved) listings.
 18. `20261021100000_chat_photos.sql` — photos in chats (private storage bucket, photo reports).
 19. `20261022100000_message_replies.sql` — replying to (quoting) a message in the same chat.
+20. `20261025100000_listing_details_contact.sql` — more listing details (who it's for, the flat, rules, transport) and optional contact details.
 
 In Supabase, also set **Authentication → URL Configuration → Site URL** (and Redirect URLs) to the app's address, e.g. `http://localhost:8081` while developing.
 

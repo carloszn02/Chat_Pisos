@@ -7,20 +7,27 @@
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import BellOff from 'lucide-react-native/icons/bell-off';
+import AtSign from 'lucide-react-native/icons/at-sign';
+import Briefcase from 'lucide-react-native/icons/briefcase';
 import Camera from 'lucide-react-native/icons/camera';
 import Check from 'lucide-react-native/icons/check';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import Ellipsis from 'lucide-react-native/icons/ellipsis';
 import Heart from 'lucide-react-native/icons/heart';
 import ImageIcon from 'lucide-react-native/icons/image';
+import Link from 'lucide-react-native/icons/link';
 import List from 'lucide-react-native/icons/list';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Phone from 'lucide-react-native/icons/phone';
 import Plus from 'lucide-react-native/icons/plus';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import TrainFront from 'lucide-react-native/icons/train-front';
 import X from 'lucide-react-native/icons/x';
 
 import { Platform } from 'react-native';
@@ -30,17 +37,24 @@ import { useTheme } from '@/hooks/use-theme';
 const ICONS = {
   'arrow-right': ArrowRight,
   'arrow-up': ArrowUp,
+  'at-sign': AtSign,
   'bell-off': BellOff,
+  briefcase: Briefcase,
   camera: Camera,
   check: Check,
+  'chevron-down': ChevronDown,
   'chevron-right': ChevronRight,
   close: X,
   heart: Heart,
   image: ImageIcon,
+  link: Link,
   list: List,
   map: MapIcon,
   'map-pin': MapPin,
+  message: MessageCircle,
+  metro: TrainFront,
   more: Ellipsis,
+  phone: Phone,
   plus: Plus,
   search: Search,
   settings: Settings,

@@ -7,12 +7,14 @@ import { readFileBytes } from '@/lib/file-bytes';
 import { shrinkImage } from '@/lib/images';
 import type { MapBounds } from '@/lib/map';
 import { supabase } from '@/lib/supabase';
-import type { Listing, ListingType } from '@/types/listing';
+import type { Listing, ListingContact, ListingType, MetroLine } from '@/types/listing';
 
 const LISTING_COLUMNS =
   'id, user_id, type, city_id, area_ids, title, description, price_eur, available_from, min_stay_months, ' +
   'bills_included, furnished, room_size_m2, flatmates, bedrooms, photo_urls, latitude, longitude, ' +
-  'location_exact, address, status, expires_at, created_at';
+  'location_exact, address, status, expires_at, created_at, bathrooms, gender, floor, deposit_months, ' +
+  'bills_estimate_eur, features, registration_allowed, pets_allowed, smoking_allowed, couples_allowed, ' +
+  'age_min, age_max, ideal_occupation, metro_lines, metro_station, transport_notes, has_contact';
 
 const PHOTOS_BUCKET = 'listing-photos';
 const PUBLIC_PATH_MARKER = `/storage/v1/object/public/${PHOTOS_BUCKET}/`;
@@ -33,6 +35,11 @@ export type ListingFilters = {
   maxPrice: number | null;
   /** Only listings inside this part of the map ("search this area"). */
   bounds?: MapBounds | null;
+  /** Hides rooms that are only for the other gender. */
+  gender?: 'female' | 'male' | null;
+  petsAllowed?: boolean;
+  registrationAllowed?: boolean;
+  metroLine?: MetroLine | null;
 };
 
 /** How many listings an area search shows at most. */
@@ -41,7 +48,7 @@ export const AREA_SEARCH_LIMIT = 200;
 /** Everything a listing form saves, except photos. */
 export type ListingValues = Omit<
   Listing,
-  'id' | 'user_id' | 'photo_urls' | 'status' | 'expires_at' | 'created_at'
+  'id' | 'user_id' | 'photo_urls' | 'status' | 'expires_at' | 'created_at' | 'has_contact'
 >;
 
 export async function fetchListings(filters: ListingFilters): Promise<Listing[]> {
@@ -64,6 +71,13 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
   if (filters.cityId) query = query.eq('city_id', filters.cityId);
   if (filters.areaId) query = query.contains('area_ids', [filters.areaId]);
   if (filters.maxPrice) query = query.lte('price_eur', filters.maxPrice);
+  if (filters.gender) {
+    const other = filters.gender === 'female' ? 'male' : 'female';
+    query = query.or(`gender.is.null,gender.neq.${other}`);
+  }
+  if (filters.petsAllowed) query = query.eq('pets_allowed', true);
+  if (filters.registrationAllowed) query = query.eq('registration_allowed', true);
+  if (filters.metroLine) query = query.contains('metro_lines', [filters.metroLine]);
   const { data, error } = await query;
   if (error) throw error;
   return data as unknown as Listing[];
@@ -125,10 +139,42 @@ export async function deleteListingPhotos(urls: string[]): Promise<void> {
   if (error) console.warn('Could not delete listing photos', error.message);
 }
 
+/** The contact details of a listing (counts towards the daily limit for other people's). */
+export async function fetchListingContact(listingId: string): Promise<ListingContact | null> {
+  const { data, error } = await supabase.rpc('get_listing_contact', { target: listingId });
+  if (error) throw error;
+  return (data as ListingContact[] | null)?.[0] ?? null;
+}
+
+/** Your own listing's contact details, for editing. */
+export async function fetchMyListingContact(listingId: string): Promise<ListingContact | null> {
+  const { data, error } = await supabase
+    .from('listing_contacts')
+    .select('instagram, linkedin, phone, phone_whatsapp, other_link')
+    .eq('listing_id', listingId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Saves the contact details, or removes them when `contact` is null. */
+export async function saveListingContact(
+  listingId: string,
+  contact: ListingContact | null
+): Promise<void> {
+  const { error } = contact
+    ? await supabase
+        .from('listing_contacts')
+        .upsert({ listing_id: listingId, ...contact }, { onConflict: 'listing_id' })
+    : await supabase.from('listing_contacts').delete().eq('listing_id', listingId);
+  if (error) throw error;
+}
+
 export async function createListing(
   userId: string,
   values: ListingValues,
-  newPhotos: ImagePickerAsset[]
+  newPhotos: ImagePickerAsset[],
+  contact: ListingContact | null
 ): Promise<Listing> {
   const photoUrls = await Promise.all(newPhotos.map((photo, i) => uploadPhoto(userId, photo, i)));
   const { data, error } = await supabase
@@ -140,14 +186,25 @@ export async function createListing(
     await deleteListingPhotos(photoUrls);
     throw error;
   }
-  return data as unknown as Listing;
+  const listing = data as unknown as Listing;
+  if (contact) {
+    try {
+      await saveListingContact(listing.id, contact);
+      listing.has_contact = true;
+    } catch (contactError) {
+      // The listing is published; the contact can be added again by editing it.
+      console.warn('Could not save listing contact', contactError);
+    }
+  }
+  return listing;
 }
 
 export async function updateListing(
   listing: Listing,
   values: ListingValues,
   keptPhotoUrls: string[],
-  newPhotos: ImagePickerAsset[]
+  newPhotos: ImagePickerAsset[],
+  contact: ListingContact | null
 ): Promise<void> {
   const uploaded = await Promise.all(
     newPhotos.map((photo, i) => uploadPhoto(listing.user_id, photo, i))
@@ -160,6 +217,7 @@ export async function updateListing(
     await deleteListingPhotos(uploaded);
     throw error;
   }
+  if (contact || listing.has_contact) await saveListingContact(listing.id, contact);
   // Remove photos the user took out, only after the listing no longer points to them.
   await deleteListingPhotos(listing.photo_urls.filter((url) => !keptPhotoUrls.includes(url)));
 }

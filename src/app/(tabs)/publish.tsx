@@ -19,11 +19,11 @@ export default function PublishScreen() {
   // Changing the key gives a fresh, empty form after each publication.
   const [formKey, setFormKey] = useState(0);
 
-  async function publish({ values, newPhotos, shareInGroups }: ListingFormResult) {
+  async function publish({ values, newPhotos, shareInGroups, contact }: ListingFormResult) {
     if (!session) return 'generic' as const;
     let listing;
     try {
-      listing = await createListing(session.user.id, values, newPhotos);
+      listing = await createListing(session.user.id, values, newPhotos, contact);
     } catch (error) {
       return isRateLimitError(error) ? ('rateLimit' as const) : ('generic' as const);
     }

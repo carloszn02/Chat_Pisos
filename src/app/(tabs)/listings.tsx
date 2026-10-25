@@ -19,6 +19,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ListingCardsSkeleton } from '@/components/skeleton';
 import { ListingCard, ListingMiniCard } from '@/components/listing-card';
 import { ListingsMap } from '@/components/listings-map';
+import { metroLineLabel, MetroLinePicker } from '@/components/metro-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -30,7 +31,7 @@ import { formatPrice } from '@/lib/format';
 import { fetchListings, fetchListingsByIds, type ListingFilters } from '@/lib/listings';
 import type { ListingPin, MapBounds } from '@/lib/map';
 import type { PublicProfile } from '@/types/chat';
-import { LISTING_TYPES, type Listing, type ListingType } from '@/types/listing';
+import { LISTING_TYPES, type Listing, type ListingType, type MetroLine } from '@/types/listing';
 
 type Chip = {
   key: string;
@@ -119,6 +120,10 @@ export default function ListingsScreen() {
   const [neighbourhoodId, setNeighbourhoodId] = useState<string | null>(null);
   const [maxPriceText, setMaxPriceText] = useState('');
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [gender, setGender] = useState<'female' | 'male' | null>(null);
+  const [petsAllowed, setPetsAllowed] = useState(false);
+  const [registrationAllowed, setRegistrationAllowed] = useState(false);
+  const [metroLine, setMetroLine] = useState<MetroLine | null>(null);
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [owners, setOwners] = useState<Map<string, PublicProfile>>(new Map());
   const [loadError, setLoadError] = useState(false);
@@ -154,8 +159,30 @@ export default function ListingsScreen() {
     () =>
       savedOnly
         ? { savedIds: savedKey ? savedKey.split(',') : [] }
-        : { cityId, type, areaId, maxPrice, bounds: areaBounds },
-    [savedOnly, savedKey, cityId, type, areaId, maxPrice, areaBounds]
+        : {
+            cityId,
+            type,
+            areaId,
+            maxPrice,
+            bounds: areaBounds,
+            gender,
+            petsAllowed,
+            registrationAllowed,
+            metroLine,
+          },
+    [
+      savedOnly,
+      savedKey,
+      cityId,
+      type,
+      areaId,
+      maxPrice,
+      areaBounds,
+      gender,
+      petsAllowed,
+      registrationAllowed,
+      metroLine,
+    ]
   );
 
   // Reload when the tab is shown and whenever a filter changes.
@@ -221,8 +248,15 @@ export default function ListingsScreen() {
     setMaxPrice(maxPriceText.trim() && Number.isInteger(value) && value > 0 ? value : null);
   }
 
-  // How many filters from the panel are on (a place and/or a price).
-  const panelFilterCount = (districtId ? 1 : 0) + (maxPrice ? 1 : 0);
+  // How many filters from the panel are on.
+  const panelFilterCount = [
+    districtId,
+    maxPrice,
+    gender,
+    petsAllowed,
+    registrationAllowed,
+    metroLine,
+  ].filter(Boolean).length;
   const typeChips: Chip[] = savedOnly
     ? [
         // Showing saved listings: one chip to go back to all of them.
@@ -313,6 +347,27 @@ export default function ListingsScreen() {
       ]
     : [];
 
+  const genderChips: Chip[] = (['all', 'female', 'male'] as const).map((option) => ({
+    key: option,
+    label: t(`listings.filters.genders.${option}`),
+    selected: (gender ?? 'all') === option,
+    onPress: () => setGender(option === 'all' ? null : option),
+  }));
+  const extraChips: Chip[] = [
+    {
+      key: 'pets',
+      label: t('listings.filters.petsAllowed'),
+      selected: petsAllowed,
+      onPress: () => setPetsAllowed((current) => !current),
+    },
+    {
+      key: 'registration',
+      label: t('listings.filters.registrationAllowed'),
+      selected: registrationAllowed,
+      onPress: () => setRegistrationAllowed((current) => !current),
+    },
+  ];
+
   // "24 listings · Malasaña · Up to 700 €"
   const placeName = neighbourhoodId
     ? neighbourhoodsOf(districtId ?? '').find((h) => h.id === neighbourhoodId)?.name
@@ -323,6 +378,12 @@ export default function ListingsScreen() {
     !savedOnly && maxPrice
       ? t('listings.filters.upTo', { price: formatPrice(maxPrice, i18n.language) })
       : null,
+    !savedOnly && gender ? t(`listings.filters.genders.${gender}`) : null,
+    !savedOnly && metroLine
+      ? t('listings.filters.metroLine', { line: metroLineLabel(metroLine) })
+      : null,
+    !savedOnly && petsAllowed ? t('listings.filters.petsAllowed') : null,
+    !savedOnly && registrationAllowed ? t('listings.filters.registrationAllowed') : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -372,8 +433,16 @@ export default function ListingsScreen() {
           chooseDistrict(null);
           setMaxPriceText('');
           setMaxPrice(null);
+          setGender(null);
+          setPetsAllowed(false);
+          setRegistrationAllowed(false);
+          setMetroLine(null);
         }}
         districtChips={districtChips}
+        genderChips={genderChips}
+        extraChips={extraChips}
+        metroLine={metroLine}
+        onMetroLine={(line) => setMetroLine(metroLine === line ? null : line)}
         neighbourhoodChips={neighbourhoodChips}
         maxPriceText={maxPriceText}
         onChangeMaxPrice={setMaxPriceText}
@@ -498,9 +567,13 @@ type FiltersPanelProps = {
   maxPriceText: string;
   onChangeMaxPrice: (text: string) => void;
   onSubmitMaxPrice: () => void;
+  genderChips: Chip[];
+  extraChips: Chip[];
+  metroLine: MetroLine | null;
+  onMetroLine: (line: MetroLine) => void;
 };
 
-/** Districts, neighbourhoods and the top price, in a panel that slides up. */
+/** Districts, neighbourhoods, price and the other filters, in a panel that slides up. */
 function FiltersPanel({
   visible,
   onClose,
@@ -510,6 +583,10 @@ function FiltersPanel({
   maxPriceText,
   onChangeMaxPrice,
   onSubmitMaxPrice,
+  genderChips,
+  extraChips,
+  metroLine,
+  onMetroLine,
 }: FiltersPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -569,6 +646,12 @@ function FiltersPanel({
             maxLength={5}
             accessibilityLabel={t('listings.filters.maxPrice')}
           />
+          <ThemedText style={styles.panelSection}>{t('listings.filters.forWho')}</ThemedText>
+          <ChipWrap chips={genderChips} />
+          <ThemedText style={styles.panelSection}>{t('listings.filters.metro')}</ThemedText>
+          <MetroLinePicker value={metroLine ? [metroLine] : []} onToggle={onMetroLine} />
+          <ThemedText style={styles.panelSection}>{t('listings.filters.more')}</ThemedText>
+          <ChipWrap chips={extraChips} />
         </ScrollView>
         <View style={[styles.panelFooter, { borderTopColor: theme.border }]}>
           <Button label={t('listings.filters.clear')} variant="text" onPress={onClear} />

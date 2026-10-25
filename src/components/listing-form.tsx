@@ -7,6 +7,18 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { Icon } from '@/components/icon';
 import { AreaPicker } from '@/components/area-picker';
 import { ChoiceChips } from '@/components/choice-chips';
+import {
+  contactDraftFrom,
+  contactFromDraft,
+  detailsToValues,
+  draftFromListing,
+  initialOpenSections,
+  ListingDetailsFields,
+  sectionForError,
+  useOpenSections,
+  type ContactDraft,
+  type DetailsDraft,
+} from '@/components/listing-details-fields';
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -17,10 +29,13 @@ import { parseCalendarDate } from '@/lib/age';
 import { blurLocation, MADRID_CENTER, searchAddress, type Coordinates } from '@/lib/geocoding';
 import type { ListingValues } from '@/lib/listings';
 import {
+  LISTING_GENDERS,
   LISTING_TYPES,
   MAX_LISTING_PHOTOS,
   MAX_SEEKING_DISTRICTS,
   type Listing,
+  type ListingContact,
+  type ListingGender,
   type ListingType,
 } from '@/types/listing';
 
@@ -31,30 +46,21 @@ export type ListingFormResult = {
   keptPhotoUrls: string[];
   newPhotos: ImagePicker.ImagePickerAsset[];
   shareInGroups: boolean;
+  /** Contact outside the app; null when none (or removed). */
+  contact: ListingContact | null;
 };
 
 type ListingFormProps = {
   /** The listing being edited; omit when creating a new one. */
   initial?: Listing;
+  /** The listing's contact details, when editing. */
+  initialContact?: ListingContact | null;
   submitLabel: string;
   onSubmit: (result: ListingFormResult) => Promise<ListingErrorKey | null>;
 };
 
 const VISIBILITY = ['approximate', 'exact'] as const;
 type Visibility = (typeof VISIBILITY)[number];
-
-const YES_NO = ['yes', 'no'] as const;
-type YesNo = (typeof YES_NO)[number];
-
-function toYesNo(value: boolean | null | undefined): YesNo | null {
-  if (value === true) return 'yes';
-  if (value === false) return 'no';
-  return null;
-}
-
-function fromYesNo(value: YesNo | null): boolean | null {
-  return value === null ? null : value === 'yes';
-}
 
 /** Parses an optional whole number. Returns undefined when the text isn't a valid number. */
 function parseOptionalInt(text: string): number | null | undefined {
@@ -69,7 +75,7 @@ function dateParts(isoDate?: string): [string, string, string] {
 }
 
 /** All listing fields, shared by the new-listing and edit-listing screens. */
-export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps) {
+export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: ListingFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const { city, areaById } = usePlaces();
@@ -87,16 +93,17 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
   const [minStay, setMinStay] = useState(
     initial?.min_stay_months ? String(initial.min_stay_months) : ''
   );
-  const [roomSize, setRoomSize] = useState(
-    initial?.room_size_m2 ? String(initial.room_size_m2) : ''
+  const [gender, setGender] = useState<ListingGender | null>(initial?.gender ?? null);
+  const [details, setDetails] = useState<DetailsDraft>(() => draftFromListing(initial));
+  const [contact, setContact] = useState<ContactDraft>(() =>
+    contactDraftFrom(initialContact ?? null)
   );
-  const [flatmates, setFlatmates] = useState(
-    initial?.flatmates != null ? String(initial.flatmates) : ''
-  );
-  const [bedrooms, setBedrooms] = useState(initial?.bedrooms ? String(initial.bedrooms) : '');
-  const [furnished, setFurnished] = useState<YesNo | null>(toYesNo(initial?.furnished));
-  const [billsIncluded, setBillsIncluded] = useState<YesNo | null>(
-    toYesNo(initial?.bills_included)
+  const sections = useOpenSections(() =>
+    initialOpenSections(
+      draftFromListing(initial),
+      contactDraftFrom(initialContact ?? null),
+      isEditing
+    )
   );
   const [description, setDescription] = useState(initial?.description ?? '');
   const [keptPhotoUrls, setKeptPhotoUrls] = useState<string[]>(initial?.photo_urls ?? []);
@@ -125,6 +132,8 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
 
   function changeType(next: ListingType) {
     setType(next);
+    // "Anyone" only makes sense for rooms; whole flats don't have it.
+    if (next !== 'offering_room' && gender === 'any') setGender(null);
     // Rooms and flats are in one place: keep only the first district (and its neighbourhood).
     if (next !== 'seeking_room') {
       setAreaIds((current) => {
@@ -194,12 +203,26 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
     if (!availableFrom) return setError('invalidDate');
 
     const minStayValue = parseOptionalInt(minStay);
-    const roomSizeValue = parseOptionalInt(roomSize);
-    const flatmatesValue = parseOptionalInt(flatmates);
-    const bedroomsValue = parseOptionalInt(bedrooms);
-    if ([minStayValue, roomSizeValue, flatmatesValue, bedroomsValue].includes(undefined)) {
+    if (
+      minStayValue === undefined ||
+      (minStayValue !== null && (minStayValue < 1 || minStayValue > 36))
+    ) {
       return setError('invalidNumber');
     }
+    const detailsResult = detailsToValues(type, details);
+    const contactResult = contactFromDraft(contact);
+    const formError =
+      'error' in detailsResult
+        ? detailsResult.error
+        : 'error' in contactResult
+          ? contactResult.error
+          : null;
+    if (formError) {
+      const section = sectionForError(formError);
+      if (section) sections.reveal(section);
+      return setError(formError);
+    }
+    if ('error' in detailsResult || 'error' in contactResult) return;
 
     // Location (rooms and flats only). An approximate location is moved ~200 m before saving,
     // unless it was already saved that way and hasn't changed.
@@ -222,13 +245,10 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
       description: description.trim() || null,
       price_eur: priceValue,
       available_from: availableFrom.toISOString().slice(0, 10),
-      min_stay_months: minStayValue ?? null,
-      // Details that don't apply to this type are cleared.
-      room_size_m2: type === 'offering_room' ? (roomSizeValue ?? null) : null,
-      flatmates: type === 'offering_room' ? (flatmatesValue ?? null) : null,
-      bedrooms: type === 'whole_flat' ? (bedroomsValue ?? null) : null,
-      furnished: isSeeking ? null : fromYesNo(furnished),
-      bills_included: isSeeking ? null : fromYesNo(billsIncluded),
+      min_stay_months: minStayValue,
+      // Whole flats aren't for a gender; people looking say who they are.
+      gender: type === 'whole_flat' ? null : gender,
+      ...detailsResult.values,
       latitude: savedLocation?.latitude ?? null,
       longitude: savedLocation?.longitude ?? null,
       location_exact: !!savedLocation && exact,
@@ -244,6 +264,7 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
           keptPhotoUrls: isSeeking ? [] : keptPhotoUrls,
           newPhotos: isSeeking ? [] : newPhotos,
           shareInGroups: !isEditing && shareInGroups,
+          contact: contactResult.contact,
         })
       );
     } catch {
@@ -395,52 +416,18 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
             </View>
           </View>
 
-          {type === 'offering_room' && (
-            <View style={styles.row}>
-              {numberField(
-                t('listings.form.roomSize'),
-                roomSize,
-                setRoomSize,
-                t('profileSetup.optional')
-              )}
-              {numberField(
-                t('listings.form.flatmates'),
-                flatmates,
-                setFlatmates,
-                t('profileSetup.optional')
-              )}
-            </View>
-          )}
-
-          {type === 'whole_flat' && (
-            <View style={styles.row}>
-              {numberField(
-                t('listings.form.bedrooms'),
-                bedrooms,
-                setBedrooms,
-                t('profileSetup.optional')
-              )}
-              <View style={styles.half} />
-            </View>
-          )}
-
-          {!isSeeking && (
-            <>
-              <ChoiceChips
-                label={t('listings.form.furnished')}
-                options={YES_NO}
-                getLabel={(o) => t(`listings.${o}`)}
-                value={furnished}
-                onChange={(o) => setFurnished(furnished === o ? null : o)}
-              />
-              <ChoiceChips
-                label={t('listings.form.billsIncluded')}
-                options={YES_NO}
-                getLabel={(o) => t(`listings.${o}`)}
-                value={billsIncluded}
-                onChange={(o) => setBillsIncluded(billsIncluded === o ? null : o)}
-              />
-            </>
+          {type !== 'whole_flat' && (
+            <ChoiceChips
+              label={isSeeking ? t('listings.form.genderSeeking') : t('listings.form.genderRoom')}
+              options={isSeeking ? LISTING_GENDERS.filter((g) => g !== 'any') : LISTING_GENDERS}
+              getLabel={(o) =>
+                o !== 'any' && isSeeking
+                  ? t(`listings.seekerGenders.${o}`)
+                  : t(`listings.genders.${o}`)
+              }
+              value={gender}
+              onChange={(o) => setGender(gender === o ? null : o)}
+            />
           )}
 
           {!isSeeking && (
@@ -605,6 +592,16 @@ export function ListingForm({ initial, submitLabel, onSubmit }: ListingFormProps
               </View>
             </View>
           )}
+
+          <ListingDetailsFields
+            type={type}
+            draft={details}
+            onChange={(patch) => setDetails((current) => ({ ...current, ...patch }))}
+            contact={contact}
+            onContactChange={(patch) => setContact((current) => ({ ...current, ...patch }))}
+            openSections={sections.open}
+            onToggleSection={sections.toggle}
+          />
 
           {!isEditing && (
             <Pressable

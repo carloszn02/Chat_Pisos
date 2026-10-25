@@ -16,8 +16,8 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchListing, updateListing } from '@/lib/listings';
-import type { Listing } from '@/types/listing';
+import { fetchListing, fetchMyListingContact, updateListing } from '@/lib/listings';
+import type { Listing, ListingContact } from '@/types/listing';
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,14 +26,17 @@ export default function EditListingScreen() {
   const { session } = useSession();
 
   const [listing, setListing] = useState<Listing | null>(null);
+  const [contact, setContact] = useState<ListingContact | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    fetchListing(id)
-      .then((found) => {
-        if (!cancelled) setListing(found);
+    Promise.all([fetchListing(id), fetchMyListingContact(id).catch(() => null)])
+      .then(([found, foundContact]) => {
+        if (cancelled) return;
+        setListing(found);
+        setContact(foundContact);
       })
       .catch(() => {})
       .finally(() => {
@@ -44,10 +47,15 @@ export default function EditListingScreen() {
     };
   }, [id]);
 
-  async function save({ values, keptPhotoUrls, newPhotos }: ListingFormResult) {
+  async function save({
+    values,
+    keptPhotoUrls,
+    newPhotos,
+    contact: newContact,
+  }: ListingFormResult) {
     if (!listing) return 'generic' as const;
     try {
-      await updateListing(listing, values, keptPhotoUrls, newPhotos);
+      await updateListing(listing, values, keptPhotoUrls, newPhotos, newContact);
     } catch {
       return 'generic' as const;
     }
@@ -75,7 +83,12 @@ export default function EditListingScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
-              <ListingForm initial={listing} submitLabel={t('editProfile.save')} onSubmit={save} />
+              <ListingForm
+                initial={listing}
+                initialContact={contact}
+                submitLabel={t('editProfile.save')}
+                onSubmit={save}
+              />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
