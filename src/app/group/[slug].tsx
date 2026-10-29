@@ -609,7 +609,7 @@ export default function GroupChatScreen() {
                 onEndReached={loadOlder}
                 onEndReachedThreshold={0.3}
                 ListFooterComponent={
-                  loadingOlder ? <ActivityIndicator color={theme.primary} /> : null
+                  loadingOlder ? <ActivityIndicator color={theme.primary} /> : undefined
                 }
               />
             )}

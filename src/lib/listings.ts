@@ -5,6 +5,7 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { fetchGroups, joinGroup } from '@/lib/chat';
 import { readFileBytes } from '@/lib/file-bytes';
 import { shrinkImage } from '@/lib/images';
+import type { ListingSort } from '@/lib/listing-sort';
 import type { MapBounds } from '@/lib/map';
 import { supabase } from '@/lib/supabase';
 import type { Listing, ListingContact, ListingType, MetroLine } from '@/types/listing';
@@ -40,6 +41,8 @@ export type ListingFilters = {
   petsAllowed?: boolean;
   registrationAllowed?: boolean;
   metroLine?: MetroLine | null;
+  /** Which listings come back first when there are more than a page (the app sorts them too). */
+  sort?: ListingSort;
 };
 
 /** How many listings an area search shows at most. */
@@ -57,7 +60,12 @@ export async function fetchListings(filters: ListingFilters): Promise<Listing[]>
     .select(LISTING_COLUMNS)
     .eq('status', 'active')
     // Your own expired listings are still readable for you, but don't belong in the list.
-    .gt('expires_at', new Date().toISOString())
+    .gt('expires_at', new Date().toISOString());
+  // Price and date orders are applied here, so the first page really is the cheapest (etc.).
+  if (filters.sort === 'price_asc') query = query.order('price_eur', { ascending: true });
+  if (filters.sort === 'price_desc') query = query.order('price_eur', { ascending: false });
+  if (filters.sort === 'available_soon') query = query.order('available_from', { ascending: true });
+  query = query
     .order('created_at', { ascending: false })
     .limit(filters.bounds ? AREA_SEARCH_LIMIT : LISTINGS_PAGE_SIZE);
   if (filters.bounds) {

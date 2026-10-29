@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
-import { StyleSheet, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
+import { Image, type ImageSource } from 'expo-image';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -7,7 +7,7 @@ import type { City } from '@/types/places';
 
 // City photos shipped with the app, by city slug. The credit text lives in the database and
 // is shown in Settings › About (the photo licence asks for it).
-const CITY_PHOTOS: Record<string, { source: ImageSourcePropType; focus: string }> = {
+const CITY_PHOTOS: Record<string, { source: ImageSource | number; focus: string }> = {
   // A tall photo shown as a wide strip: focus on the angel and the top of the Metrópolis dome,
   // so phones and computers both show the best part (not a slice from the middle).
   madrid: { source: require('@/assets/images/cities/madrid.jpg'), focus: '13%' },

@@ -6,6 +6,7 @@
 
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
+import ArrowUpDown from 'lucide-react-native/icons/arrow-up-down';
 import BellOff from 'lucide-react-native/icons/bell-off';
 import AtSign from 'lucide-react-native/icons/at-sign';
 import Briefcase from 'lucide-react-native/icons/briefcase';
@@ -63,6 +64,7 @@ const ICONS = {
   search: Search,
   settings: Settings,
   shield: ShieldCheck,
+  sort: ArrowUpDown,
   sparkles: Sparkles,
   users: Users,
   filters: SlidersHorizontal,

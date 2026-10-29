@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,6 +11,8 @@ export type ActionSheetOption = {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  /** The current choice (e.g. the chosen sort order): shown with a check. */
+  selected?: boolean;
 };
 
 type ActionSheetProps = {
@@ -56,6 +59,9 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
           <Pressable
             key={option.label}
             accessibilityRole="button"
+            accessibilityState={
+              option.selected === undefined ? undefined : { selected: option.selected }
+            }
             onPress={() => {
               onClose();
               // iOS can't open a new screen or menu while this one is still closing.
@@ -66,9 +72,19 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
               { borderTopColor: theme.border },
               pressed && styles.pressed,
             ]}>
-            <ThemedText style={[styles.optionText, option.destructive && { color: theme.danger }]}>
-              {option.label}
-            </ThemedText>
+            <View style={styles.optionRow}>
+              <ThemedText
+                style={[
+                  styles.optionText,
+                  option.destructive && { color: theme.danger },
+                  option.selected && { color: theme.primary, fontWeight: 700 },
+                ]}>
+                {option.label}
+              </ThemedText>
+              {option.selected && (
+                <Icon name="check" size={18} color={theme.primary} strokeWidth={2.4} />
+              )}
+            </View>
           </Pressable>
         ))}
         <Pressable
@@ -87,6 +103,11 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
 }
 
 const styles = StyleSheet.create({
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',

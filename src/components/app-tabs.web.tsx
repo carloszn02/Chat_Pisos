@@ -7,6 +7,7 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { useTranslation } from 'react-i18next';
+import type { ComponentRef, Ref } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -50,11 +51,16 @@ export function TabButton({
   isFocused,
   badge = 0,
   highlight = false,
+  ref,
   ...props
 }: TabTriggerSlotProps & { badge?: number; highlight?: boolean }) {
   const theme = useTheme();
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      {...props}
+      // expo-router still types this ref for the old View class (React Native 0.88 changed it).
+      ref={ref as unknown as Ref<ComponentRef<typeof Pressable>>}
+      style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={[styles.tabButtonView, highlight && { backgroundColor: theme.primary }]}>

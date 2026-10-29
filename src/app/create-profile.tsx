@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   View,
 } from 'react-native';
@@ -26,7 +27,7 @@ export default function CreateProfileScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { refresh } = useProfile();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   async function save(values: ProfileFormValues) {
     if (!session) return 'generic' as const;

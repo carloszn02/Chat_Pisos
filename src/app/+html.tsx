@@ -1,14 +1,16 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
+import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 /**
  * The HTML page around the web version of the app (only used on the web).
  * Sets the description shown by search engines and link previews,
  * and a cream background so there is no white flash while the app loads.
+ * headNodes and bodyNodes are the app's scripts and styles: without them the web page stays blank.
  */
 export default function Root({ children }: PropsWithChildren) {
+  const { bodyAttributes, bodyNodes, htmlAttributes, headNodes } = useServerDocumentContext();
   return (
-    <html lang="es">
+    <html lang="es" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -26,8 +28,12 @@ export default function Root({ children }: PropsWithChildren) {
         />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: 'html, body { background-color: #FBF8F4; }' }} />
+        {headNodes}
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

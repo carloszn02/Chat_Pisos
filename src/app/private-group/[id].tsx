@@ -651,7 +651,9 @@ export default function PrivateGroupScreen() {
             contentContainerStyle={styles.messageList}
             onEndReached={loadOlder}
             onEndReachedThreshold={0.3}
-            ListFooterComponent={loadingOlder ? <ActivityIndicator color={theme.primary} /> : null}
+            ListFooterComponent={
+              loadingOlder ? <ActivityIndicator color={theme.primary} /> : undefined
+            }
           />
         )}
 

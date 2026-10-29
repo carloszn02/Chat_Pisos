@@ -31,7 +31,7 @@ export function ListingsMap({
   style,
 }: ListingsMapProps) {
   const theme = useTheme();
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<WebView<object>>(null);
   const [ready, setReady] = useState(false);
   // The page is made once; pins and the selection are sent to it afterwards.
   const html = useMemo(() => buildListingsMapHtml(theme.primary), [theme.primary]);
@@ -54,7 +54,7 @@ export function ListingsMap({
 
   return (
     <View style={[styles.container, { borderColor: theme.border }, style]}>
-      <WebView
+      <WebView<object>
         ref={webViewRef}
         originWhitelist={['*']}
         source={{ html }}

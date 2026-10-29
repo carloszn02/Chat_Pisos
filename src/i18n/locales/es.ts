@@ -369,6 +369,16 @@ const es = {
     report: 'Denunciar este anuncio',
     count_one: '{{count}} anuncio',
     count_other: '{{count}} anuncios',
+    sort: {
+      title: 'Ordenar por',
+      options: {
+        recommended: 'Recomendados',
+        newest: 'Más recientes',
+        price_asc: 'Precio: más barato',
+        price_desc: 'Precio: más caro',
+        available_soon: 'Disponibles antes',
+      },
+    },
     genders: {
       any: 'Indiferente',
       female: 'Chicas',

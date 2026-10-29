@@ -14,94 +14,36 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, IconButton } from '@/components/button';
-import { Icon, type IconName } from '@/components/icon';
+import { ChipRow, ChipWrap, type Chip } from '@/components/filter-chips';
 import { ScreenHeader } from '@/components/screen-header';
 import { ListingCardsSkeleton } from '@/components/skeleton';
 import { ListingCard, ListingMiniCard } from '@/components/listing-card';
 import { ListingsMap } from '@/components/listings-map';
+import { SortSheet } from '@/components/sort-sheet';
 import { metroLineLabel, MetroLinePicker } from '@/components/metro-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
+import { useProfile } from '@/hooks/use-profile';
 import { useSaved } from '@/hooks/use-saved';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchAuthors } from '@/lib/chat';
 import { formatPrice } from '@/lib/format';
+import { sortListings, type ListingSort } from '@/lib/listing-sort';
 import { fetchListings, fetchListingsByIds, type ListingFilters } from '@/lib/listings';
 import type { ListingPin, MapBounds } from '@/lib/map';
 import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPES, type Listing, type ListingType, type MetroLine } from '@/types/listing';
-
-type Chip = {
-  key: string;
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  /** An icon before the text (e.g. the filters icon). */
-  icon?: IconName;
-  /** Shows a small ✕ after the text: tapping the chip removes that filter. */
-  removable?: boolean;
-  /** Outlined in dark instead of filled (for the "Filters" button). */
-  outlined?: boolean;
-};
-
-function ChipView({ chip }: { chip: Chip }) {
-  const theme = useTheme();
-  const filled = chip.selected && !chip.outlined;
-  const color = filled ? theme.onPrimary : theme.text;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: chip.selected }}
-      onPress={chip.onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        {
-          borderColor: filled ? theme.primary : chip.outlined ? theme.text : theme.border,
-          backgroundColor: filled ? theme.primary : theme.backgroundElement,
-        },
-        pressed && styles.pressed,
-      ]}>
-      {chip.icon && <Icon name={chip.icon} size={16} color={color} strokeWidth={2} />}
-      <ThemedText type={filled || chip.outlined ? 'smallBold' : 'small'} style={{ color }}>
-        {chip.label}
-      </ThemedText>
-      {chip.removable && <Icon name="close" size={14} color={color} strokeWidth={2.2} />}
-    </Pressable>
-  );
-}
-
-/** Chips in a row that scrolls sideways. */
-function ChipRow({ chips }: { chips: Chip[] }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chipRow}>
-      {chips.map((chip) => (
-        <ChipView key={chip.key} chip={chip} />
-      ))}
-    </ScrollView>
-  );
-}
-
-/** Chips that wrap onto several lines (inside the filters panel). */
-function ChipWrap({ chips }: { chips: Chip[] }) {
-  return (
-    <View style={styles.chipWrap}>
-      {chips.map((chip) => (
-        <ChipView key={chip.key} chip={chip} />
-      ))}
-    </View>
-  );
-}
 
 export default function ListingsScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { city, districts, neighbourhoodsOf } = usePlaces();
   const { savedIds } = useSaved();
+  const { profile: me } = useProfile();
+  const [sort, setSort] = useState<ListingSort>('recommended');
+  const [sortOpen, setSortOpen] = useState(false);
   const cityId = city?.id ?? null;
 
   const [view, setView] = useState<'list' | 'map'>('list');
@@ -169,6 +111,7 @@ export default function ListingsScreen() {
             petsAllowed,
             registrationAllowed,
             metroLine,
+            sort,
           },
     [
       savedOnly,
@@ -182,6 +125,7 @@ export default function ListingsScreen() {
       petsAllowed,
       registrationAllowed,
       metroLine,
+      sort,
     ]
   );
 
@@ -198,13 +142,12 @@ export default function ListingsScreen() {
     setRefreshing(false);
   }
 
-  const shown = useMemo(
-    () =>
-      savedOnly
-        ? (listings ?? []).filter((listing) => savedIds.includes(listing.id))
-        : (listings ?? []),
-    [savedOnly, listings, savedIds]
-  );
+  const shown = useMemo(() => {
+    const visible = savedOnly
+      ? (listings ?? []).filter((listing) => savedIds.includes(listing.id))
+      : (listings ?? []);
+    return sortListings(visible, sort, { me, owners });
+  }, [savedOnly, listings, savedIds, sort, me, owners]);
 
   // Map pins: only listings with a location (people looking for a room usually have none).
   const pins: ListingPin[] = useMemo(
@@ -280,6 +223,14 @@ export default function ListingsScreen() {
           selected: panelFilterCount > 0,
           outlined: true,
           onPress: () => setFiltersOpen(true),
+        },
+        {
+          key: 'sort',
+          label: t(`listings.sort.options.${sort}`),
+          icon: 'sort',
+          selected: sort !== 'recommended',
+          outlined: true,
+          onPress: () => setSortOpen(true),
         },
         // While searching a map area, a chip shows it and clears it.
         ...(areaBounds
@@ -423,6 +374,12 @@ export default function ListingsScreen() {
         </ThemedText>
       )}
 
+      <SortSheet
+        visible={sortOpen}
+        value={sort}
+        onChange={setSort}
+        onClose={() => setSortOpen(false)}
+      />
       <FiltersPanel
         visible={filtersOpen}
         onClose={() => {
@@ -707,11 +664,6 @@ const styles = StyleSheet.create({
   panelShow: {
     flex: 1,
   },
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
   container: {
     flex: 1,
   },
@@ -788,18 +740,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     boxShadow: '0 1px 6px rgba(0, 0, 0, 0.12)',
-  },
-  chipRow: {
-    gap: Spacing.two,
-  },
-  chip: {
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   priceInput: {
     fontFamily: AppFonts.regular,

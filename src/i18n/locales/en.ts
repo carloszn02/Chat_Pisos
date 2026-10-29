@@ -371,6 +371,16 @@ const en: typeof es = {
     report: 'Report this listing',
     count_one: '{{count}} listing',
     count_other: '{{count}} listings',
+    sort: {
+      title: 'Sort by',
+      options: {
+        recommended: 'Recommended',
+        newest: 'Newest',
+        price_asc: 'Price: lowest first',
+        price_desc: 'Price: highest first',
+        available_soon: 'Available soonest',
+      },
+    },
     genders: {
       any: 'Anyone',
       female: 'Girls',

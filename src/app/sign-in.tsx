@@ -61,7 +61,9 @@ export default function SignInScreen() {
 
   const isSignUp = mode === 'signUp';
   const isForgot = mode === 'forgot';
-  const redirectTo = Platform.OS === 'web' ? window.location.origin : undefined;
+  // No window while the web page is pre-rendered on the server (it's only needed on a tap).
+  const redirectTo =
+    Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined;
 
   async function submit() {
     const trimmedEmail = email.trim();
