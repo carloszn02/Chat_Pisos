@@ -1,16 +1,10 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -81,7 +75,7 @@ export default function EditListingScreen() {
         <KeyboardAvoidingView
           style={styles.screen}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView keyboardShouldPersistTaps="handled">
+          <ScreenScrollView keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
               <ListingForm
                 initial={listing}
@@ -90,7 +84,7 @@ export default function EditListingScreen() {
                 onSubmit={save}
               />
             </View>
-          </ScrollView>
+          </ScreenScrollView>
         </KeyboardAvoidingView>
       )}
     </ThemedView>

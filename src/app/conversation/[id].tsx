@@ -308,6 +308,8 @@ export default function ConversationScreen() {
   const isIncomingRequest = conversation.status === 'pending' && !startedByMe;
   // A declined request still looks pending to the sender (they aren't told).
   const isWaitingForAnswer = conversation.status !== 'accepted' && startedByMe;
+  // A request is one message: after it, the text box waits for the other person to accept.
+  const requestSent = isWaitingForAnswer && messages.length > 0;
   const name = otherUser?.first_name ?? '';
   const otherId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
   const iBlockedThem = blockedIds.has(otherId);
@@ -542,13 +544,15 @@ export default function ConversationScreen() {
                 </Pressable>
               </View>
             </View>
+          ) : requestSent ? (
+            <ThemedText
+              type="small"
+              themeColor="textSecondary"
+              style={[styles.bannerText, styles.waiting]}>
+              {t('messages.waitingForAnswer', { name })}
+            </ThemedText>
           ) : (
             <>
-              {isWaitingForAnswer && messages.length > 0 && (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
-                  {t('messages.waitingForAnswer', { name })}
-                </ThemedText>
-              )}
               {attachedListingId && listings.get(attachedListingId) && (
                 <View style={styles.attached}>
                   <View style={styles.attachedHeader}>
@@ -686,6 +690,9 @@ export default function ConversationScreen() {
 }
 
 const styles = StyleSheet.create({
+  waiting: {
+    paddingVertical: Spacing.two,
+  },
   screen: {
     flex: 1,
   },

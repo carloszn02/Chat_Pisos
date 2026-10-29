@@ -1,19 +1,13 @@
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { CardGridSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { DistrictCard } from '@/components/district-card';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -106,7 +100,7 @@ export default function ExploreGroupsScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('chats.exploreTitle', { city: city?.name ?? '' }) }} />
-      <ScrollView keyboardShouldPersistTaps="handled">
+      <ScreenScrollView keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <ThemedText themeColor="textSecondary" style={styles.intro}>
             {t('chats.exploreIntro')}
@@ -182,7 +176,7 @@ export default function ExploreGroupsScreen() {
             <Icon name="chevron-right" size={18} color={theme.primary} />
           </PressableLink>
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     </ThemedView>
   );
 }

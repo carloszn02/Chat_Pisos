@@ -2,13 +2,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { RowsSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ConnectionPicker } from '@/components/connection-picker';
 import { PrivateGroupBadge } from '@/components/private-group-row';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -247,7 +248,7 @@ export default function PrivateGroupMembersScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('privateGroups.members') }} />
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           {group && (
             <View style={styles.groupHeader}>
@@ -534,7 +535,7 @@ export default function PrivateGroupMembersScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <ActionSheet
         visible={!!toRemove}

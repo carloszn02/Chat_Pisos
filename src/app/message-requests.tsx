@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { RowsSkeleton } from '@/components/skeleton';
 import { ConversationRow } from '@/components/conversation-row';
 import { PrivateGroupRow } from '@/components/private-group-row';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,7 +30,7 @@ export default function MessageRequestsScreen() {
       <Stack.Screen
         options={{ title: showGroups ? t('messages.invitations') : t('messages.requests') }}
       />
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
             {showGroups ? t('messages.invitationsIntro') : t('messages.requestsIntro')}
@@ -63,7 +64,7 @@ export default function MessageRequestsScreen() {
                 />
               ))}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     </ThemedView>
   );
 }

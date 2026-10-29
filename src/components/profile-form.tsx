@@ -201,12 +201,21 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
     { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
+  /** Only some questions have an explanation under them. */
+  function questionHint(key: HabitQuestion): string | undefined {
+    const hints = t('profileSetup.questionHints', { returnObjects: true }) as Partial<
+      Record<HabitQuestion, string>
+    >;
+    return hints[key];
+  }
+
   function question(key: HabitQuestion) {
     const value = habits[key] as string | null;
     if (key === 'tidiness') {
       return (
         <TidinessScale
           key={key}
+          hint={questionHint(key)}
           value={habits.tidiness}
           onChange={(option) => answer('tidiness', option)}
         />
@@ -216,6 +225,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
       <ChoiceChips
         key={key}
         label={t(`profileSetup.questions.${key}`)}
+        hint={questionHint(key)}
         options={HABIT_QUESTIONS[key] as readonly string[]}
         getLabel={(o) => t(`profileSetup.options.${key}.${o}` as never)}
         value={value}
@@ -417,9 +427,19 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
   return (
     <View style={styles.form}>
       <View style={styles.progress}>
-        <ThemedText type="small" themeColor="textSecondary">
-          {t('profileSetup.stepOf', { step: index + 1, total: STEPS.length })}
-        </ThemedText>
+        <View style={styles.progressTop}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('profileSetup.stepOf', { step: index + 1, total: STEPS.length })}
+          </ThemedText>
+          {index > 0 && (
+            <Button
+              label={t('profileSetup.skip')}
+              variant="text"
+              size="small"
+              onPress={isLast ? submit : () => goTo(STEPS[index + 1])}
+            />
+          )}
+        </View>
         <View style={styles.progressTrack}>
           {STEPS.map((s, i) => (
             <View
@@ -469,13 +489,6 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
           style={styles.flex}
         />
       </View>
-      {index > 0 && (
-        <Button
-          label={t('profileSetup.skip')}
-          variant="text"
-          onPress={isLast ? submit : () => goTo(STEPS[index + 1])}
-        />
-      )}
     </View>
   );
 }
@@ -488,7 +501,9 @@ function SectionTitle({ title }: { title: string }) {
 function TidinessScale({
   value,
   onChange,
+  hint,
 }: {
+  hint?: string;
   value: Tidiness | null;
   onChange: (option: Tidiness) => void;
 }) {
@@ -500,7 +515,14 @@ function TidinessScale({
       style={styles.field}
       accessibilityRole="radiogroup"
       accessibilityLabel={t('profileSetup.questions.tidiness')}>
-      <ThemedText type="smallBold">{t('profileSetup.questions.tidiness')}</ThemedText>
+      <View style={styles.questionLabel}>
+        <ThemedText type="smallBold">{t('profileSetup.questions.tidiness')}</ThemedText>
+        {hint && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {hint}
+          </ThemedText>
+        )}
+      </View>
       <View style={styles.scale}>
         <View style={[styles.scaleLine, { backgroundColor: theme.border }]} />
         {TIDINESS.map((option, i) => {
@@ -552,8 +574,18 @@ function TidinessScale({
 }
 
 const styles = StyleSheet.create({
+  questionLabel: {
+    gap: 2,
+  },
   form: {
     gap: Spacing.four,
+  },
+  progressTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // Same height with or without "Skip", so the bar doesn't move between steps.
+    minHeight: 36,
   },
   progress: {
     gap: Spacing.two,

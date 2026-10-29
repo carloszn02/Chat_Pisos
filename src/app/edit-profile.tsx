@@ -1,8 +1,9 @@
 import { router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 import { ProfileForm } from '@/components/profile-form';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
@@ -31,13 +32,13 @@ export default function EditProfileScreen() {
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScreenScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
             {profile && (
               <ProfileForm initial={profile} submitLabel={t('editProfile.save')} onSubmit={save} />
             )}
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
   );

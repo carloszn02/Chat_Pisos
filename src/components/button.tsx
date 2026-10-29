@@ -83,6 +83,8 @@ export function Button({
           )}
           <ThemedText
             type="smallBold"
+            // With very large system text, buttons still keep their shape.
+            maxFontSizeMultiplier={1.4}
             style={[styles.label, size === 'small' && styles.labelSmall, { color: textColor }]}>
             {label}
           </ThemedText>
@@ -160,7 +162,8 @@ const styles = StyleSheet.create({
   },
   regular: {
     minHeight: 48,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   small: {
     minHeight: 36,
@@ -178,10 +181,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    maxWidth: '100%',
   },
   label: {
     fontSize: 15,
     lineHeight: 20,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   labelSmall: {
     fontSize: 14,

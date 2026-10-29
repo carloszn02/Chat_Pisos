@@ -1,13 +1,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { ActionSheet } from '@/components/action-sheet';
 import { GroupParticipants } from '@/components/group-participants';
 import { GroupTile } from '@/components/group-tile';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { DetailSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -140,7 +141,7 @@ export default function GroupInfoScreen() {
   return (
     <ThemedView style={styles.screen}>
       {title}
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           <View style={styles.hero}>
             <GroupTile group={group} size={88} />
@@ -197,7 +198,7 @@ export default function GroupInfoScreen() {
             />
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <MuteSheet
         visible={muteOpen}

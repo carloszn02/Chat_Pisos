@@ -1,10 +1,11 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { RowsSkeleton } from '@/components/skeleton';
 import { Avatar } from '@/components/avatar';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -53,7 +54,7 @@ export default function BlockedUsersScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('blocked.title') }} />
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
             {t('blocked.intro')}
@@ -94,7 +95,7 @@ export default function BlockedUsersScreen() {
             })
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     </ThemedView>
   );
 }

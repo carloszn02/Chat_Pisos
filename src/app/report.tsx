@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -14,6 +13,7 @@ import {
 
 import { Icon } from '@/components/icon';
 import { ChoiceChips } from '@/components/choice-chips';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -104,7 +104,7 @@ export default function ReportScreen() {
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScreenScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
             {sent ? (
               <>
@@ -227,7 +227,7 @@ export default function ReportScreen() {
               </>
             )}
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
   );

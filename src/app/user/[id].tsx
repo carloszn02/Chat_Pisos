@@ -1,12 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { DetailSkeleton } from '@/components/skeleton';
 import { ActionSheet } from '@/components/action-sheet';
 import { CompatibilityBox } from '@/components/compatibility-box';
 import { ProfileSummary } from '@/components/profile-summary';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -94,7 +95,7 @@ export default function UserProfileScreen() {
           <ThemedText themeColor="textSecondary">{t('messages.userNotFound')}</ThemedText>
         </View>
       ) : (
-        <ScrollView>
+        <ScreenScrollView>
           <View style={styles.content}>
             <ProfileSummary profile={profile} />
 
@@ -160,7 +161,7 @@ export default function UserProfileScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       )}
       {profile && (
         <ActionSheet

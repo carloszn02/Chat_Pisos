@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -44,7 +45,7 @@ export default function DeleteAccountScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('deleteAccount.title') }} />
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           <ThemedText type="subtitle" style={styles.title}>
             {t('deleteAccount.heading')}
@@ -114,7 +115,7 @@ export default function DeleteAccountScreen() {
             )}
           </Pressable>
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     </ThemedView>
   );
 }

@@ -2,11 +2,12 @@ import Constants from 'expo-constants';
 import { Stack, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -52,7 +53,7 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('settings.title') }} />
-      <ScrollView>
+      <ScreenScrollView>
         <View style={styles.content}>
           <Section title={t('settings.language')}>
             {SUPPORTED_LANGUAGES.map((lang, index) => {
@@ -164,7 +165,7 @@ export default function SettingsScreen() {
             </ThemedText>
           </PressableLink>
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <ActionSheet
         visible={confirmSignOut}

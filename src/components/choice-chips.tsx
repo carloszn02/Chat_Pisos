@@ -6,6 +6,8 @@ import { useTheme } from '@/hooks/use-theme';
 
 type ChoiceChipsProps<T extends string> = {
   label: string;
+  /** A short explanation under the question. */
+  hint?: string;
   options: readonly T[];
   getLabel: (option: T) => string;
   /** One value for single choice, an array for multiple choice. */
@@ -16,6 +18,7 @@ type ChoiceChipsProps<T extends string> = {
 /** A labelled row of pill buttons, e.g. "Smoking: Non-smoker / Outside only / Smoker". */
 export function ChoiceChips<T extends string>({
   label,
+  hint,
   options,
   getLabel,
   value,
@@ -29,7 +32,14 @@ export function ChoiceChips<T extends string>({
       style={styles.group}
       accessibilityRole={multiple ? undefined : 'radiogroup'}
       accessibilityLabel={label}>
-      <ThemedText type="smallBold">{label}</ThemedText>
+      <View style={styles.label}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+        {hint && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {hint}
+          </ThemedText>
+        )}
+      </View>
       <View style={styles.chips}>
         {options.map((option) => {
           const selected = multiple ? value.includes(option) : value === option;
@@ -59,6 +69,9 @@ export function ChoiceChips<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  label: {
+    gap: 2,
+  },
   group: {
     gap: Spacing.two,
   },

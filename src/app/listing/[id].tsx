@@ -22,6 +22,7 @@ import { ListingContactCard } from '@/components/listing-contact';
 import { MetroBadge } from '@/components/metro-badge';
 import { LocationMap } from '@/components/location-map';
 import { SaveButton } from '@/components/save-button';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -280,7 +281,7 @@ export default function ListingDetailScreen() {
             ) : null,
         }}
       />
-      <ScrollView>
+      <ScreenScrollView>
         {listing.photo_urls.length > 0 && (
           <ScrollView
             horizontal
@@ -513,7 +514,7 @@ export default function ListingDetailScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <ActionSheet
         visible={confirmDelete}

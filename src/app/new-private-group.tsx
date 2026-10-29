@@ -6,13 +6,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 
 import { ConnectionPicker } from '@/components/connection-picker';
+import { ScreenScrollView } from '@/components/screen-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -52,7 +52,7 @@ export default function NewPrivateGroupScreen() {
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScreenScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
             <ThemedText themeColor="textSecondary" style={styles.intro}>
               {t('privateGroups.newIntro', { max: PRIVATE_GROUP_MAX_PEOPLE })}
@@ -116,7 +116,7 @@ export default function NewPrivateGroupScreen() {
               )}
             </Pressable>
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
   );
