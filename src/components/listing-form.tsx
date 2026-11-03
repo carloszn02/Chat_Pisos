@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { DateInput } from '@/components/date-input';
 import { Icon } from '@/components/icon';
 import { AreaPicker } from '@/components/area-picker';
 import { ChoiceChips } from '@/components/choice-chips';
@@ -23,6 +25,7 @@ import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
+import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import type es from '@/i18n/locales/es';
 import { parseCalendarDate } from '@/lib/age';
@@ -57,6 +60,25 @@ type ListingFormProps = {
   initialContact?: ListingContact | null;
   submitLabel: string;
   onSubmit: (result: ListingFormResult) => Promise<ListingErrorKey | null>;
+  /** Keep what's written as a draft (Publish tab): it survives leaving or closing the app. */
+  draftKey?: string;
+};
+
+/** What a draft keeps: the written fields (not photos or the map pin). */
+type ListingDraft = {
+  type: ListingType | null;
+  areaIds: string[];
+  title: string;
+  price: string;
+  day: string;
+  month: string;
+  year: string;
+  minStay: string;
+  gender: ListingGender | null;
+  details: DetailsDraft;
+  contact: ContactDraft;
+  description: string;
+  shareInGroups: boolean;
 };
 
 const VISIBILITY = ['approximate', 'exact'] as const;
@@ -75,7 +97,13 @@ function dateParts(isoDate?: string): [string, string, string] {
 }
 
 /** All listing fields, shared by the new-listing and edit-listing screens. */
-export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: ListingFormProps) {
+export function ListingForm({
+  initial,
+  initialContact,
+  submitLabel,
+  onSubmit,
+  draftKey,
+}: ListingFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const { city, areaById } = usePlaces();
@@ -125,6 +153,82 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
   const [searchMessage, setSearchMessage] = useState<'notFound' | 'failed' | null>(null);
   const [error, setError] = useState<ListingErrorKey | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // The draft: loaded once, then saved half a second after each change.
+  const { session } = useSession();
+  const draftStorageKey =
+    draftKey && !isEditing && session ? `chat-pisos.draft.${draftKey}.${session.user.id}` : null;
+  const [draftReady, setDraftReady] = useState(!draftStorageKey);
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    let current = true;
+    void (async () => {
+      const raw = await AsyncStorage.getItem(draftStorageKey).catch(() => null);
+      if (!current) return;
+      try {
+        const draft = raw ? (JSON.parse(raw) as ListingDraft) : null;
+        if (draft) {
+          setType(draft.type);
+          setAreaIds(draft.areaIds);
+          setTitle(draft.title);
+          setPrice(draft.price);
+          setDay(draft.day);
+          setMonth(draft.month);
+          setYear(draft.year);
+          setMinStay(draft.minStay);
+          setGender(draft.gender);
+          setDetails(draft.details);
+          setContact(draft.contact);
+          setDescription(draft.description);
+          setShareInGroups(draft.shareInGroups);
+        }
+      } catch {
+        // A draft from an older version of the form: start fresh.
+      }
+      setDraftReady(true);
+    })();
+    return () => {
+      current = false;
+    };
+  }, [draftStorageKey]);
+  useEffect(() => {
+    if (!draftStorageKey || !draftReady) return;
+    const draft: ListingDraft = {
+      type,
+      areaIds,
+      title,
+      price,
+      day,
+      month,
+      year,
+      minStay,
+      gender,
+      details,
+      contact,
+      description,
+      shareInGroups,
+    };
+    const timer = setTimeout(() => {
+      void AsyncStorage.setItem(draftStorageKey, JSON.stringify(draft)).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    draftStorageKey,
+    draftReady,
+    type,
+    areaIds,
+    title,
+    price,
+    day,
+    month,
+    year,
+    minStay,
+    gender,
+    details,
+    contact,
+    description,
+    shareInGroups,
+  ]);
 
   const isSeeking = type === 'seeking_room';
   const maxDistricts = isSeeking ? MAX_SEEKING_DISTRICTS : 1;
@@ -260,15 +364,17 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
     setError(null);
     setBusy(true);
     try {
-      setError(
-        await onSubmit({
-          values,
-          keptPhotoUrls: isSeeking ? [] : keptPhotoUrls,
-          newPhotos: isSeeking ? [] : newPhotos,
-          shareInGroups: !isEditing && shareInGroups,
-          contact: contactResult.contact,
-        })
-      );
+      const result = await onSubmit({
+        values,
+        keptPhotoUrls: isSeeking ? [] : keptPhotoUrls,
+        newPhotos: isSeeking ? [] : newPhotos,
+        shareInGroups: !isEditing && shareInGroups,
+        contact: contactResult.contact,
+      });
+      // Published: the draft is done.
+      if (!result && draftStorageKey)
+        await AsyncStorage.removeItem(draftStorageKey).catch(() => {});
+      setError(result);
     } catch {
       setError('generic');
     } finally {
@@ -381,41 +487,18 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
 
           <View style={styles.field}>
             <ThemedText type="smallBold">{t('listings.form.availableFrom')}</ThemedText>
-            <View style={styles.row}>
-              <TextInput
-                style={[inputStyle, styles.flex]}
-                value={day}
-                onChangeText={setDay}
-                placeholder={t('profileSetup.day')}
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="number-pad"
-                inputMode="numeric"
-                maxLength={2}
-                accessibilityLabel={t('profileSetup.day')}
-              />
-              <TextInput
-                style={[inputStyle, styles.flex]}
-                value={month}
-                onChangeText={setMonth}
-                placeholder={t('profileSetup.month')}
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="number-pad"
-                inputMode="numeric"
-                maxLength={2}
-                accessibilityLabel={t('profileSetup.month')}
-              />
-              <TextInput
-                style={[inputStyle, styles.yearInput]}
-                value={year}
-                onChangeText={setYear}
-                placeholder={t('profileSetup.year')}
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="number-pad"
-                inputMode="numeric"
-                maxLength={4}
-                accessibilityLabel={t('profileSetup.year')}
-              />
-            </View>
+            <DateInput
+              day={day}
+              month={month}
+              year={year}
+              onChange={(d, m, y) => {
+                setDay(d);
+                setMonth(m);
+                setYear(y);
+              }}
+              inputStyle={inputStyle}
+              label={t('listings.form.availableFrom')}
+            />
           </View>
 
           {type !== 'whole_flat' && (

@@ -1,25 +1,9 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
-
 import AppTabs from '@/components/app-tabs';
-import { useSession } from '@/hooks/use-session';
-import { hasSeenTutorial } from '@/lib/tutorial';
 
+/**
+ * The main tabs. New people are taught in context (a one-time tip on each screen, see
+ * HintCard) instead of a tutorial up front; the tutorial stays in Settings › Información.
+ */
 export default function TabLayout() {
-  const { session } = useSession();
-  const userId = session?.user.id;
-
-  // The first time someone reaches the app, show the welcome tutorial (it can be skipped).
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    hasSeenTutorial(userId).then((seen) => {
-      if (!seen && !cancelled) router.push('/tutorial');
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
   return <AppTabs />;
 }

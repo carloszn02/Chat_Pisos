@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toast: {
-    backgroundColor: 'rgba(46, 38, 32, 0.92)',
+    backgroundColor: 'rgba(30, 27, 46, 0.94)',
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,

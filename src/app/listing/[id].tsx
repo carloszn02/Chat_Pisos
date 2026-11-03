@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { Button } from '@/components/button';
+import { HintCard } from '@/components/hint-card';
 import { DetailSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
 import { ActionSheet } from '@/components/action-sheet';
@@ -46,7 +48,7 @@ import type { Listing } from '@/types/listing';
 import { SPOKEN_LANGUAGES } from '@/types/profile';
 
 export default function ListingDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, published } = useLocalSearchParams<{ id: string; published?: string }>();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { width } = useWindowDimensions();
@@ -59,6 +61,8 @@ export default function ListingDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Arrived here right after publishing (from the Publish tab).
+  const [justPublished, setJustPublished] = useState(published === '1');
   const { share, toast } = useShare();
 
   // Reload when coming back from editing.
@@ -300,6 +304,24 @@ export default function ListingDetailScreen() {
         )}
 
         <View style={styles.content}>
+          {justPublished && isOwner && listing.status === 'active' && (
+            <HintCard
+              icon="sparkles"
+              title={t('published.title')}
+              body={t('published.body')}
+              onDismiss={() => setJustPublished(false)}>
+              <Button
+                label={t('published.share')}
+                size="small"
+                onPress={() =>
+                  share(
+                    t('share.listingMessage', { title: listing.title }),
+                    appUrl(`/listing/${listing.id}`)
+                  )
+                }
+              />
+            </HintCard>
+          )}
           <View style={styles.headerRow}>
             <ListingTypeTag type={listing.type} />
             {listing.status === 'closed' && (
@@ -308,29 +330,57 @@ export default function ListingDetailScreen() {
               </ThemedText>
             )}
           </View>
+          <ListingPrice listing={listing} size="large" />
           <ThemedText type="subtitle" style={styles.title}>
             {listing.title}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {placeLabel(listing.area_ids)}
           </ThemedText>
-          <ListingPrice listing={listing} size="large" />
 
           {facts.length > 0 && (
-            <View style={styles.facts}>
-              {facts.map(([label, value]) => (
+            <View style={[styles.facts, { borderColor: theme.divider }]}>
+              {facts.map(([label, value], index) => (
                 <View
                   key={label}
                   style={[
                     styles.fact,
-                    { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                    index > 0 && { borderTopWidth: 1, borderTopColor: theme.divider },
                   ]}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {label}
-                  </ThemedText>
-                  <ThemedText style={styles.bold}>{value}</ThemedText>
+                  <ThemedText themeColor="textSecondary">{label}</ThemedText>
+                  <ThemedText style={[styles.bold, styles.factValue]}>{value}</ThemedText>
                 </View>
               ))}
+            </View>
+          )}
+
+          {owner && (
+            <View
+              style={[
+                styles.ownerCard,
+                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              ]}>
+              <PressableLink
+                href={{ pathname: '/user/[id]', params: { id: owner.id } }}
+                accessibilityRole="link"
+                style={[styles.ownerRow]}>
+                <Avatar uri={owner.avatar_url} name={owner.first_name} size={48} />
+                <View style={styles.flex}>
+                  <ThemedText style={styles.bold}>
+                    {owner.first_name}, {owner.age}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {[
+                      owner.occupation && t(`profileSetup.options.occupation.${owner.occupation}`),
+                      owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </ThemedText>
+                </View>
+                <Icon name="chevron-right" size={18} color={theme.textSecondary} />
+              </PressableLink>
+              {me && !isOwner && <CompatibilityBox me={me} other={owner} bordered={false} />}
             </View>
           )}
 
@@ -378,36 +428,6 @@ export default function ListingDetailScreen() {
               <ThemedText type="small" themeColor="textSecondary">
                 {listing.location_exact ? (listing.address ?? '') : t('listings.approximateNote')}
               </ThemedText>
-            </View>
-          )}
-
-          {owner && (
-            <View
-              style={[
-                styles.ownerCard,
-                { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-              ]}>
-              <PressableLink
-                href={{ pathname: '/user/[id]', params: { id: owner.id } }}
-                accessibilityRole="link"
-                style={[styles.ownerRow]}>
-                <Avatar uri={owner.avatar_url} name={owner.first_name} size={48} />
-                <View style={styles.flex}>
-                  <ThemedText style={styles.bold}>
-                    {owner.first_name}, {owner.age}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {[
-                      owner.occupation && t(`profileSetup.options.occupation.${owner.occupation}`),
-                      owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </ThemedText>
-                </View>
-                <Icon name="chevron-right" size={18} color={theme.textSecondary} />
-              </PressableLink>
-              {me && !isOwner && <CompatibilityBox me={me} other={owner} bordered={false} />}
             </View>
           )}
 
@@ -604,17 +624,19 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   facts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
   },
   fact: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: Spacing.three,
-    gap: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: Spacing.three,
+    paddingVertical: Spacing.two + 4,
+  },
+  factValue: {
+    flexShrink: 1,
+    textAlign: 'right',
   },
   description: {
     lineHeight: 24,

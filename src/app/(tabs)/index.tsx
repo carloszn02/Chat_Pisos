@@ -1,24 +1,27 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RowsSkeleton } from '@/components/skeleton';
 import { PressableLink } from '@/components/pressable-link';
-import { IconButton } from '@/components/button';
+import { Button, IconButton } from '@/components/button';
 import { ChatActions, type ChatActionsTarget } from '@/components/chat-actions';
 import { ChatRow } from '@/components/chat-row';
 import { CityBanner } from '@/components/city-banner';
 import { DistrictCard } from '@/components/district-card';
 import { GroupTile } from '@/components/group-tile';
+import { HintCard } from '@/components/hint-card';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
+import { useHint } from '@/hooks/use-hint';
 import { useMutes } from '@/hooks/use-mutes';
 import { usePlaces } from '@/hooks/use-places';
+import { useProfile } from '@/hooks/use-profile';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -33,7 +36,8 @@ import { formatShortTime } from '@/lib/format';
 import type { ChatGroup, GroupMessage, GroupStats, PublicProfile } from '@/types/chat';
 
 // How many districts to suggest in the "Discover" row before "See all".
-const DISCOVER_COUNT = 8;
+// A short pick (the most active first); the rest are one tap away in "See all".
+const DISCOVER_COUNT = 3;
 const CARD_WIDTH = 168;
 
 type ChatsData = {
@@ -52,6 +56,8 @@ export default function ChatsScreen() {
   const userId = session?.user.id;
   const { city } = usePlaces();
   const { isMuted } = useMutes();
+  const { profile } = useProfile();
+  const welcome = useHint('welcome');
 
   const [data, setData] = useState<ChatsData | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -142,6 +148,36 @@ export default function ChatsScreen() {
               }
             />
             {city && <CityBanner city={city} subtitle={t('chats.citySubtitle')} />}
+
+            {welcome.visible && (
+              <HintCard
+                icon="sparkles"
+                title={t('hints.welcome.title', { name: profile?.first_name ?? '' })}
+                body={
+                  Platform.OS === 'web'
+                    ? t('hints.welcome.body')
+                    : `${t('hints.welcome.body')} ${t('hints.welcome.swipe')}`
+                }
+                onDismiss={welcome.dismiss}>
+                <Button
+                  label={t('hints.welcome.listings')}
+                  size="small"
+                  onPress={() => {
+                    welcome.dismiss();
+                    router.navigate('/listings');
+                  }}
+                />
+                <Button
+                  label={t('hints.welcome.publish')}
+                  size="small"
+                  variant="secondary"
+                  onPress={() => {
+                    welcome.dismiss();
+                    router.navigate('/publish');
+                  }}
+                />
+              </HintCard>
+            )}
 
             {!data && !loadError && <RowsSkeleton count={3} shape="square" />}
 
@@ -236,40 +272,7 @@ export default function ChatsScreen() {
                   width={CARD_WIDTH}
                 />
               ))}
-              <PressableLink
-                href="/explore-groups"
-                accessibilityRole="link"
-                style={[
-                  styles.seeAllCard,
-                  { borderColor: theme.borderStrong, backgroundColor: theme.tile },
-                ]}>
-                <View style={[styles.seeAllCircle, { backgroundColor: theme.backgroundElement }]}>
-                  <Icon name="arrow-right" size={20} color={theme.primary} strokeWidth={2} />
-                </View>
-                <ThemedText type="smallBold" style={styles.seeAllText}>
-                  {t('chats.exploreTitle', { city: city?.name ?? '' })}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.seeAllText}>
-                  {t('chats.exploreHint', { count: otherGroups.length })}
-                </ThemedText>
-              </PressableLink>
             </ScrollView>
-          )}
-
-          {data && (
-            <View style={styles.footer}>
-              <PressableLink
-                href="/suggest-area"
-                accessibilityRole="link"
-                style={[styles.suggestRow]}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('chats.suggestTitle')}{' '}
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    {t('chats.suggestHint')}
-                  </ThemedText>
-                </ThemedText>
-              </PressableLink>
-            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -377,41 +380,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
-  seeAllCard: {
-    width: CARD_WIDTH,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    padding: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-  },
-  seeAllCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-  },
   seeAllArrow: {
     fontSize: 22,
     lineHeight: 26,
     fontWeight: 700,
-  },
-  seeAllText: {
-    textAlign: 'center',
-  },
-  footer: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  suggestRow: {
-    paddingVertical: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

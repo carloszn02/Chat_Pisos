@@ -1,10 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatSkeleton } from '@/components/skeleton';
+import { HintCard } from '@/components/hint-card';
+import { SwipeToReply } from '@/components/swipe-to-reply';
 import { ActionSheet } from '@/components/action-sheet';
 import { Avatar } from '@/components/avatar';
 import { ChatDividers, findFirstUnread, useJumpToUnread } from '@/components/chat-dividers';
@@ -20,6 +22,7 @@ import { PrivateGroupBadge } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useHint } from '@/hooks/use-hint';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useChatPhotoUrls } from '@/hooks/use-chat-photo-urls';
 import { useSession } from '@/hooks/use-session';
@@ -70,6 +73,7 @@ function replaceMessage(current: PrivateGroupMessage[], updated: PrivateGroupMes
 export default function PrivateGroupScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, i18n } = useTranslation();
+  const chatHint = useHint('chat');
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { session } = useSession();
@@ -636,6 +640,15 @@ export default function PrivateGroupScreen() {
           </Pressable>
         )}
 
+        {chatHint.visible && (
+          <View style={styles.hintWrap}>
+            <HintCard
+              icon="message"
+              body={Platform.OS === 'web' ? t('hints.chatWeb') : t('hints.chat')}
+              onDismiss={chatHint.dismiss}
+            />
+          </View>
+        )}
         {visibleMessages.length === 0 ? (
           <View style={[styles.screen, styles.centered]}>
             <ThemedText themeColor="textSecondary">{t('privateGroups.emptyChat')}</ThemedText>
@@ -647,7 +660,15 @@ export default function PrivateGroupScreen() {
             data={visibleMessages}
             onScrollToIndexFailed={onScrollToIndexFailed}
             keyExtractor={(m) => m.id}
-            renderItem={renderMessage}
+            renderItem={(info: { item: PrivateGroupMessage; index: number }) => (
+              <SwipeToReply
+                onReply={() => setReplyTo(info.item)}
+                enabled={
+                  Platform.OS !== 'web' && !info.item.deleted_at && info.item.kind !== 'event'
+                }>
+                {renderMessage(info)}
+              </SwipeToReply>
+            )}
             contentContainerStyle={styles.messageList}
             onEndReached={loadOlder}
             onEndReachedThreshold={0.3}
@@ -793,6 +814,10 @@ export default function PrivateGroupScreen() {
 }
 
 const styles = StyleSheet.create({
+  hintWrap: {
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
   screen: {
     flex: 1,
   },

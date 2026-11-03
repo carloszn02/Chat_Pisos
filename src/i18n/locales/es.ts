@@ -16,7 +16,7 @@ const es = {
     cityWide: 'Toda la ciudad',
     districtGroup: 'Grupo del barrio',
     noMessagesYet: 'Todavía no hay mensajes',
-    loadError: 'No se han podido cargar los chats.',
+    loadError: 'No se han podido cargar los chats. Comprueba tu conexión a internet.',
     retry: 'Reintentar',
     safetyTip: 'Nunca pagues una fianza antes de ver el piso en persona.',
     emptyChat: 'Sé el primero en escribir en este grupo.',
@@ -28,7 +28,8 @@ const es = {
     leaveConfirmTitle: '¿Salir de {{name}}?',
     leaveConfirmBody:
       'Dejarás de poder escribir en el grupo. Puedes volver a unirte cuando quieras.',
-    sendError: 'No se ha podido enviar el mensaje.',
+    sendError:
+      'No se ha podido enviar el mensaje. Comprueba tu conexión; tu texto sigue aquí para volver a enviarlo.',
     you: 'Tú',
     citySubtitle: 'Habitaciones, pisos y compañeros por barrios',
     exploreTitle: 'Explorar barrios de {{city}}',
@@ -46,7 +47,7 @@ const es = {
     memberCount_other: '{{count}} miembros',
     activeToday: 'Activo hoy',
     activeThisWeek: 'Activo esta semana',
-    quiet: 'Aún tranquilo',
+    quiet: 'Sé el primero',
     searchPlaceholder: 'Busca tu barrio',
     clearSearch: 'Borrar búsqueda',
     noResults: 'No hay ningún chat para «{{search}}». Puedes pedirlo abajo.',
@@ -114,7 +115,7 @@ const es = {
     noRequests: 'No tienes solicitudes pendientes.',
     empty:
       'Aún no tienes conversaciones. Toca el nombre de alguien en un chat de barrio para ver su perfil y escribirle.',
-    loadError: 'No se han podido cargar los mensajes.',
+    loadError: 'No se han podido cargar los mensajes. Comprueba tu conexión a internet.',
     requestSent: 'Solicitud enviada',
     safetyTip: 'Consejo: visita el piso y conoce a la persona antes de pagar nada.',
     firstMessageHint:
@@ -125,7 +126,7 @@ const es = {
     decline: 'Rechazar',
     waitingForAnswer:
       '{{name}} todavía no ha aceptado tu solicitud. Podrás seguir escribiendo cuando la acepte.',
-    actionError: 'Algo ha fallado. Inténtalo de nuevo.',
+    actionError: 'No se ha podido completar. Comprueba tu conexión e inténtalo otra vez.',
     viewProfile: 'Ver perfil',
     talkingAbout: 'Sobre este anuncio',
     removeListing: 'Quitar anuncio',
@@ -213,7 +214,7 @@ const es = {
         'Solo puedes invitar a personas con las que tengas una conversación aceptada (y que no estén bloqueadas).',
       groupFull: 'El grupo ya tiene el máximo de 10 personas.',
       rateLimit: 'Has creado muchos grupos hoy. Podrás crear más mañana.',
-      generic: 'Algo ha fallado. Inténtalo de nuevo.',
+      generic: 'No se ha podido completar. Comprueba tu conexión e inténtalo otra vez.',
     },
   },
   chatActions: {
@@ -258,10 +259,38 @@ const es = {
       'Este enlace ha caducado o lo han desactivado. Pide uno nuevo a quien te lo envió.',
     goToMessages: 'Ir a Mensajes',
     errors: {
-      generic: 'Algo ha fallado. Inténtalo de nuevo.',
+      generic: 'No se ha podido completar. Comprueba tu conexión e inténtalo otra vez.',
       full: 'Este grupo ya tiene el máximo de 10 personas.',
       rateLimit: 'Has pedido unirte a muchos grupos hoy. Podrás pedir más mañana.',
     },
+  },
+  dateInput: {
+    placeholder: 'Elige una fecha',
+    hint: 'Abre el calendario',
+    done: 'Listo',
+  },
+  hints: {
+    dismiss: 'Ocultar consejo',
+    welcome: {
+      title: '¡Todo listo, {{name}}!',
+      body: 'Empieza por lo que más te ayude: mira anuncios ordenados por compatibilidad contigo o publica lo que buscas.',
+      swipe: 'Desliza a los lados para cambiar de pestaña.',
+      listings: 'Ver anuncios',
+      publish: 'Publicar lo que busco',
+    },
+    listings:
+      'Filtra por tipo y ordena como prefieras. Toca el corazón para guardar un anuncio y el mapa para buscar en una zona.',
+    chat: 'Desliza un mensaje hacia la derecha para responderlo. Mantén pulsado para ver más opciones, como denunciar.',
+    chatWeb: 'Mantén pulsado un mensaje para responderlo o ver más opciones, como denunciar.',
+    publish:
+      'Elige para qué es el anuncio. Solo lo básico es obligatorio; los detalles extra ayudan a que te encuentre la persona adecuada.',
+    requests:
+      'Las solicitudes son primeros mensajes de personas con las que aún no hablas. Si aceptas una, podréis escribiros.',
+  },
+  published: {
+    title: 'Tu anuncio ya está publicado',
+    body: 'Compártelo con amigos o en tus grupos para que lo vea más gente.',
+    share: 'Compartir anuncio',
   },
   meta: {
     title: 'Chat Pisos: habitaciones y compañeros de piso en Madrid',
@@ -306,7 +335,8 @@ const es = {
     errors: {
       reasonRequired: 'Elige un motivo.',
       rateLimit: 'Has enviado muchas denuncias hoy. Si es urgente, escríbenos.',
-      generic: 'No se ha podido enviar la denuncia. Inténtalo de nuevo.',
+      generic:
+        'No se ha podido enviar la denuncia. Comprueba tu conexión e inténtalo otra vez; tu texto sigue aquí.',
     },
   },
   blocked: {
@@ -332,7 +362,14 @@ const es = {
     mapUnavailable: 'No se ha podido cargar el mapa.',
     save: 'Guardar anuncio',
     unsave: 'Quitar de guardados',
+    savedToast: 'Guardado. Lo encontrarás con el corazón de Anuncios.',
+    unsavedToast: 'Quitado de guardados',
     saved: 'Guardados',
+    invite: {
+      title: '¿Aún no encuentras lo que buscas?',
+      body: 'Publica lo que buscas y deja que te encuentren a ti. Solo lleva un minuto.',
+      action: 'Publicar',
+    },
     savedEmpty:
       'Aún no has guardado ningún anuncio. Toca el corazón de un anuncio para encontrarlo aquí después.',
     viewList: 'Lista',
@@ -351,8 +388,8 @@ const es = {
     mineEmpty:
       'Aún no tienes anuncios. Puedes tener varios a la vez: por ejemplo, ofrecer tu habitación y buscar otra.',
     types: {
-      offering_room: 'Ofrezco habitación',
-      seeking_room: 'Busco habitación',
+      offering_room: 'Habitación disponible',
+      seeking_room: 'Busca habitación',
       whole_flat: 'Piso completo',
     },
     perMonth: '/mes',
@@ -369,7 +406,8 @@ const es = {
     months_one: '{{count}} mes',
     months_other: '{{count}} meses',
     empty: 'No hay anuncios con estos filtros todavía.',
-    loadError: 'No se han podido cargar los anuncios.',
+    loadError:
+      'No se han podido cargar los anuncios. Comprueba tu conexión y desliza hacia abajo para reintentar.',
     notFound: 'Este anuncio ya no está disponible.',
     inCommon: 'Tenéis en común',
     markClosed: 'Marcar como cerrado',
@@ -382,6 +420,8 @@ const es = {
     count_other: '{{count}} anuncios',
     sort: {
       title: 'Ordenar por',
+      recommendedHint:
+        'Recomendados: primero los anuncios recientes, completos y de gente compatible contigo.',
       options: {
         recommended: 'Recomendados',
         newest: 'Más recientes',
@@ -630,7 +670,8 @@ const es = {
       confirmPin:
         'Para mostrar la dirección exacta, busca la dirección o mueve el punto a su sitio exacto.',
       rateLimit: 'Has publicado muchos anuncios hoy. Podrás publicar más mañana.',
-      generic: 'No se ha podido guardar el anuncio. Inténtalo de nuevo.',
+      generic:
+        'No se ha podido guardar el anuncio. Comprueba tu conexión e inténtalo otra vez; lo que has escrito sigue aquí.',
     },
   },
   deleteAccount: {
@@ -804,7 +845,7 @@ const es = {
       userExists: 'Ya existe una cuenta con este email. Inicia sesión.',
       weakPassword: 'Esta contraseña es demasiado débil. Prueba con una más larga.',
       rateLimit: 'Demasiados intentos. Espera unos minutos y vuelve a probar.',
-      generic: 'Algo ha fallado. Inténtalo de nuevo.',
+      generic: 'No se ha podido completar. Comprueba tu conexión e inténtalo otra vez.',
     },
   },
   profileSetup: {
@@ -1054,7 +1095,8 @@ const es = {
       underage: 'Debes tener 18 años o más para usar Chat Pisos.',
       languagesRequired: 'Elige al menos un idioma.',
       photoUpload: 'No se ha podido subir la foto. Prueba con otra imagen.',
-      generic: 'No se ha podido guardar el perfil. Inténtalo de nuevo.',
+      generic:
+        'No se ha podido guardar el perfil. Comprueba tu conexión e inténtalo otra vez; tus respuestas siguen aquí.',
     },
   },
   languages: {

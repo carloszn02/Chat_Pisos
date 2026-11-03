@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, IconButton } from '@/components/button';
 import { ChipRow, ChipWrap, type Chip } from '@/components/filter-chips';
+import { HintCard } from '@/components/hint-card';
 import { ScreenHeader } from '@/components/screen-header';
 import { ListingCardsSkeleton } from '@/components/skeleton';
 import { ListingCard, ListingMiniCard } from '@/components/listing-card';
@@ -31,6 +32,7 @@ import {
   Spacing,
   TabScreenEdges,
 } from '@/constants/theme';
+import { useHint } from '@/hooks/use-hint';
 import { usePlaces } from '@/hooks/use-places';
 import { useTabSwipe } from '@/hooks/use-tab-swipe';
 import { useProfile } from '@/hooks/use-profile';
@@ -55,6 +57,7 @@ export default function ListingsScreen() {
   const cityId = city?.id ?? null;
 
   const [view, setView] = useState<'list' | 'map'>('list');
+  const listingsHint = useHint('listings');
   // On the map, dragging moves the map instead of switching tabs.
   useTabSwipe(view !== 'map');
   // The panel with districts, neighbourhoods and price.
@@ -372,6 +375,9 @@ export default function ListingsScreen() {
       />
 
       <ChipRow chips={typeChips} />
+      {listingsHint.visible && (
+        <HintCard icon="sparkles" body={t('hints.listings')} onDismiss={listingsHint.dismiss} />
+      )}
       {summary ? (
         <ThemedText type="small" themeColor="textSecondary">
           {summary}
@@ -511,6 +517,30 @@ export default function ListingsScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
           }
+          ListFooterComponent={
+            // Few listings yet: invite people to publish theirs instead of ending on nothing.
+            listings && !savedOnly && shown.length < FEW_LISTINGS ? (
+              <View style={[styles.cell, styles.inviteWrap]}>
+                <View
+                  style={[
+                    styles.invite,
+                    { backgroundColor: theme.tile, borderColor: theme.border },
+                  ]}>
+                  <ThemedText style={[styles.inviteTitle, { color: theme.onTile }]}>
+                    {t('listings.invite.title')}
+                  </ThemedText>
+                  <ThemedText type="small">{t('listings.invite.body')}</ThemedText>
+                  <Button
+                    label={t('listings.invite.action')}
+                    size="small"
+                    icon="plus"
+                    onPress={() => router.navigate('/publish')}
+                    style={styles.inviteButton}
+                  />
+                </View>
+              </View>
+            ) : undefined
+          }
           ListHeaderComponent={
             <View style={[styles.content, styles.listHeader]}>
               {filtersBlock}
@@ -638,6 +668,9 @@ function FiltersPanel({
   );
 }
 
+/** Below this many listings, the list ends with an invite to publish. */
+const FEW_LISTINGS = 4;
+
 function ListGap() {
   return <View style={styles.gap} />;
 }
@@ -654,6 +687,22 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     paddingBottom: Spacing.three,
+  },
+  inviteWrap: {
+    paddingTop: Spacing.four,
+  },
+  invite: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  inviteTitle: {
+    fontWeight: 700,
+  },
+  inviteButton: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.two,
   },
   backdrop: {
     flex: 1,

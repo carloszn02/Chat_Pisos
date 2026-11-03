@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HintCard } from '@/components/hint-card';
 import { IconButton } from '@/components/button';
 import { ScreenHeader } from '@/components/screen-header';
 import { RowsSkeleton } from '@/components/skeleton';
@@ -16,6 +17,7 @@ import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
+import { useHint } from '@/hooks/use-hint';
 import { useInbox } from '@/hooks/use-inbox';
 import { useMutes } from '@/hooks/use-mutes';
 import { useSession } from '@/hooks/use-session';
@@ -28,6 +30,7 @@ const SECTION_KEY = 'chat-pisos.messages-section';
 /** Your own conversations, in two sections: private groups and one-to-one chats. */
 export default function MessagesScreen() {
   const { t } = useTranslation();
+  const requestsHint = useHint('requests');
   const theme = useTheme();
   const { session } = useSession();
   const { data, loadError, reload } = useInbox();
@@ -139,6 +142,14 @@ export default function MessagesScreen() {
                     </ThemedText>
                   </PressableLink>
                 </View>
+
+                {section === 'private' && requestsHint.visible && (
+                  <HintCard
+                    icon="message"
+                    body={t('hints.requests')}
+                    onDismiss={requestsHint.dismiss}
+                  />
+                )}
 
                 {section === 'groups' ? (
                   myGroups.length === 0 ? (

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { useAppToast } from '@/hooks/use-app-toast';
 import { useSaved } from '@/hooks/use-saved';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -18,6 +19,7 @@ export function SaveButton({ listingId, variant = 'floating' }: SaveButtonProps)
   const { t } = useTranslation();
   const theme = useTheme();
   const { isSaved, toggle } = useSaved();
+  const showToast = useAppToast();
   const saved = isSaved(listingId);
   const color = saved ? SAVED_RED : theme.text;
 
@@ -28,6 +30,8 @@ export function SaveButton({ listingId, variant = 'floating' }: SaveButtonProps)
       aria-pressed={saved}
       onPress={() => {
         void toggle(listingId);
+        // A short confirmation, so a tap on the heart never goes unnoticed.
+        showToast(saved ? t('listings.unsavedToast') : t('listings.savedToast'));
       }}
       hitSlop={8}
       style={({ pressed }) => [

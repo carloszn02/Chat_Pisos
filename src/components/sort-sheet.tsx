@@ -20,6 +20,7 @@ export function SortSheet({
     <ActionSheet
       visible={visible}
       title={t('listings.sort.title')}
+      message={t('listings.sort.recommendedHint')}
       options={LISTING_SORTS.map((sort) => ({
         label: t(`listings.sort.options.${sort}`),
         selected: sort === value,

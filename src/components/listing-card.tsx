@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View, type ImageStyle } from 'react-native';
 
-import { Icon } from '@/components/icon';
+import { Icon, type IconName } from '@/components/icon';
 import { MetroBadge } from '@/components/metro-badge';
 import { PressableLink } from '@/components/pressable-link';
 import { SaveButton } from '@/components/save-button';
@@ -108,13 +108,15 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
   // The heart, for other people's listings (not in the small chat version).
   const showSave = !compact && listing.user_id !== session?.user.id;
 
-  const details = [
-    placeLabel(listing.area_ids),
-    t('listings.fromDate', { date: formatDate(listing.available_from, i18n.language) }),
-    owner && `${owner.first_name}, ${owner.age}`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // Where, from when and who, each with its own small icon.
+  const details: [IconName, string][] = [
+    ['map-pin', placeLabel(listing.area_ids)],
+    [
+      'calendar',
+      t('listings.fromDate', { date: formatDate(listing.available_from, i18n.language) }),
+    ],
+    ...(owner ? [['user', `${owner.first_name}, ${owner.age}`] as [IconName, string]] : []),
+  ];
 
   // "Girls only" / "Boys only" on rooms (not "anyone", which is the usual case).
   const genderTag =
@@ -184,14 +186,14 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
             {listing.title}
           </ThemedText>
           <View style={styles.details}>
-            <Icon name="map-pin" size={14} color={theme.textSecondary} strokeWidth={2} />
-            <ThemedText
-              type="small"
-              themeColor="textSecondary"
-              numberOfLines={1}
-              style={styles.flex}>
-              {details}
-            </ThemedText>
+            {details.map(([icon, text]) => (
+              <View key={icon} style={styles.detail}>
+                <Icon name={icon} size={14} color={theme.textSecondary} strokeWidth={2} />
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                  {text}
+                </ThemedText>
+              </View>
+            ))}
           </View>
           {(listing.metro_lines.length > 0 || genderTag) && (
             <View style={styles.highlights}>
@@ -258,8 +260,15 @@ const styles = StyleSheet.create({
   },
   details: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: Spacing.three,
+    rowGap: 4,
+  },
+  detail: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    maxWidth: '100%',
   },
   flex: {
     flex: 1,

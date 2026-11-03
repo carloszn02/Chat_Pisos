@@ -5,10 +5,12 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FormScrollView } from '@/components/form-scroll-view';
+import { HintCard } from '@/components/hint-card';
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
+import { useHint } from '@/hooks/use-hint';
 import { useSession } from '@/hooks/use-session';
 import { isRateLimitError } from '@/lib/errors';
 import { createListing, shareListingInGroups } from '@/lib/listings';
@@ -17,6 +19,7 @@ import { createListing, shareListingInGroups } from '@/lib/listings';
 export default function PublishScreen() {
   const { t } = useTranslation();
   const { session } = useSession();
+  const publishHint = useHint('publish');
   // Changing the key gives a fresh, empty form after each publication.
   const [formKey, setFormKey] = useState(0);
 
@@ -37,7 +40,8 @@ export default function PublishScreen() {
       }
     }
     setFormKey((key) => key + 1);
-    router.push({ pathname: '/listing/[id]', params: { id: listing.id } });
+    // The listing page then suggests sharing it.
+    router.push({ pathname: '/listing/[id]', params: { id: listing.id, published: '1' } });
     return null;
   }
 
@@ -52,8 +56,12 @@ export default function PublishScreen() {
                 {t('publish.intro')}
               </ThemedText>
             </View>
+            {publishHint.visible && (
+              <HintCard icon="sparkles" body={t('hints.publish')} onDismiss={publishHint.dismiss} />
+            )}
             <ListingForm
               key={formKey}
+              draftKey="publish"
               submitLabel={t('listings.form.publish')}
               onSubmit={publish}
             />

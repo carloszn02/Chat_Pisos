@@ -7,8 +7,10 @@
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import ArrowUpDown from 'lucide-react-native/icons/arrow-up-down';
+import Calendar from 'lucide-react-native/icons/calendar';
 import Eye from 'lucide-react-native/icons/eye';
 import Mail from 'lucide-react-native/icons/mail';
+import Reply from 'lucide-react-native/icons/reply';
 import User from 'lucide-react-native/icons/user';
 import EyeOff from 'lucide-react-native/icons/eye-off';
 import BellOff from 'lucide-react-native/icons/bell-off';
@@ -48,6 +50,7 @@ const ICONS = {
   'at-sign': AtSign,
   'bell-off': BellOff,
   briefcase: Briefcase,
+  calendar: Calendar,
   camera: Camera,
   check: Check,
   eye: Eye,
@@ -60,6 +63,7 @@ const ICONS = {
   image: ImageIcon,
   link: Link,
   mail: Mail,
+  reply: Reply,
   list: List,
   map: MapIcon,
   'map-pin': MapPin,

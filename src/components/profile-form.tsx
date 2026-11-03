@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { DateInput } from '@/components/date-input';
 import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { ThemedText } from '@/components/themed-text';
@@ -288,41 +289,20 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
             </ThemedText>
           </View>
         ) : (
-          <View style={styles.dateRow}>
-            <TextInput
-              style={[inputStyle, styles.dateShort]}
-              value={day}
-              onChangeText={setDay}
-              placeholder={t('profileSetup.day')}
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              maxLength={2}
-              accessibilityLabel={t('profileSetup.day')}
-            />
-            <TextInput
-              style={[inputStyle, styles.dateShort]}
-              value={month}
-              onChangeText={setMonth}
-              placeholder={t('profileSetup.month')}
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              maxLength={2}
-              accessibilityLabel={t('profileSetup.month')}
-            />
-            <TextInput
-              style={[inputStyle, styles.dateLong]}
-              value={year}
-              onChangeText={setYear}
-              placeholder={t('profileSetup.year')}
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              maxLength={4}
-              accessibilityLabel={t('profileSetup.year')}
-            />
-          </View>
+          <DateInput
+            day={day}
+            month={month}
+            year={year}
+            onChange={(d, m, y) => {
+              setDay(d);
+              setMonth(m);
+              setYear(y);
+            }}
+            inputStyle={inputStyle}
+            label={t('profileSetup.birthDate')}
+            defaultDate={new Date(2000, 0, 1)}
+            maximumDate={new Date()}
+          />
         )}
       </View>
 

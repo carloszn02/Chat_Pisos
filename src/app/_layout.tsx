@@ -5,11 +5,13 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { IconButton } from '@/components/button';
 import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
+import { AppToastProvider } from '@/hooks/use-app-toast';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { AppearanceProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import { InboxProvider } from '@/hooks/use-inbox';
@@ -56,28 +58,32 @@ export default function RootLayout() {
   return (
     <>
       <PageTitle />
-      <KeyboardProvider>
-        <AppearanceProvider>
-          <ThemedNavigation>
-            <SessionProvider>
-              <ProfileProvider>
-                <BlocksProvider>
-                  <PlacesProvider>
-                    <MutesProvider>
-                      <SavedProvider>
-                        <InboxProvider>
-                          <SplashScreenController />
-                          <RootNavigator />
-                        </InboxProvider>
-                      </SavedProvider>
-                    </MutesProvider>
-                  </PlacesProvider>
-                </BlocksProvider>
-              </ProfileProvider>
-            </SessionProvider>
-          </ThemedNavigation>
-        </AppearanceProvider>
-      </KeyboardProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
+          <AppearanceProvider>
+            <ThemedNavigation>
+              <SessionProvider>
+                <ProfileProvider>
+                  <BlocksProvider>
+                    <PlacesProvider>
+                      <MutesProvider>
+                        <SavedProvider>
+                          <InboxProvider>
+                            <AppToastProvider>
+                              <SplashScreenController />
+                              <RootNavigator />
+                            </AppToastProvider>
+                          </InboxProvider>
+                        </SavedProvider>
+                      </MutesProvider>
+                    </PlacesProvider>
+                  </BlocksProvider>
+                </ProfileProvider>
+              </SessionProvider>
+            </ThemedNavigation>
+          </AppearanceProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </>
   );
 }

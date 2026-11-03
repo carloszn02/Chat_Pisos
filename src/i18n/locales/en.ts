@@ -18,7 +18,7 @@ const en: typeof es = {
     cityWide: 'Whole city',
     districtGroup: 'District group',
     noMessagesYet: 'No messages yet',
-    loadError: "The chats couldn't be loaded.",
+    loadError: "The chats couldn't be loaded. Check your internet connection.",
     retry: 'Try again',
     safetyTip: 'Never pay a deposit before seeing the flat in person.',
     emptyChat: 'Be the first to write in this group.',
@@ -29,7 +29,8 @@ const en: typeof es = {
     leave: 'Leave group',
     leaveConfirmTitle: 'Leave {{name}}?',
     leaveConfirmBody: "You won't be able to write in the group. You can join again any time.",
-    sendError: "Your message couldn't be sent.",
+    sendError:
+      "Your message couldn't be sent. Check your connection; your text is still here to send again.",
     you: 'You',
     citySubtitle: 'Rooms, flats and flatmates by neighbourhood',
     exploreTitle: 'Explore {{city}} districts',
@@ -47,7 +48,7 @@ const en: typeof es = {
     memberCount_other: '{{count}} members',
     activeToday: 'Active today',
     activeThisWeek: 'Active this week',
-    quiet: 'Quiet so far',
+    quiet: 'Be the first',
     searchPlaceholder: 'Search your neighbourhood',
     clearSearch: 'Clear search',
     noResults: 'No chat for "{{search}}". You can ask for one below.',
@@ -115,7 +116,7 @@ const en: typeof es = {
     noRequests: 'You have no pending requests.',
     empty:
       "You don't have any conversations yet. Tap someone's name in a district chat to see their profile and message them.",
-    loadError: "Your messages couldn't be loaded.",
+    loadError: "Your messages couldn't be loaded. Check your internet connection.",
     requestSent: 'Request sent',
     safetyTip: 'Tip: visit the flat and meet the person before paying anything.',
     firstMessageHint:
@@ -126,7 +127,7 @@ const en: typeof es = {
     decline: 'Decline',
     waitingForAnswer:
       "{{name}} hasn't accepted your request yet. You can keep writing once they do.",
-    actionError: 'Something went wrong. Please try again.',
+    actionError: "That didn't go through. Check your connection and try again.",
     viewProfile: 'View profile',
     talkingAbout: 'About this listing',
     removeListing: 'Remove listing',
@@ -214,7 +215,7 @@ const en: typeof es = {
         "You can only invite people you have an accepted conversation with (and who aren't blocked).",
       groupFull: 'The group already has the maximum of 10 people.',
       rateLimit: "You've created a lot of groups today. You can create more tomorrow.",
-      generic: 'Something went wrong. Please try again.',
+      generic: "That didn't go through. Check your connection and try again.",
     },
   },
   chatActions: {
@@ -259,10 +260,38 @@ const en: typeof es = {
       'This link has expired or was turned off. Ask the person who sent it for a new one.',
     goToMessages: 'Go to Messages',
     errors: {
-      generic: 'Something went wrong. Please try again.',
+      generic: "That didn't go through. Check your connection and try again.",
       full: 'This group already has the maximum of 10 people.',
       rateLimit: "You've asked to join a lot of groups today. You can ask again tomorrow.",
     },
+  },
+  dateInput: {
+    placeholder: 'Choose a date',
+    hint: 'Opens the calendar',
+    done: 'Done',
+  },
+  hints: {
+    dismiss: 'Hide tip',
+    welcome: {
+      title: "You're all set, {{name}}!",
+      body: 'Start with what helps you most: browse listings sorted by how compatible they are with you, or publish what you are looking for.',
+      swipe: 'Swipe sideways to switch tabs.',
+      listings: 'See listings',
+      publish: "Publish what I'm looking for",
+    },
+    listings:
+      'Filter by type and sort as you like. Tap the heart to save a listing and the map to search in one area.',
+    chat: 'Swipe a message to the right to reply. Press and hold for more options, like reporting.',
+    chatWeb: 'Press and hold a message to reply or see more options, like reporting.',
+    publish:
+      'Choose what the listing is for. Only the basics are required; the extra details help the right person find you.',
+    requests:
+      "Requests are first messages from people you don't talk to yet. If you accept one, you can message each other.",
+  },
+  published: {
+    title: 'Your listing is live',
+    body: 'Share it with friends or in your groups so more people see it.',
+    share: 'Share listing',
   },
   meta: {
     title: 'Chat Pisos: rooms and flatmates in Madrid',
@@ -308,7 +337,8 @@ const en: typeof es = {
     errors: {
       reasonRequired: 'Choose a reason.',
       rateLimit: "You've sent a lot of reports today. If it's urgent, write to us.",
-      generic: "Your report couldn't be sent. Please try again.",
+      generic:
+        "Your report couldn't be sent. Check your connection and try again; your text is still here.",
     },
   },
   blocked: {
@@ -334,7 +364,14 @@ const en: typeof es = {
     mapUnavailable: 'The map could not be loaded.',
     save: 'Save listing',
     unsave: 'Remove from saved',
+    savedToast: 'Saved. Find it with the heart in Listings.',
+    unsavedToast: 'Removed from saved',
     saved: 'Saved',
+    invite: {
+      title: "Haven't found what you're looking for?",
+      body: 'Publish what you are looking for and let people find you. It takes a minute.',
+      action: 'Publish',
+    },
     savedEmpty:
       "You haven't saved any listings yet. Tap the heart on a listing to find it here later.",
     viewList: 'List',
@@ -353,8 +390,8 @@ const en: typeof es = {
     mineEmpty:
       "You don't have any listings yet. You can have several at once: for example, offer your room and look for another one.",
     types: {
-      offering_room: 'Offering room',
-      seeking_room: 'Looking for room',
+      offering_room: 'Room available',
+      seeking_room: 'Looking for a room',
       whole_flat: 'Whole flat',
     },
     perMonth: '/month',
@@ -371,7 +408,7 @@ const en: typeof es = {
     months_one: '{{count}} month',
     months_other: '{{count}} months',
     empty: 'No listings match these filters yet.',
-    loadError: "The listings couldn't be loaded.",
+    loadError: "The listings couldn't be loaded. Check your connection and pull down to try again.",
     notFound: 'This listing is no longer available.',
     inCommon: 'You have in common',
     markClosed: 'Mark as closed',
@@ -384,6 +421,8 @@ const en: typeof es = {
     count_other: '{{count}} listings',
     sort: {
       title: 'Sort by',
+      recommendedHint:
+        'Recommended: recent, complete listings from people compatible with you come first.',
       options: {
         recommended: 'Recommended',
         newest: 'Newest',
@@ -483,8 +522,8 @@ const en: typeof es = {
       metro: 'Metro line',
       metroLine: 'Metro {{line}}',
       types: {
-        offering_room: 'Rooms offered',
-        seeking_room: 'Looking for room',
+        offering_room: 'Rooms',
+        seeking_room: 'Looking for a room',
         whole_flat: 'Whole flats',
       },
     },
@@ -632,7 +671,8 @@ const en: typeof es = {
       invalidLink: 'Check the link (for example, tiktok.com/@username).',
       confirmPin: 'To show the exact address, search for it or move the pin to the exact spot.',
       rateLimit: "You've published a lot of listings today. You can publish more tomorrow.",
-      generic: "Your listing couldn't be saved. Please try again.",
+      generic:
+        "Your listing couldn't be saved. Check your connection and try again; what you wrote is still here.",
     },
   },
   deleteAccount: {
@@ -804,7 +844,7 @@ const en: typeof es = {
       userExists: 'An account with this email already exists. Log in instead.',
       weakPassword: 'This password is too weak. Try a longer one.',
       rateLimit: 'Too many attempts. Wait a few minutes and try again.',
-      generic: 'Something went wrong. Please try again.',
+      generic: "That didn't go through. Check your connection and try again.",
     },
   },
   profileSetup: {
@@ -1038,7 +1078,8 @@ const en: typeof es = {
       underage: 'You must be 18 or older to use Chat Pisos.',
       languagesRequired: 'Choose at least one language.',
       photoUpload: "Your photo couldn't be uploaded. Try another image.",
-      generic: "Your profile couldn't be saved. Please try again.",
+      generic:
+        "Your profile couldn't be saved. Check your connection and try again; your answers are still here.",
     },
   },
   languages: {
