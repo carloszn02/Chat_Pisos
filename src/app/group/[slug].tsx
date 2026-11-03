@@ -599,7 +599,7 @@ export default function GroupChatScreen() {
             {chatHint.visible && (
               <View style={styles.hintWrap}>
                 <HintCard
-                  icon="message"
+                  icon="reply"
                   body={Platform.OS === 'web' ? t('hints.chatWeb') : t('hints.chat')}
                   onDismiss={chatHint.dismiss}
                 />
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   replyPrivately: {
     alignSelf: 'flex-start',
     borderWidth: 1.5,
-    borderRadius: 999,
+    borderRadius: 12,
     paddingHorizontal: Spacing.three,
     paddingVertical: 6,
   },
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

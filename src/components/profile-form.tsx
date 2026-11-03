@@ -348,7 +348,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
       <ThemedText type="smallBold">
         {t('profileSetup.about')}{' '}
         <ThemedText type="small" themeColor="textSecondary">
-          · {t('profileSetup.optional')}
+          {t('profileSetup.optionalNote')}
         </ThemedText>
       </ThemedText>
       <TextInput
@@ -371,7 +371,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
     <>
       {LIVING_TOGETHER_QUESTIONS.map(question)}
       <ChoiceChips
-        label={`${t('profileSetup.interests')} · ${t('profileSetup.interestsHint', { max: MAX_INTERESTS })}`}
+        label={`${t('profileSetup.interests')} (${t('profileSetup.interestsHint', { max: MAX_INTERESTS })})`}
         options={INTERESTS}
         getLabel={(o) => t(`profileSetup.options.interests.${o}`)}
         value={habits.interests}

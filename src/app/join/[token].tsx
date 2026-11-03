@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   button: {
     alignSelf: 'stretch',
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

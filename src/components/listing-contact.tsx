@@ -167,7 +167,7 @@ function ContactRow({
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.three,
     gap: Spacing.two,
   },

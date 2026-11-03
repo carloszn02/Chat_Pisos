@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { IconButton } from '@/components/button';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * A one-time tip in the page itself (not a pop-up): what this screen can do, where it's
- * used. The cross hides it for good. `children` can add buttons for a first step.
+ * A one-time tip in the page itself: a short note in plain text (no box, so it doesn't
+ * compete with the content), with "Got it" to hide it for good. The icon says what the tip
+ * is about. `children` can add buttons for a first step.
  */
 export function HintCard({
-  icon = 'sparkles',
+  icon,
   title,
   body,
   onDismiss,
@@ -28,26 +28,26 @@ export function HintCard({
   const { t } = useTranslation();
   const theme = useTheme();
   return (
-    <View
-      accessibilityRole="summary"
-      style={[styles.card, { backgroundColor: theme.tile, borderColor: theme.border }]}>
+    <View style={styles.note}>
       <View style={styles.row}>
-        <Icon name={icon} size={20} color={theme.onTile} strokeWidth={2} />
-        <View style={styles.text}>
-          {title && (
-            <ThemedText style={[styles.title, { color: theme.onTile }]}>{title}</ThemedText>
-          )}
-          <ThemedText type="small" style={{ color: theme.text }}>
-            {body}
-          </ThemedText>
-        </View>
-        <IconButton
-          icon="close"
-          label={t('hints.dismiss')}
-          variant="plain"
-          size={32}
+        {icon && (
+          <View style={styles.icon}>
+            <Icon name={icon} size={16} color={theme.textSecondary} strokeWidth={2} />
+          </View>
+        )}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.text}>
+          {title && <ThemedText type="smallBold">{title} </ThemedText>}
+          {body}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="button"
           onPress={onDismiss}
-        />
+          hitSlop={12}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            {t('hints.dismiss')}
+          </ThemedText>
+        </Pressable>
       </View>
       {children && <View style={styles.actions}>{children}</View>}
     </View>
@@ -55,28 +55,27 @@ export function HintCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: Spacing.three,
-    paddingRight: Spacing.two,
+  note: {
     gap: Spacing.three,
+    paddingVertical: Spacing.one,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.two,
   },
+  icon: {
+    marginTop: 2,
+  },
   text: {
     flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontWeight: 700,
   },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });

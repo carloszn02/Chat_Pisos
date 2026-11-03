@@ -224,7 +224,7 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   compactCard: {
@@ -393,7 +393,7 @@ const miniStyles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.two,
     gap: Spacing.two,
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',

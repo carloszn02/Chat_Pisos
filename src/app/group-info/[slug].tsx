@@ -130,7 +130,7 @@ export default function GroupInfoScreen() {
   const where = group.is_city_wide
     ? t('chats.cityWide')
     : parent
-      ? `${t('chats.districtGroup')} · ${parent.name}`
+      ? t('chats.districtGroupIn', { district: parent.name })
       : t('chats.districtGroup');
   const activity = stats?.active_today
     ? t('chats.activeToday')
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   stats: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingVertical: Spacing.three,
   },
   stat: {

@@ -121,7 +121,7 @@ export function DistrictCard({ group, stats, joined, joining, onJoin, width }: D
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   joined: {
     minHeight: 36,
-    borderRadius: 999,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -464,7 +464,7 @@ export default function ConversationScreen() {
         {chatHint.visible && (
           <View style={styles.hintWrap}>
             <HintCard
-              icon="message"
+              icon="reply"
               body={Platform.OS === 'web' ? t('hints.chatWeb') : t('hints.chat')}
               onDismiss={chatHint.dismiss}
             />
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   requestButton: {
     flex: 1,
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

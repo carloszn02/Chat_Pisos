@@ -100,7 +100,7 @@ export function CompatibilityBox({
             {t('compatibility.talkAbout')}
           </ThemedText>
           <ThemedText type="small">
-            {result.differences.map((question) => t(`profileSetup.topics.${question}`)).join(' · ')}
+            {result.differences.map((question) => t(`profileSetup.topics.${question}`)).join(', ')}
           </ThemedText>
         </View>
       )}
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   bordered: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.three,
   },
   levelRow: {

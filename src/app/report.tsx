@@ -146,7 +146,7 @@ export default function ReportScreen() {
                 <ThemedText type="smallBold">
                   {t('report.detailsLabel')}{' '}
                   <ThemedText type="small" themeColor="textSecondary">
-                    · {t('profileSetup.optional')}
+                    {t('profileSetup.optionalNote')}
                   </ThemedText>
                 </ThemedText>
                 <TextInput
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

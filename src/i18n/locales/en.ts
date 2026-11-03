@@ -17,6 +17,7 @@ const en: typeof es = {
     join: 'Join',
     cityWide: 'Whole city',
     districtGroup: 'District group',
+    districtGroupIn: 'Neighbourhood group in {{district}}',
     noMessagesYet: 'No messages yet',
     loadError: "The chats couldn't be loaded. Check your internet connection.",
     retry: 'Try again',
@@ -142,7 +143,7 @@ const en: typeof es = {
       "Create a group with people you're already talking to privately, for example to look for a flat together. Up to {{max}} people; each one has to accept the invitation.",
     nameLabel: 'Group name',
     namePlaceholder: 'E.g. Flat in Malasaña',
-    peopleLabel: 'Who to invite · {{count}} chosen',
+    peopleLabel: 'Who to invite ({{count}} chosen)',
     create: 'Create group',
     noConnections:
       'You can only invite people you have an accepted private conversation with. Message someone first from a district chat or a listing.',
@@ -271,10 +272,10 @@ const en: typeof es = {
     done: 'Done',
   },
   hints: {
-    dismiss: 'Hide tip',
+    dismiss: 'Got it',
     welcome: {
-      title: "You're all set, {{name}}!",
-      body: 'Start with what helps you most: browse listings sorted by how compatible they are with you, or publish what you are looking for.',
+      title: 'Hi, {{name}}.',
+      body: 'These are the chats for each neighbourhood. Browse the rooms on offer or publish what you are looking for.',
       swipe: 'Swipe sideways to switch tabs.',
       listings: 'See listings',
       publish: "Publish what I'm looking for",
@@ -369,7 +370,7 @@ const en: typeof es = {
     saved: 'Saved',
     invite: {
       title: "Haven't found what you're looking for?",
-      body: 'Publish what you are looking for and let people find you. It takes a minute.',
+      body: 'Publish what you are looking for, with your budget and neighbourhoods, and let people message you.',
       action: 'Publish',
     },
     savedEmpty:
@@ -558,7 +559,7 @@ const en: typeof es = {
         whole_flat: 'The entire flat, for one person or a group',
       },
       district: 'District',
-      neighbourhoodIn: 'Neighbourhood in {{district}} · optional',
+      neighbourhoodIn: 'Neighbourhood in {{district}} (optional)',
       districtsSeeking: "Districts you're interested in (up to 3)",
       title: 'Title',
       titlePlaceholders: {
@@ -608,7 +609,7 @@ const en: typeof es = {
       metroStation: 'Nearest station',
       metroStationPlaceholder: 'E.g. Tribunal',
       transportNotes: 'Buses, Cercanías…',
-      transportNotesPlaceholder: 'E.g. Bus 21, 147 · Cercanías Recoletos',
+      transportNotesPlaceholder: 'E.g. Bus 21 and 147, Cercanías Recoletos',
       contactHint:
         'If you leave this empty, people will only message you in the app. Anything you add is only shown to people with an account, after they tap “Show contact”.',
       instagram: 'Instagram',
@@ -740,7 +741,7 @@ const en: typeof es = {
     slides: {
       welcome: {
         title: 'Welcome to Chat Pisos',
-        body: 'Find a room, a flat or flatmates in Madrid, organised by district. Here are the basics in one minute.',
+        body: 'Find a room, a flat or flatmates in Madrid, organised by district.',
       },
       chats: {
         title: 'District chats',
@@ -751,7 +752,7 @@ const en: typeof es = {
         body: 'Filter by district, price, metro line and more. See listings on the map, search a specific area and save your favourites with the heart.',
       },
       publish: {
-        title: 'Publish in seconds',
+        title: 'Publish your listing',
         body: 'With the centre button you can offer your room, look for one or rent out a flat. You can have several listings at once and share them in the district chat.',
       },
       messages: {
@@ -877,6 +878,7 @@ const en: typeof es = {
     smoking: 'Smoking',
     pets: 'Pets',
     optional: 'Optional',
+    optionalNote: '(optional)',
     submit: 'Save profile',
     wrongAccount: 'Not your account?',
     signOut: 'Log out',

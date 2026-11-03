@@ -306,7 +306,7 @@ export default function ListingDetailScreen() {
         <View style={styles.content}>
           {justPublished && isOwner && listing.status === 'active' && (
             <HintCard
-              icon="sparkles"
+              icon="check"
               title={t('published.title')}
               body={t('published.body')}
               onDismiss={() => setJustPublished(false)}>
@@ -375,7 +375,7 @@ export default function ListingDetailScreen() {
                       owner.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
                     ]
                       .filter(Boolean)
-                      .join(' · ')}
+                      .join('\n')}
                   </ThemedText>
                 </View>
                 <Icon name="chevron-right" size={18} color={theme.textSecondary} />
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   ownerCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.three,
     gap: Spacing.two,
   },
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

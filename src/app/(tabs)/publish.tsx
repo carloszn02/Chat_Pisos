@@ -57,7 +57,7 @@ export default function PublishScreen() {
               </ThemedText>
             </View>
             {publishHint.visible && (
-              <HintCard icon="sparkles" body={t('hints.publish')} onDismiss={publishHint.dismiss} />
+              <HintCard icon="house" body={t('hints.publish')} onDismiss={publishHint.dismiss} />
             )}
             <ListingForm
               key={formKey}

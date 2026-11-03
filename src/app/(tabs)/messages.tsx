@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   newGroup: {
     height: 36,
     paddingHorizontal: Spacing.three,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1.5,
     justifyContent: 'center',
   },

@@ -3,7 +3,9 @@
  * - primary: filled mocha, for the main action on a screen
  * - secondary: outlined, for other actions
  * - text: a plain coloured link-style button
- * All are pill-shaped. IconButton is the round icon button used at the top of screens.
+ * - photo / photoOutline: white, for buttons on top of a photo (the city banner)
+ * All have softly rounded corners (pills are kept for filter chips and tags, so actions and
+ * choices look different). IconButton is the round icon button used at the top of screens.
  */
 
 import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
@@ -16,7 +18,7 @@ import { useTheme } from '@/hooks/use-theme';
 type ButtonProps = {
   label: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'text';
+  variant?: 'primary' | 'secondary' | 'text' | 'photo' | 'photoOutline';
   /** 'small' is for buttons inside cards and rows. */
   size?: 'regular' | 'small';
   icon?: IconName;
@@ -49,7 +51,11 @@ export function Button({
         ? theme.danger
         : variant === 'text'
           ? theme.primary
-          : theme.text;
+          : variant === 'photo'
+            ? PHOTO_TEXT
+            : variant === 'photoOutline'
+              ? '#FFFFFF'
+              : theme.text;
 
   return (
     <Pressable
@@ -72,6 +78,8 @@ export function Button({
           },
         ],
         variant === 'text' && styles.textOnly,
+        variant === 'photo' && styles.photo,
+        variant === 'photoOutline' && styles.photoOutline,
         (pressed || inactive) && styles.dimmed,
         style,
       ]}>
@@ -94,6 +102,9 @@ export function Button({
     </Pressable>
   );
 }
+
+/** Dusk blue text on the white photo button, in both themes. */
+const PHOTO_TEXT = '#2E3A78';
 
 type IconButtonProps = {
   icon: IconName;
@@ -157,7 +168,7 @@ export function IconButton({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -172,6 +183,14 @@ const styles = StyleSheet.create({
   },
   outlined: {
     borderWidth: 1,
+  },
+  photo: {
+    backgroundColor: '#FFFFFF',
+  },
+  photoOutline: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.75)',
+    backgroundColor: 'rgba(20, 22, 40, 0.25)',
   },
   textOnly: {
     minHeight: 36,

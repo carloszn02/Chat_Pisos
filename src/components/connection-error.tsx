@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,

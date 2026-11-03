@@ -43,7 +43,7 @@ export function ProfileSummary({
     profile.languages.map((code) => SPOKEN_LANGUAGES[code]).join(', '),
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join('\n');
 
   const tags = (questions: HabitQuestion[]) =>
     questions.flatMap((question) => {

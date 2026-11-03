@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

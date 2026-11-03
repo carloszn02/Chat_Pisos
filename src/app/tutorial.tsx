@@ -19,7 +19,7 @@ const SLIDES: { key: string; icon: IconName }[] = [
   { key: 'listings', icon: 'map' },
   { key: 'publish', icon: 'plus' },
   { key: 'messages', icon: 'users' },
-  { key: 'profile', icon: 'sparkles' },
+  { key: 'profile', icon: 'user' },
   { key: 'safety', icon: 'shield' },
 ];
 

@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
     marginTop: Spacing.two,

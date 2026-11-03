@@ -35,7 +35,6 @@ import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import Sparkles from 'lucide-react-native/icons/sparkles';
 import TrainFront from 'lucide-react-native/icons/train-front';
 import Users from 'lucide-react-native/icons/users';
 import X from 'lucide-react-native/icons/x';
@@ -76,7 +75,6 @@ const ICONS = {
   settings: Settings,
   shield: ShieldCheck,
   sort: ArrowUpDown,
-  sparkles: Sparkles,
   user: User,
   users: Users,
   filters: SlidersHorizontal,

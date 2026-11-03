@@ -12,7 +12,6 @@ import { ChatRow } from '@/components/chat-row';
 import { CityBanner } from '@/components/city-banner';
 import { DistrictCard } from '@/components/district-card';
 import { GroupTile } from '@/components/group-tile';
-import { HintCard } from '@/components/hint-card';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
@@ -147,37 +146,41 @@ export default function ChatsScreen() {
                 />
               }
             />
-            {city && <CityBanner city={city} subtitle={t('chats.citySubtitle')} />}
-
-            {welcome.visible && (
-              <HintCard
-                icon="sparkles"
-                title={t('hints.welcome.title', { name: profile?.first_name ?? '' })}
-                body={
-                  Platform.OS === 'web'
-                    ? t('hints.welcome.body')
-                    : `${t('hints.welcome.body')} ${t('hints.welcome.swipe')}`
-                }
-                onDismiss={welcome.dismiss}>
-                <Button
-                  label={t('hints.welcome.listings')}
-                  size="small"
-                  onPress={() => {
-                    welcome.dismiss();
-                    router.navigate('/listings');
-                  }}
-                />
-                <Button
-                  label={t('hints.welcome.publish')}
-                  size="small"
-                  variant="secondary"
-                  onPress={() => {
-                    welcome.dismiss();
-                    router.navigate('/publish');
-                  }}
-                />
-              </HintCard>
-            )}
+            {city &&
+              (welcome.visible ? (
+                <CityBanner
+                  city={city}
+                  subtitle={[
+                    t('hints.welcome.title', { name: profile?.first_name ?? '' }),
+                    t('hints.welcome.body'),
+                    Platform.OS === 'web' ? '' : t('hints.welcome.swipe'),
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClose={welcome.dismiss}
+                  closeLabel={t('hints.dismiss')}>
+                  <Button
+                    label={t('hints.welcome.listings')}
+                    size="small"
+                    variant="photo"
+                    onPress={() => {
+                      welcome.dismiss();
+                      router.navigate('/listings');
+                    }}
+                  />
+                  <Button
+                    label={t('hints.welcome.publish')}
+                    size="small"
+                    variant="photoOutline"
+                    onPress={() => {
+                      welcome.dismiss();
+                      router.navigate('/publish');
+                    }}
+                  />
+                </CityBanner>
+              ) : (
+                <CityBanner city={city} subtitle={t('chats.citySubtitle')} />
+              ))}
 
             {!data && !loadError && <RowsSkeleton count={3} shape="square" />}
 

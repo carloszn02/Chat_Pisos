@@ -118,7 +118,7 @@ export default function ProfileScreen() {
                   key: 'listings',
                   label:
                     listingCount > 0
-                      ? `${t('profileTab.listingsTab')} · ${listingCount}`
+                      ? `${t('profileTab.listingsTab')} (${listingCount})`
                       : t('profileTab.listingsTab'),
                 },
               ]}
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   completion: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.three,
     gap: Spacing.two,
   },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   outlineButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

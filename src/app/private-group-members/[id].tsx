@@ -641,13 +641,13 @@ const styles = StyleSheet.create({
   smallButton: {
     height: 34,
     paddingHorizontal: Spacing.three,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   linkCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: Spacing.three,
     gap: Spacing.three,
   },
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -15,6 +15,7 @@ const es = {
     join: 'Unirse',
     cityWide: 'Toda la ciudad',
     districtGroup: 'Grupo del barrio',
+    districtGroupIn: 'Grupo de barrio en {{district}}',
     noMessagesYet: 'Todavía no hay mensajes',
     loadError: 'No se han podido cargar los chats. Comprueba tu conexión a internet.',
     retry: 'Reintentar',
@@ -141,7 +142,7 @@ const es = {
       'Crea un grupo con personas con las que ya hablas por privado, por ejemplo para buscar piso juntos. Máximo {{max}} personas; cada una tendrá que aceptar la invitación.',
     nameLabel: 'Nombre del grupo',
     namePlaceholder: 'Ej.: Piso en Malasaña',
-    peopleLabel: 'A quién invitar · {{count}} elegidos',
+    peopleLabel: 'A quién invitar ({{count}} elegidos)',
     create: 'Crear grupo',
     noConnections:
       'Solo puedes invitar a personas con las que tengas una conversación privada aceptada. Escribe primero a alguien desde un chat de barrio o un anuncio.',
@@ -270,10 +271,10 @@ const es = {
     done: 'Listo',
   },
   hints: {
-    dismiss: 'Ocultar consejo',
+    dismiss: 'Entendido',
     welcome: {
-      title: '¡Todo listo, {{name}}!',
-      body: 'Empieza por lo que más te ayude: mira anuncios ordenados por compatibilidad contigo o publica lo que buscas.',
+      title: 'Hola, {{name}}.',
+      body: 'Aquí están los chats de cada barrio. Mira las habitaciones que hay o publica lo que buscas.',
       swipe: 'Desliza a los lados para cambiar de pestaña.',
       listings: 'Ver anuncios',
       publish: 'Publicar lo que busco',
@@ -367,7 +368,7 @@ const es = {
     saved: 'Guardados',
     invite: {
       title: '¿Aún no encuentras lo que buscas?',
-      body: 'Publica lo que buscas y deja que te encuentren a ti. Solo lleva un minuto.',
+      body: 'Publica lo que buscas, con tu presupuesto y tus barrios, y deja que te escriban a ti.',
       action: 'Publicar',
     },
     savedEmpty:
@@ -556,7 +557,7 @@ const es = {
         whole_flat: 'El piso entero, para una persona o un grupo',
       },
       district: 'Distrito',
-      neighbourhoodIn: 'Barrio en {{district}} · opcional',
+      neighbourhoodIn: 'Barrio en {{district}} (opcional)',
       districtsSeeking: 'Distritos que te interesan (hasta 3)',
       title: 'Título',
       titlePlaceholders: {
@@ -606,7 +607,7 @@ const es = {
       metroStation: 'Estación más cercana',
       metroStationPlaceholder: 'Ej.: Tribunal',
       transportNotes: 'Autobuses, Cercanías…',
-      transportNotesPlaceholder: 'Ej.: Bus 21, 147 · Cercanías Recoletos',
+      transportNotesPlaceholder: 'Ej.: Bus 21 y 147, Cercanías Recoletos',
       contactHint:
         'Si no añades nada, te escribirán solo por la app. Lo que pongas aquí solo lo verán personas con cuenta, después de tocar «Ver contacto».',
       instagram: 'Instagram',
@@ -739,7 +740,7 @@ const es = {
     slides: {
       welcome: {
         title: 'Bienvenido/a a Chat Pisos',
-        body: 'Encuentra habitación, piso o compañeros de piso en Madrid, organizado por barrios. Te enseñamos lo básico en un minuto.',
+        body: 'Encuentra habitación, piso o compañeros de piso en Madrid, organizado por barrios.',
       },
       chats: {
         title: 'Chats de barrio',
@@ -750,7 +751,7 @@ const es = {
         body: 'Filtra por barrio, precio, línea de metro y más. Mira los anuncios en el mapa, busca en una zona concreta y guarda tus favoritos con el corazón.',
       },
       publish: {
-        title: 'Publica en segundos',
+        title: 'Publica tu anuncio',
         body: 'Con el botón central ofreces tu habitación, buscas una o alquilas un piso. Puedes tener varios anuncios a la vez y compartirlos en el chat del barrio.',
       },
       messages: {
@@ -879,6 +880,7 @@ const es = {
     smoking: 'Tabaco',
     pets: 'Mascotas',
     optional: 'Opcional',
+    optionalNote: '(opcional)',
     submit: 'Guardar perfil',
     wrongAccount: '¿No es tu cuenta?',
     signOut: 'Cerrar sesión',

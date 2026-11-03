@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   unblockButton: {
     height: 36,
     paddingHorizontal: Spacing.three,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: 'center',
   },

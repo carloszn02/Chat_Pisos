@@ -218,7 +218,7 @@ export default function ListingsScreen() {
         // Showing saved listings: one chip to go back to all of them.
         {
           key: 'saved',
-          label: `${t('listings.saved')} · ${savedIds.length}`,
+          label: `${t('listings.saved')} (${savedIds.length})`,
           icon: 'heart',
           selected: true,
           removable: true,
@@ -230,7 +230,7 @@ export default function ListingsScreen() {
           key: 'filters',
           label:
             panelFilterCount > 0
-              ? `${t('listings.filters.title')} · ${panelFilterCount}`
+              ? `${t('listings.filters.title')} (${panelFilterCount})`
               : t('listings.filters.title'),
           icon: 'filters',
           selected: panelFilterCount > 0,
@@ -332,7 +332,7 @@ export default function ListingsScreen() {
     },
   ];
 
-  // "24 listings · Malasaña · Up to 700 €"
+  // "24 listings, Malasaña, up to 700 €"
   const placeName = neighbourhoodId
     ? neighbourhoodsOf(districtId ?? '').find((h) => h.id === neighbourhoodId)?.name
     : districts.find((d) => d.id === districtId)?.name;
@@ -350,7 +350,7 @@ export default function ListingsScreen() {
     !savedOnly && registrationAllowed ? t('listings.filters.registrationAllowed') : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 
   const filtersBlock = (
     <>
@@ -376,7 +376,7 @@ export default function ListingsScreen() {
 
       <ChipRow chips={typeChips} />
       {listingsHint.visible && (
-        <HintCard icon="sparkles" body={t('hints.listings')} onDismiss={listingsHint.dismiss} />
+        <HintCard icon="heart" body={t('hints.listings')} onDismiss={listingsHint.dismiss} />
       )}
       {summary ? (
         <ThemedText type="small" themeColor="textSecondary">
@@ -521,15 +521,11 @@ export default function ListingsScreen() {
             // Few listings yet: invite people to publish theirs instead of ending on nothing.
             listings && !savedOnly && shown.length < FEW_LISTINGS ? (
               <View style={[styles.cell, styles.inviteWrap]}>
-                <View
-                  style={[
-                    styles.invite,
-                    { backgroundColor: theme.tile, borderColor: theme.border },
-                  ]}>
-                  <ThemedText style={[styles.inviteTitle, { color: theme.onTile }]}>
-                    {t('listings.invite.title')}
+                <View style={[styles.invite, { borderTopColor: theme.divider }]}>
+                  <ThemedText style={styles.inviteTitle}>{t('listings.invite.title')}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('listings.invite.body')}
                   </ThemedText>
-                  <ThemedText type="small">{t('listings.invite.body')}</ThemedText>
                   <Button
                     label={t('listings.invite.action')}
                     size="small"
@@ -692,9 +688,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   invite: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: Spacing.three,
+    borderTopWidth: 1,
+    paddingTop: Spacing.four,
     gap: Spacing.one,
   },
   inviteTitle: {
@@ -807,7 +802,7 @@ const styles = StyleSheet.create({
     minWidth: 170,
     height: 40,
     paddingHorizontal: Spacing.three,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',

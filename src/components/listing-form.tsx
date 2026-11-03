@@ -521,7 +521,7 @@ export function ListingForm({
               <ThemedText type="smallBold">
                 {t('listings.form.location')}{' '}
                 <ThemedText type="small" themeColor="textSecondary">
-                  · {t('profileSetup.optional')}
+                  {t('profileSetup.optionalNote')}
                 </ThemedText>
               </ThemedText>
               <View style={styles.row}>
@@ -610,7 +610,7 @@ export function ListingForm({
             <ThemedText type="smallBold">
               {t('listings.form.description')}{' '}
               <ThemedText type="small" themeColor="textSecondary">
-                · {t('profileSetup.optional')}
+                {t('profileSetup.optionalNote')}
               </ThemedText>
             </ThemedText>
             <TextInput
@@ -631,7 +631,7 @@ export function ListingForm({
               <ThemedText type="smallBold">
                 {t('listings.form.photos')}{' '}
                 <ThemedText type="small" themeColor="textSecondary">
-                  · {t('listings.form.photosHint', { max: MAX_LISTING_PHOTOS })}
+                  ({t('listings.form.photosHint', { max: MAX_LISTING_PHOTOS })})
                 </ThemedText>
               </ThemedText>
               <View style={styles.photoGrid}>
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   searchButton: {
     height: 48,
     paddingHorizontal: Spacing.three,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 48,
-    borderRadius: 999,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
