@@ -1,5 +1,6 @@
 /**
- * App colours: a clean cream with coffee brown (light), and coffee-black with caramel (dark).
+ * App colours, "Madrid rooftops at dusk": an evening haze with dusk blue (light), and the
+ * night sky with warm ochre light (dark). Ochre is also the accent for unread counts.
  * The person picks Light, Dark or Automatic in Settings (see hooks/use-color-scheme).
  * `primary` is for main buttons and accents; `onPrimary` is the text on top of it.
  */
@@ -10,36 +11,41 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#1F1A17',
-    background: '#FAF8F5',
+    text: '#1E1B2E',
+    background: '#F3F2F7',
     backgroundElement: '#FFFFFF',
-    backgroundSelected: '#F3ECE5',
-    textSecondary: '#72675E',
-    border: '#ECE5DD',
+    backgroundSelected: '#E6E8F4',
+    textSecondary: '#625D75',
+    border: '#E2DFEA',
     /** Outlined buttons: a little stronger than border. */
-    borderStrong: '#DCD2C7',
+    borderStrong: '#CFCADB',
     /** Thin lines between rows in lists. */
-    divider: '#F0EAE3',
-    /** District tiles and other soft warm surfaces, with their text colour. */
-    tile: '#F1E6DB',
-    onTile: '#7A4B2A',
-    primary: '#7A4B2A',
+    divider: '#ECEAF2',
+    /** District tiles and other soft surfaces, with their text colour. */
+    tile: '#E6E8F4',
+    onTile: '#2E3A78',
+    primary: '#2E3A78',
     onPrimary: '#FFFFFF',
+    /** Warm ochre light: unread counts and small highlights. */
+    accent: '#E3A33B',
+    onAccent: '#1E1B2E',
     danger: '#B3261E',
   },
   dark: {
-    text: '#F4EEE8',
-    background: '#14110F',
-    backgroundElement: '#1D1814',
-    backgroundSelected: '#2A221C',
-    textSecondary: '#A89B90',
-    border: '#2E2520',
-    borderStrong: '#3F342C',
-    divider: '#241D19',
-    tile: '#33261D',
-    onTile: '#E2B994',
-    primary: '#D9AB86',
-    onPrimary: '#1E140D',
+    text: '#F0EDF7',
+    background: '#141628',
+    backgroundElement: '#1E2138',
+    backgroundSelected: '#2A2E50',
+    textSecondary: '#A7A2BC',
+    border: '#2D3150',
+    borderStrong: '#3D4268',
+    divider: '#24284A',
+    tile: '#262A48',
+    onTile: '#C9CDF2',
+    primary: '#E7B254',
+    onPrimary: '#1E1606',
+    accent: '#E7B254',
+    onAccent: '#1E1606',
     danger: '#F2B8B5',
   },
 } as const;

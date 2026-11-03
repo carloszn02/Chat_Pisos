@@ -264,9 +264,18 @@ const en: typeof es = {
       rateLimit: "You've asked to join a lot of groups today. You can ask again tomorrow.",
     },
   },
+  meta: {
+    title: 'Chat Pisos: rooms and flatmates in Madrid',
+  },
+  notFound: {
+    title: "This page doesn't exist",
+    body: 'The link may be mistyped, or the listing may no longer be published.',
+    home: 'Go to the start',
+  },
   common: {
     cancel: 'Cancel',
     close: 'Close',
+    goHome: 'Go to the start',
     loading: 'Loading',
   },
   report: {
@@ -762,6 +771,8 @@ const en: typeof es = {
     switchToSignUp: 'Sign up',
     checkEmailTitle: 'Check your email',
     checkEmailBody: 'We sent a link to {{email}}. Open it to confirm your account, then log in.',
+    checkEmailExisting:
+      'If you already had an account with this email, there is no need: just log in.',
     backToSignIn: 'Back to log in',
     resendConfirmation: 'Resend the confirmation email',
     forgotLink: 'Forgot your password?',

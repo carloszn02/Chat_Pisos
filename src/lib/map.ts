@@ -185,7 +185,7 @@ export function parseListingsMapMessage(data: unknown): ListingsMapMessage | nul
 
 /** The pins' look, shared by the web and phone versions. */
 export function listingPinCss(color: string): string {
-  return `.pin { background: #FFFFFF; color: #2E2620; border: 1.5px solid ${color};
+  return `.pin { background: #FFFFFF; color: #1E1B2E; border: 1.5px solid ${color};
   border-radius: 999px; padding: 4px 9px; font: 700 13px/16px system-ui, sans-serif;
   white-space: nowrap; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
 .pin.selected { background: ${color}; color: #FFFFFF; z-index: 2; }`;

@@ -1,3 +1,11 @@
+/**
+ * The locale used for dates and times: British English for English ("29 Oct", "14:30"), as
+ * people read dates in Madrid, instead of the American month-first "10/29".
+ */
+function dateLocale(language: string): string {
+  return language.startsWith('en') ? 'en-GB' : language;
+}
+
 function isToday(date: Date): boolean {
   const now = new Date();
   return (
@@ -11,14 +19,17 @@ function isToday(date: Date): boolean {
 export function formatShortTime(iso: string, language: string): string {
   const date = new Date(iso);
   if (isToday(date)) {
-    return date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(dateLocale(language), { hour: '2-digit', minute: '2-digit' });
   }
-  return date.toLocaleDateString(language, { day: 'numeric', month: 'numeric' });
+  return date.toLocaleDateString(dateLocale(language), { day: 'numeric', month: 'numeric' });
 }
 
 /** "10:42". Used under each chat bubble (the day is shown in the divider above). */
 export function formatMessageTime(iso: string, language: string): string {
-  return new Date(iso).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(dateLocale(language), {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /** True if both moments fall on the same day (in the phone's time zone). */
@@ -48,10 +59,10 @@ export function formatChatDay(
   if (daysAgo === 1) return words.yesterday;
   let text: string;
   if (daysAgo > 1 && daysAgo < 7) {
-    text = date.toLocaleDateString(language, { weekday: 'long' });
+    text = date.toLocaleDateString(dateLocale(language), { weekday: 'long' });
   } else {
     const sameYear = date.getFullYear() === new Date().getFullYear();
-    text = date.toLocaleDateString(language, {
+    text = date.toLocaleDateString(dateLocale(language), {
       day: 'numeric',
       month: 'long',
       ...(sameYear ? {} : { year: 'numeric' }),
@@ -72,7 +83,7 @@ export function formatPrice(euros: number, language: string): string {
 /** "1 Nov 2026" (or "1 nov 2026" in Spanish) from a YYYY-MM-DD date. */
 export function formatDate(isoDate: string, language: string): string {
   const [year, month, day] = isoDate.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(language, {
+  return new Date(year, month - 1, day).toLocaleDateString(dateLocale(language), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

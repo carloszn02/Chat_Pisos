@@ -263,9 +263,18 @@ const es = {
       rateLimit: 'Has pedido unirte a muchos grupos hoy. Podrás pedir más mañana.',
     },
   },
+  meta: {
+    title: 'Chat Pisos: habitaciones y compañeros de piso en Madrid',
+  },
+  notFound: {
+    title: 'Esta página no existe',
+    body: 'Puede que el enlace esté mal escrito o que el anuncio ya no esté publicado.',
+    home: 'Ir al inicio',
+  },
   common: {
     cancel: 'Cancelar',
     close: 'Cerrar',
+    goHome: 'Ir al inicio',
     loading: 'Cargando',
   },
   report: {
@@ -761,6 +770,8 @@ const es = {
     checkEmailTitle: 'Revisa tu email',
     checkEmailBody:
       'Te hemos enviado un enlace a {{email}}. Ábrelo para confirmar tu cuenta y luego inicia sesión.',
+    checkEmailExisting:
+      'Si ya tenías una cuenta con este email, no hace falta: inicia sesión directamente.',
     backToSignIn: 'Volver a iniciar sesión',
     resendConfirmation: 'Reenviar el email de confirmación',
     forgotLink: '¿Has olvidado tu contraseña?',

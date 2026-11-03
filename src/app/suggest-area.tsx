@@ -69,7 +69,7 @@ export default function SuggestAreaScreen() {
     return (
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: chosen }}
+        aria-checked={chosen}
         accessibilityLabel={name}
         onPress={() => toggle(areaId)}
         style={({ pressed }) => [
@@ -118,7 +118,7 @@ export default function SuggestAreaScreen() {
                   <View style={styles.districtRow}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityState={{ expanded: isOpen }}
+                      aria-expanded={isOpen}
                       onPress={() => setExpanded(isOpen ? null : district.id)}
                       style={styles.districtName}>
                       <ThemedText style={styles.bold}>{district.name}</ThemedText>

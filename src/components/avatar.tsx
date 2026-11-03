@@ -19,10 +19,19 @@ type AvatarProps = {
 export function Avatar({ uri, name, size, zoomable = false }: AvatarProps) {
   const theme = useTheme();
   const shape = { width: size, height: size, borderRadius: size / 2 };
+  // A photo that can't be shown (deleted, or a format the browser can't read, like HEIC)
+  // falls back to the initial instead of leaving an empty gap.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
 
-  if (uri) {
+  if (uri && uri !== failedUri) {
     const image = (
-      <Image source={{ uri }} style={shape} contentFit="cover" accessibilityLabel={name} />
+      <Image
+        source={{ uri }}
+        style={shape}
+        contentFit="cover"
+        accessibilityLabel={name}
+        onError={() => setFailedUri(uri)}
+      />
     );
     return zoomable ? <ZoomablePhoto url={uri}>{image}</ZoomablePhoto> : image;
   }

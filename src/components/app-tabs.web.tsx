@@ -8,7 +8,7 @@ import {
 } from 'expo-router/ui';
 import { useTranslation } from 'react-i18next';
 import type { ComponentRef, Ref } from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -55,6 +55,7 @@ export function TabButton({
   ...props
 }: TabTriggerSlotProps & { badge?: number; highlight?: boolean }) {
   const theme = useTheme();
+  const compact = useWindowDimensions().width < COMPACT_WIDTH;
   return (
     <Pressable
       {...props}
@@ -63,16 +64,20 @@ export function TabButton({
       style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={[styles.tabButtonView, highlight && { backgroundColor: theme.primary }]}>
+        style={[
+          styles.tabButtonView,
+          compact && styles.tabButtonCompact,
+          highlight && { backgroundColor: theme.primary },
+        ]}>
         <ThemedText
           type={highlight ? 'smallBold' : 'small'}
           themeColor={isFocused ? 'text' : 'textSecondary'}
-          style={highlight && { color: theme.onPrimary }}>
+          style={[compact && styles.labelCompact, highlight && { color: theme.onPrimary }]}>
           {children}
         </ThemedText>
         {badge > 0 && (
-          <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-            <ThemedText style={[styles.badgeText, { color: theme.onPrimary }]}>
+          <View style={[styles.badge, { backgroundColor: theme.accent }]}>
+            <ThemedText style={[styles.badgeText, { color: theme.onAccent }]}>
               {badge > 99 ? '99+' : badge}
             </ThemedText>
           </View>
@@ -83,12 +88,18 @@ export function TabButton({
 }
 
 export function CustomTabList(props: TabListProps) {
+  const compact = useWindowDimensions().width < COMPACT_WIDTH;
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Chat Pisos
-        </ThemedText>
+    <View {...props} style={[styles.tabListContainer, compact && styles.tabListCompact]}>
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.innerContainer, compact && styles.innerCompact]}>
+        {/* On a phone-sized window the five tabs need all the room. */}
+        {!compact && (
+          <ThemedText type="smallBold" style={styles.brandText}>
+            Chat Pisos
+          </ThemedText>
+        )}
 
         {props.children}
       </ThemedView>
@@ -96,7 +107,25 @@ export function CustomTabList(props: TabListProps) {
   );
 }
 
+/** Below this width (phones) the bar drops the name and uses tighter spacing. */
+const COMPACT_WIDTH = 640;
+
 const styles = StyleSheet.create({
+  tabListCompact: {
+    padding: Spacing.two,
+  },
+  innerCompact: {
+    paddingHorizontal: Spacing.one,
+    gap: 2,
+    justifyContent: 'space-between',
+  },
+  tabButtonCompact: {
+    paddingHorizontal: 6,
+    gap: 4,
+  },
+  labelCompact: {
+    fontSize: 13,
+  },
   tabListContainer: {
     position: 'absolute',
     width: '100%',

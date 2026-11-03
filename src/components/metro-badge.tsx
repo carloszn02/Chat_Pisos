@@ -55,7 +55,8 @@ export function MetroLinePicker({ value, onToggle, disabled }: MetroLinePickerPr
             key={line}
             accessibilityRole="checkbox"
             accessibilityLabel={`Metro ${metroLineLabel(line)}`}
-            accessibilityState={{ checked: selected, disabled: off }}
+            aria-checked={selected}
+            aria-disabled={off}
             disabled={off}
             onPress={() => onToggle(line)}
             hitSlop={4}

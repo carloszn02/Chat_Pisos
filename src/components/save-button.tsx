@@ -25,7 +25,7 @@ export function SaveButton({ listingId, variant = 'floating' }: SaveButtonProps)
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={saved ? t('listings.unsave') : t('listings.save')}
-      accessibilityState={{ selected: saved }}
+      aria-pressed={saved}
       onPress={() => {
         void toggle(listingId);
       }}

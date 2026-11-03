@@ -47,7 +47,7 @@ export function ChoiceChips<T extends string>({
             <Pressable
               key={option}
               accessibilityRole={multiple ? 'checkbox' : 'radio'}
-              accessibilityState={multiple ? { checked: selected } : { selected }}
+              aria-checked={selected}
               onPress={() => onChange(option)}
               style={({ pressed }) => [
                 styles.chip,

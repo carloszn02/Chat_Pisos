@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Browser test screenshots and logs (Playwright)
+.playwright-mcp/

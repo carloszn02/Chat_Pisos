@@ -168,6 +168,11 @@ export default function SignInScreen() {
                 ? t('auth.resetEmailBody', { email: sentTo })
                 : t('auth.checkEmailBody', { email: sentTo })}
             </ThemedText>
+            {sentKind === 'confirm' && (
+              <ThemedText type="small" themeColor="textSecondary" style={styles.bodyText}>
+                {t('auth.checkEmailExisting')}
+              </ThemedText>
+            )}
             <Pressable
               accessibilityRole="button"
               onPress={() => {
@@ -210,7 +215,7 @@ export default function SignInScreen() {
                         key={lang}
                         accessibilityRole="button"
                         accessibilityLabel={t(`languages.${lang}`)}
-                        accessibilityState={{ selected }}
+                        aria-pressed={selected}
                         onPress={() => i18n.changeLanguage(lang)}
                         style={[
                           styles.languageOption,
@@ -295,7 +300,7 @@ export default function SignInScreen() {
               {isSignUp && (
                 <Pressable
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: accepted }}
+                  aria-checked={accepted}
                   onPress={() => setAccepted(!accepted)}
                   style={styles.checkboxRow}>
                   <View

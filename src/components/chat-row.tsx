@@ -90,12 +90,12 @@ export function ChatRow({
               <View
                 style={[
                   styles.count,
-                  { backgroundColor: muted && !highlight ? theme.border : theme.primary },
+                  { backgroundColor: muted && !highlight ? theme.border : theme.accent },
                 ]}>
                 <ThemedText
                   style={[
                     styles.countText,
-                    { color: muted && !highlight ? theme.textSecondary : theme.onPrimary },
+                    { color: muted && !highlight ? theme.textSecondary : theme.onAccent },
                   ]}>
                   {unread > 99 ? '99+' : unread > 0 ? unread : 1}
                 </ThemedText>

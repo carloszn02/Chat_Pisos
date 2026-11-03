@@ -59,9 +59,7 @@ export function ActionSheet({ visible, title, message, options, onClose }: Actio
           <Pressable
             key={option.label}
             accessibilityRole="button"
-            accessibilityState={
-              option.selected === undefined ? undefined : { selected: option.selected }
-            }
+            aria-checked={option.selected}
             onPress={() => {
               onClose();
               // iOS can't open a new screen or menu while this one is still closing.
@@ -108,11 +106,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
+  // Covers the whole screen, also beside the menu on wide screens.
   backdrop: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   sheet: {
+    marginTop: 'auto',
     width: '100%',
     maxWidth: 520,
     alignSelf: 'center',

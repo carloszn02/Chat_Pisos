@@ -9,6 +9,7 @@ import { PressableLink } from '@/components/pressable-link';
 import { SaveButton } from '@/components/save-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,7 +26,9 @@ export function ListingTypeTag({
   onPhoto?: boolean;
 }) {
   const { t } = useTranslation();
-  const colors = LISTING_TYPE_COLORS[type];
+  const scheme = useColorScheme();
+  // On a photo the label is always white, so it uses the light colors.
+  const colors = LISTING_TYPE_COLORS[onPhoto ? 'light' : scheme][type];
   return (
     <View
       style={[
@@ -310,6 +313,7 @@ export function ListingMiniCard({ listing, onClose }: { listing: Listing; onClos
   const { placeLabel } = usePlaces();
   const { t } = useTranslation();
   const theme = useTheme();
+  const scheme = useColorScheme();
   const { session } = useSession();
   const photo = listing.photo_urls[0];
   const isMine = listing.user_id === session?.user.id;
@@ -331,7 +335,7 @@ export function ListingMiniCard({ listing, onClose }: { listing: Listing; onClos
           <View
             style={[
               miniStyles.photo,
-              { backgroundColor: LISTING_TYPE_COLORS[listing.type].background },
+              { backgroundColor: LISTING_TYPE_COLORS[scheme][listing.type].background },
             ]}
           />
         )}

@@ -532,7 +532,7 @@ function TidinessScale({
               key={option}
               accessibilityRole="radio"
               accessibilityLabel={t(`profileSetup.options.tidiness.${option}`)}
-              accessibilityState={{ selected }}
+              aria-checked={selected}
               onPress={() => onChange(option)}
               hitSlop={8}
               style={({ pressed }) => [

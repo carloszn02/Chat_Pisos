@@ -176,7 +176,7 @@ export default function ReportScreen() {
                 {!blockedIds.has(params.userId) && (
                   <Pressable
                     accessibilityRole="checkbox"
-                    accessibilityState={{ checked: alsoBlock }}
+                    aria-checked={alsoBlock}
                     onPress={() => setAlsoBlock(!alsoBlock)}
                     style={styles.checkboxRow}>
                     <View

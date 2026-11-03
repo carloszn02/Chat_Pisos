@@ -132,6 +132,8 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
 
   function changeType(next: ListingType) {
     setType(next);
+    // Choosing a type answers the "choose what this listing is for" message.
+    setError((current) => (current === 'typeRequired' ? null : current));
     // "Anyone" only makes sense for rooms; whole flats don't have it.
     if (next !== 'offering_room' && gender === 'any') setGender(null);
     // Rooms and flats are in one place: keep only the first district (and its neighbourhood).
@@ -313,7 +315,7 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
             <Pressable
               key={option}
               accessibilityRole="radio"
-              accessibilityState={{ selected }}
+              aria-checked={selected}
               onPress={() => changeType(option)}
               style={({ pressed }) => [
                 styles.typeOption,
@@ -606,7 +608,7 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
           {!isEditing && (
             <Pressable
               accessibilityRole="checkbox"
-              accessibilityState={{ checked: shareInGroups }}
+              aria-checked={shareInGroups}
               onPress={() => setShareInGroups(!shareInGroups)}
               style={[
                 styles.checkboxRow,

@@ -88,7 +88,8 @@ export function ConnectionPicker({
           <Pressable
             key={person.id}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: chosen, disabled }}
+            aria-checked={chosen}
+            aria-disabled={disabled}
             onPress={() => toggle(person.id)}
             style={({ pressed }) => [
               styles.row,

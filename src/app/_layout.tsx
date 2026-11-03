@@ -1,10 +1,12 @@
 import '@/i18n';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, type Theme } from 'expo-router';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
+import { IconButton } from '@/components/button';
 import { ConnectionError } from '@/components/connection-error';
 import { AppFonts, Colors } from '@/constants/theme';
 import { BlocksProvider } from '@/hooks/use-blocks';
@@ -52,10 +54,7 @@ const headerOptions = {
 export default function RootLayout() {
   return (
     <>
-      {/* Browser tab title on the web (ignored on phones). */}
-      <Head>
-        <title>Chat Pisos · Habitaciones y compañeros de piso en Madrid</title>
-      </Head>
+      <PageTitle />
       <AppearanceProvider>
         <ThemedNavigation>
           <SessionProvider>
@@ -77,6 +76,28 @@ export default function RootLayout() {
         </ThemedNavigation>
       </AppearanceProvider>
     </>
+  );
+}
+
+function HomeHeaderButton() {
+  const { t } = useTranslation();
+  return (
+    <IconButton
+      icon="house"
+      label={t('common.goHome')}
+      variant="plain"
+      onPress={() => router.replace('/')}
+    />
+  );
+}
+
+/** Browser tab title on the web, in the app's language (ignored on phones). */
+function PageTitle() {
+  const { t } = useTranslation();
+  return (
+    <Head>
+      <title>{t('meta.title')}</title>
+    </Head>
   );
 }
 
@@ -108,6 +129,9 @@ function RootNavigator() {
   const loggedIn = !!session;
   const hasProfile = !!profile;
   const inApp = loggedIn && !isRecoveringPassword;
+  // While we still check who is logged in, keep the app's screens available: otherwise a
+  // shared link or a page refresh on the web would be sent to sign-in and then to Chats.
+  const maybeInApp = inApp || sessionLoading;
 
   // Shared links opened while logged out are opened after signing in.
   usePendingLinks({
@@ -119,8 +143,13 @@ function RootNavigator() {
   if (inApp && loadFailed) return <ConnectionError onRetry={refresh} />;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={inApp && (hasProfile || isLoading)}>
+    <Stack
+      screenOptions={({ navigation }) => ({
+        headerShown: false,
+        // Opened straight from a link (nothing to go back to): a button to the app's start.
+        ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeHeaderButton /> }),
+      })}>
+      <Stack.Protected guard={maybeInApp && (hasProfile || isLoading)}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="edit-profile" options={headerOptions} />
         <Stack.Screen name="group/[slug]" options={headerOptions} />
@@ -148,7 +177,7 @@ function RootNavigator() {
       <Stack.Protected guard={loggedIn && isRecoveringPassword}>
         <Stack.Screen name="reset-password" />
       </Stack.Protected>
-      <Stack.Protected guard={!loggedIn}>
+      <Stack.Protected guard={!loggedIn && !sessionLoading}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
     </Stack>

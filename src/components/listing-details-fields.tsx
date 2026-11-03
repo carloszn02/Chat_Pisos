@@ -267,7 +267,7 @@ function Section({ title, filled, open, onToggle, children }: SectionProps) {
       ]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={onToggle}
         style={({ pressed }) => [styles.sectionHeader, pressed && styles.pressed]}>
         <ThemedText style={[styles.bold, styles.flex]}>{title}</ThemedText>
@@ -672,7 +672,7 @@ function Checkbox({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
+      aria-checked={checked}
       onPress={onPress}
       hitSlop={6}
       style={({ pressed }) => [styles.checkboxRow, pressed && styles.pressed]}>

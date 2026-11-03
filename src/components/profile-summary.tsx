@@ -134,9 +134,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   groupTitle: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    fontSize: 12,
+    fontSize: 14,
   },
   pills: {
     flexDirection: 'row',

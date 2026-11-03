@@ -26,7 +26,7 @@ function ChipView({ chip }: { chip: Chip }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: chip.selected }}
+      aria-pressed={chip.selected}
       onPress={chip.onPress}
       style={({ pressed }) => [
         styles.chip,

@@ -35,7 +35,7 @@ export function SegmentedControl<Key extends string>({
           <Pressable
             key={segment.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected: isSelected }}
+            aria-selected={isSelected}
             onPress={() => onChange(segment.key)}
             style={[
               styles.segment,

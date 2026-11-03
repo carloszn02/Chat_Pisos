@@ -72,7 +72,7 @@ export default function DeleteAccountScreen() {
 
           <Pressable
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: understood }}
+            aria-checked={understood}
             onPress={() => setUnderstood(!understood)}
             style={styles.checkboxRow}>
             <View

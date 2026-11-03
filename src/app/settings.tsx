@@ -135,7 +135,8 @@ export default function SettingsScreen() {
                 <View style={styles.credit}>
                   <ThemedText>{t('settings.photoCredits')}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {t('settings.cityPhoto', { city: city.name })}: {city.photo_credit}
+                    {t('settings.cityPhoto', { city: city.name })}:{' '}
+                    {city.photo_credit.replace(/^\s*foto:\s*/i, '')}
                   </ThemedText>
                 </View>
               </Row>
@@ -229,7 +230,7 @@ function Row({ children, first = false, href, onPress, accessibilityRole, select
   return (
     <Pressable
       accessibilityRole={accessibilityRole}
-      accessibilityState={selected === undefined ? undefined : { selected }}
+      aria-checked={selected}
       disabled={!onPress && !accessibilityRole}
       onPress={onPress}
       style={({ pressed }) => [rowStyle, pressed && styles.pressed]}>
@@ -253,9 +254,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   sectionTitle: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    fontSize: 12,
+    fontSize: 14,
   },
   list: {
     borderWidth: 1,

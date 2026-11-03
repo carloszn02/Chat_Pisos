@@ -1,5 +1,6 @@
 import { Image, type ImageSource } from 'expo-image';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -32,8 +33,17 @@ export function CityBanner({ city, subtitle }: { city: City; subtitle: string })
           accessibilityIgnoresInvertColors
         />
       )}
-      {/* A soft shade so the white text stays readable on any photo. */}
-      <View style={[StyleSheet.absoluteFill, styles.shade]} />
+      {/* A dusk sky over the photo; darker at the bottom so the white text stays readable. */}
+      <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none" viewBox="0 0 100 100">
+        <Defs>
+          <LinearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#2E3A78" stopOpacity="0.62" />
+            <Stop offset="0.45" stopColor="#C98B3A" stopOpacity="0.22" />
+            <Stop offset="1" stopColor="#141628" stopOpacity="0.82" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100" height="100" fill="url(#dusk)" />
+      </Svg>
       <View style={styles.text}>
         <ThemedText style={styles.name}>{city.name}</ThemedText>
         <ThemedText type="small" style={styles.subtitle}>
@@ -50,13 +60,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     justifyContent: 'flex-end',
-    backgroundColor: '#4A3426',
+    backgroundColor: '#2E3A78',
   },
   bannerWide: {
     height: 210,
-  },
-  shade: {
-    backgroundColor: 'rgba(30, 20, 14, 0.38)',
   },
   text: {
     padding: Spacing.three,
