@@ -27,6 +27,17 @@ export const LISTING_LIFETIME_DAYS = 60;
 
 /** Photos are resized to this size on the phone before uploading. */
 const PHOTO_MAX_SIDE = 1600;
+/** A smaller copy saved next to each photo, for listing cards (about a quarter of the data). */
+const THUMB_MAX_SIDE = 800;
+const THUMB_SUFFIX = '-thumb';
+
+/**
+ * The small copy of a listing photo: "…/123-0.jpeg" → "…/123-0-thumb.jpeg". Photos uploaded
+ * before small copies existed don't have one; cards fall back to the full photo.
+ */
+export function listingThumbUrl(url: string): string {
+  return url.replace(/(\.[a-z]+)$/i, `${THUMB_SUFFIX}$1`);
+}
 
 export type ListingFilters = {
   cityId: string | null;
@@ -127,16 +138,29 @@ async function uploadPhoto(
   const image = await shrinkImage(asset, PHOTO_MAX_SIDE);
   const contentType = image.mimeType;
   const extension = contentType.split('/')[1] ?? 'jpg';
-  const path = `${userId}/${Date.now()}-${index}.${extension}`;
+  const name = `${userId}/${Date.now()}-${index}`;
+  const path = `${name}.${extension}`;
   const body = await readFileBytes(image.uri);
   const { error } = await supabase.storage.from(PHOTOS_BUCKET).upload(path, body, { contentType });
   if (error) throw error;
+  // The small copy for cards. If it fails, cards simply show the full photo.
+  try {
+    const thumb = await shrinkImage(asset, THUMB_MAX_SIDE);
+    const thumbBody = await readFileBytes(thumb.uri);
+    await supabase.storage
+      .from(PHOTOS_BUCKET)
+      .upload(`${name}${THUMB_SUFFIX}.${extension}`, thumbBody, { contentType });
+  } catch {
+    console.warn('Could not upload the small copy of a listing photo');
+  }
   return supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /** Removes listing photos from storage (used when editing, deleting or closing an account). */
 export async function deleteListingPhotos(urls: string[]): Promise<void> {
+  // Each photo's small copy goes too (removing one that doesn't exist is harmless).
   const paths = urls
+    .flatMap((url) => [url, listingThumbUrl(url)])
     .map((url) => {
       const index = url.indexOf(PUBLIC_PATH_MARKER);
       return index === -1 ? null : decodeURIComponent(url.slice(index + PUBLIC_PATH_MARKER.length));

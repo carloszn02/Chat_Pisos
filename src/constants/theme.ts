@@ -19,6 +19,8 @@ export const Colors = {
     border: '#E2DFEA',
     /** Outlined buttons: a little stronger than border. */
     borderStrong: '#CFCADB',
+    /** Outline of text boxes: strong enough to see where to type (3:1 on white and haze). */
+    inputBorder: '#8E89A2',
     /** Thin lines between rows in lists. */
     divider: '#ECEAF2',
     /** District tiles and other soft surfaces, with their text colour. */
@@ -39,6 +41,7 @@ export const Colors = {
     textSecondary: '#A7A2BC',
     border: '#2D3150',
     borderStrong: '#3D4268',
+    inputBorder: '#666B9A',
     divider: '#24284A',
     tile: '#262A48',
     onTile: '#C9CDF2',

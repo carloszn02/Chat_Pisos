@@ -403,8 +403,11 @@ export default function ConversationScreen() {
           styles.bubble,
           isMine
             ? [styles.myBubble, { backgroundColor: theme.primary }]
-            : [styles.theirBubble, { backgroundColor: theme.backgroundElement }],
-          highlightId === item.id && styles.highlight,
+            : [
+                styles.theirBubble,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ],
+          highlightId === item.id && { boxShadow: `0 0 0 3px ${theme.accent}` },
         ]}>
         {item.deleted_at ? (
           <ThemedText style={[styles.body, styles.deleted, { color: textColor }]}>
@@ -701,10 +704,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: Spacing.four,
   },
-  // The original message, for a moment after tapping its quote.
-  highlight: {
-    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
-  },
   headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -736,7 +735,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(120, 100, 85, 0.18)',
   },
   body: {
     fontSize: 15,

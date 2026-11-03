@@ -163,7 +163,7 @@ export default function SignInScreen() {
 
   const inputStyle = [
     styles.input,
-    { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
+    { borderColor: theme.inputBorder, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
   if (sentTo) {

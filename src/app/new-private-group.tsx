@@ -1,18 +1,10 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ConnectionPicker } from '@/components/connection-picker';
-import { ScreenScrollView } from '@/components/screen-scroll-view';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -49,75 +41,71 @@ export default function NewPrivateGroupScreen() {
   return (
     <ThemedView style={styles.screen}>
       <Stack.Screen options={{ title: t('privateGroups.newTitle') }} />
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenScrollView keyboardShouldPersistTaps="handled">
-          <View style={styles.content}>
-            <ThemedText themeColor="textSecondary" style={styles.intro}>
-              {t('privateGroups.newIntro', { max: PRIVATE_GROUP_MAX_PEOPLE })}
+      <FormScrollView bottomInset>
+        <View style={styles.content}>
+          <ThemedText themeColor="textSecondary" style={styles.intro}>
+            {t('privateGroups.newIntro', { max: PRIVATE_GROUP_MAX_PEOPLE })}
+          </ThemedText>
+
+          <View style={styles.field}>
+            <ThemedText type="smallBold">{t('privateGroups.nameLabel')}</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.inputBorder,
+                  backgroundColor: theme.backgroundElement,
+                  color: theme.text,
+                },
+              ]}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('privateGroups.namePlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              maxLength={50}
+              accessibilityLabel={t('privateGroups.nameLabel')}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText type="smallBold">
+              {t('privateGroups.peopleLabel', { count: invitees.length })}
             </ThemedText>
+            <ConnectionPicker
+              selected={invitees}
+              onChange={setInvitees}
+              maxSelected={PRIVATE_GROUP_MAX_PEOPLE - 1}
+            />
+          </View>
 
-            <View style={styles.field}>
-              <ThemedText type="smallBold">{t('privateGroups.nameLabel')}</ThemedText>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: theme.border,
-                    backgroundColor: theme.backgroundElement,
-                    color: theme.text,
-                  },
-                ]}
-                value={name}
-                onChangeText={setName}
-                placeholder={t('privateGroups.namePlaceholder')}
-                placeholderTextColor={theme.textSecondary}
-                maxLength={50}
-                accessibilityLabel={t('privateGroups.nameLabel')}
-              />
-            </View>
+          {error && (
+            <ThemedText
+              type="small"
+              style={{ color: theme.danger }}
+              accessibilityLiveRegion="polite">
+              {t(`privateGroups.errors.${error}`)}
+            </ThemedText>
+          )}
 
-            <View style={styles.field}>
-              <ThemedText type="smallBold">
-                {t('privateGroups.peopleLabel', { count: invitees.length })}
-              </ThemedText>
-              <ConnectionPicker
-                selected={invitees}
-                onChange={setInvitees}
-                maxSelected={PRIVATE_GROUP_MAX_PEOPLE - 1}
-              />
-            </View>
-
-            {error && (
-              <ThemedText
-                type="small"
-                style={{ color: theme.danger }}
-                accessibilityLiveRegion="polite">
-                {t(`privateGroups.errors.${error}`)}
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={create}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.primary },
+              (pressed || busy) && styles.pressed,
+            ]}>
+            {busy ? (
+              <ActivityIndicator color={theme.onPrimary} />
+            ) : (
+              <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                {t('privateGroups.create')}
               </ThemedText>
             )}
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy}
-              onPress={create}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: theme.primary },
-                (pressed || busy) && styles.pressed,
-              ]}>
-              {busy ? (
-                <ActivityIndicator color={theme.onPrimary} />
-              ) : (
-                <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                  {t('privateGroups.create')}
-                </ThemedText>
-              )}
-            </Pressable>
-          </View>
-        </ScreenScrollView>
-      </KeyboardAvoidingView>
+          </Pressable>
+        </View>
+      </FormScrollView>
     </ThemedView>
   );
 }

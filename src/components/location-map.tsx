@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Coordinates } from '@/lib/geocoding';
 import { buildMapHtml, parseMapMessage } from '@/lib/map';
@@ -23,9 +24,10 @@ export function LocationMap({
   onMove,
 }: LocationMapProps) {
   const theme = useTheme();
+  const dark = useColorScheme() === 'dark';
   const html = useMemo(
-    () => buildMapHtml({ center, exact, editable, color: theme.primary }),
-    [center, exact, editable, theme.primary]
+    () => buildMapHtml({ center, exact, editable, color: theme.primary, dark }),
+    [center, exact, editable, theme.primary, dark]
   );
 
   return (

@@ -59,7 +59,7 @@ export function MetroLinePicker({ value, onToggle, disabled }: MetroLinePickerPr
             aria-disabled={off}
             disabled={off}
             onPress={() => onToggle(line)}
-            hitSlop={4}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.option,
               { borderColor: selected ? theme.text : 'transparent' },

@@ -109,7 +109,7 @@ export default function ExploreGroupsScreen() {
           <View
             style={[
               styles.searchBox,
-              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              { borderColor: theme.inputBorder, backgroundColor: theme.backgroundElement },
             ]}>
             <Icon name="search" size={18} color={theme.textSecondary} />
             <TextInput

@@ -1,19 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { ChoiceChips } from '@/components/choice-chips';
-import { ScreenScrollView } from '@/components/screen-scroll-view';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -87,7 +79,7 @@ export default function ReportScreen() {
 
   const inputStyle = [
     styles.input,
-    { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
+    { borderColor: theme.inputBorder, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
   return (
@@ -101,134 +93,130 @@ export default function ReportScreen() {
               : t('report.titleUser'),
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.screen}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenScrollView keyboardShouldPersistTaps="handled">
-          <View style={styles.content}>
-            {sent ? (
-              <>
-                <ThemedText type="subtitle" style={styles.title}>
-                  {t('report.thanksTitle')}
+      <FormScrollView bottomInset>
+        <View style={styles.content}>
+          {sent ? (
+            <>
+              <ThemedText type="subtitle" style={styles.title}>
+                {t('report.thanksTitle')}
+              </ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.bodyText}>
+                {t('report.thanksBody')}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={close}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                  {t('report.done')}
                 </ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.bodyText}>
-                  {t('report.thanksBody')}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={close}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    { backgroundColor: theme.primary },
-                    pressed && styles.pressed,
-                  ]}>
-                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                    {t('report.done')}
-                  </ThemedText>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <ThemedText themeColor="textSecondary" style={styles.bodyText}>
-                  {t('report.intro', { name })}
-                </ThemedText>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <ThemedText themeColor="textSecondary" style={styles.bodyText}>
+                {t('report.intro', { name })}
+              </ThemedText>
 
-                {params.snapshot ? (
+              {params.snapshot ? (
+                <View
+                  style={[
+                    styles.quote,
+                    { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                  ]}>
+                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={4}>
+                    “{params.snapshot}”
+                  </ThemedText>
+                </View>
+              ) : null}
+
+              <ChoiceChips
+                label={t('report.reasonLabel')}
+                options={REPORT_REASONS}
+                getLabel={(r) => t(`report.reasons.${r}`)}
+                value={reason}
+                onChange={setReason}
+              />
+
+              <View style={styles.field}>
+                <ThemedText type="smallBold">
+                  {t('report.detailsLabel')}{' '}
+                  <ThemedText type="small" themeColor="textSecondary">
+                    · {t('profileSetup.optional')}
+                  </ThemedText>
+                </ThemedText>
+                <TextInput
+                  style={[inputStyle, styles.textArea]}
+                  value={details}
+                  onChangeText={setDetails}
+                  placeholder={t('report.detailsPlaceholder')}
+                  placeholderTextColor={theme.textSecondary}
+                  multiline
+                  maxLength={1000}
+                  textAlignVertical="top"
+                  accessibilityLabel={t('report.detailsLabel')}
+                />
+              </View>
+
+              {!blockedIds.has(params.userId) && (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  aria-checked={alsoBlock}
+                  onPress={() => setAlsoBlock(!alsoBlock)}
+                  style={styles.checkboxRow}>
                   <View
                     style={[
-                      styles.quote,
-                      { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+                      styles.checkbox,
+                      { borderColor: alsoBlock ? theme.primary : theme.border },
+                      alsoBlock && { backgroundColor: theme.primary },
                     ]}>
-                    <ThemedText type="small" themeColor="textSecondary" numberOfLines={4}>
-                      “{params.snapshot}”
+                    {alsoBlock && (
+                      <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
+                    )}
+                  </View>
+                  <View style={styles.checkboxText}>
+                    <ThemedText style={styles.bold}>{t('report.alsoBlock', { name })}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {t('report.alsoBlockHint')}
                     </ThemedText>
                   </View>
-                ) : null}
-
-                <ChoiceChips
-                  label={t('report.reasonLabel')}
-                  options={REPORT_REASONS}
-                  getLabel={(r) => t(`report.reasons.${r}`)}
-                  value={reason}
-                  onChange={setReason}
-                />
-
-                <View style={styles.field}>
-                  <ThemedText type="smallBold">
-                    {t('report.detailsLabel')}{' '}
-                    <ThemedText type="small" themeColor="textSecondary">
-                      · {t('profileSetup.optional')}
-                    </ThemedText>
-                  </ThemedText>
-                  <TextInput
-                    style={[inputStyle, styles.textArea]}
-                    value={details}
-                    onChangeText={setDetails}
-                    placeholder={t('report.detailsPlaceholder')}
-                    placeholderTextColor={theme.textSecondary}
-                    multiline
-                    maxLength={1000}
-                    textAlignVertical="top"
-                    accessibilityLabel={t('report.detailsLabel')}
-                  />
-                </View>
-
-                {!blockedIds.has(params.userId) && (
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    aria-checked={alsoBlock}
-                    onPress={() => setAlsoBlock(!alsoBlock)}
-                    style={styles.checkboxRow}>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        { borderColor: alsoBlock ? theme.primary : theme.border },
-                        alsoBlock && { backgroundColor: theme.primary },
-                      ]}>
-                      {alsoBlock && (
-                        <Icon name="check" size={16} color={theme.onPrimary} strokeWidth={3} />
-                      )}
-                    </View>
-                    <View style={styles.checkboxText}>
-                      <ThemedText style={styles.bold}>{t('report.alsoBlock', { name })}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {t('report.alsoBlockHint')}
-                      </ThemedText>
-                    </View>
-                  </Pressable>
-                )}
-
-                {error && (
-                  <ThemedText
-                    type="small"
-                    style={{ color: theme.danger }}
-                    accessibilityLiveRegion="polite">
-                    {t(`report.errors.${error}`)}
-                  </ThemedText>
-                )}
-
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy}
-                  onPress={send}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    { backgroundColor: theme.danger },
-                    (pressed || busy) && styles.pressed,
-                  ]}>
-                  {busy ? (
-                    <ActivityIndicator color={theme.onPrimary} />
-                  ) : (
-                    <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
-                      {t('report.submit')}
-                    </ThemedText>
-                  )}
                 </Pressable>
-              </>
-            )}
-          </View>
-        </ScreenScrollView>
-      </KeyboardAvoidingView>
+              )}
+
+              {error && (
+                <ThemedText
+                  type="small"
+                  style={{ color: theme.danger }}
+                  accessibilityLiveRegion="polite">
+                  {t(`report.errors.${error}`)}
+                </ThemedText>
+              )}
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={send}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.danger },
+                  (pressed || busy) && styles.pressed,
+                ]}>
+                {busy ? (
+                  <ActivityIndicator color={theme.onPrimary} />
+                ) : (
+                  <ThemedText style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                    {t('report.submit')}
+                  </ThemedText>
+                )}
+              </Pressable>
+            </>
+          )}
+        </View>
+      </FormScrollView>
     </ThemedView>
   );
 }

@@ -312,7 +312,7 @@ export function ListingDetailsFields({
 
   const inputStyle = [
     styles.input,
-    { borderColor: theme.border, backgroundColor: theme.background, color: theme.text },
+    { borderColor: theme.inputBorder, backgroundColor: theme.background, color: theme.text },
   ];
 
   function textField(

@@ -1,10 +1,10 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
-import { ScreenScrollView } from '@/components/screen-scroll-view';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -72,20 +72,16 @@ export default function EditListingScreen() {
           <ThemedText themeColor="textSecondary">{t('listings.notFound')}</ThemedText>
         </View>
       ) : (
-        <KeyboardAvoidingView
-          style={styles.screen}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScreenScrollView keyboardShouldPersistTaps="handled">
-            <View style={styles.content}>
-              <ListingForm
-                initial={listing}
-                initialContact={contact}
-                submitLabel={t('editProfile.save')}
-                onSubmit={save}
-              />
-            </View>
-          </ScreenScrollView>
-        </KeyboardAvoidingView>
+        <FormScrollView bottomInset>
+          <View style={styles.content}>
+            <ListingForm
+              initial={listing}
+              initialContact={contact}
+              submitLabel={t('editProfile.save')}
+              onSubmit={save}
+            />
+          </View>
+        </FormScrollView>
       )}
     </ThemedView>
   );

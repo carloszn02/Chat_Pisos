@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import type { LocationMapProps } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { mapConfig } from '@/lib/map';
 import { loadMapLibre, type MapLibreMap } from '@/lib/maplibre-web';
@@ -30,6 +31,7 @@ export function LocationMap({
 
   const { latitude, longitude } = center;
   const color = theme.primary;
+  const dark = useColorScheme() === 'dark';
 
   useEffect(() => {
     let map: MapLibreMap | null = null;
@@ -38,7 +40,7 @@ export function LocationMap({
     loadMapLibre()
       .then((maplibregl) => {
         if (cancelled || !containerRef.current) return;
-        const config = mapConfig({ center: { latitude, longitude }, exact, editable, color });
+        const config = mapConfig({ center: { latitude, longitude }, exact, editable, color, dark });
         const send = (lat: number, lng: number) =>
           onMoveRef.current?.({ latitude: lat, longitude: lng });
 
@@ -97,7 +99,7 @@ export function LocationMap({
       cancelled = true;
       map?.remove();
     };
-  }, [latitude, longitude, exact, editable, color]);
+  }, [latitude, longitude, exact, editable, color, dark]);
 
   return (
     <View

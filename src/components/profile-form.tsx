@@ -198,7 +198,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, onStepChange }: Pr
 
   const inputStyle = [
     styles.input,
-    { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
+    { borderColor: theme.inputBorder, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
   /** Only some questions have an explanation under them. */

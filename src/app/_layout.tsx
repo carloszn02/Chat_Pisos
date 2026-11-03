@@ -5,6 +5,7 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { IconButton } from '@/components/button';
 import { ConnectionError } from '@/components/connection-error';
@@ -55,26 +56,28 @@ export default function RootLayout() {
   return (
     <>
       <PageTitle />
-      <AppearanceProvider>
-        <ThemedNavigation>
-          <SessionProvider>
-            <ProfileProvider>
-              <BlocksProvider>
-                <PlacesProvider>
-                  <MutesProvider>
-                    <SavedProvider>
-                      <InboxProvider>
-                        <SplashScreenController />
-                        <RootNavigator />
-                      </InboxProvider>
-                    </SavedProvider>
-                  </MutesProvider>
-                </PlacesProvider>
-              </BlocksProvider>
-            </ProfileProvider>
-          </SessionProvider>
-        </ThemedNavigation>
-      </AppearanceProvider>
+      <KeyboardProvider>
+        <AppearanceProvider>
+          <ThemedNavigation>
+            <SessionProvider>
+              <ProfileProvider>
+                <BlocksProvider>
+                  <PlacesProvider>
+                    <MutesProvider>
+                      <SavedProvider>
+                        <InboxProvider>
+                          <SplashScreenController />
+                          <RootNavigator />
+                        </InboxProvider>
+                      </SavedProvider>
+                    </MutesProvider>
+                  </PlacesProvider>
+                </BlocksProvider>
+              </ProfileProvider>
+            </SessionProvider>
+          </ThemedNavigation>
+        </AppearanceProvider>
+      </KeyboardProvider>
     </>
   );
 }

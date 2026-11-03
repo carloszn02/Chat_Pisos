@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type ImageStyle } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { MetroBadge } from '@/components/metro-badge';
@@ -14,8 +15,22 @@ import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate, formatPrice } from '@/lib/format';
+import { listingThumbUrl } from '@/lib/listings';
 import type { PublicProfile } from '@/types/chat';
 import { LISTING_TYPE_COLORS, type Listing, type ListingType } from '@/types/listing';
+
+/** A listing's photo in a card: the small copy, or the full photo for older listings. */
+function ListingPhoto({ url, style }: { url: string; style: ImageStyle }) {
+  const [useFull, setUseFull] = useState(false);
+  return (
+    <Image
+      source={{ uri: useFull ? url : listingThumbUrl(url) }}
+      style={style}
+      contentFit="cover"
+      onError={() => setUseFull(true)}
+    />
+  );
+}
 
 /** The small colored label: "Offering room", "Looking for room" or "Whole flat". */
 export function ListingTypeTag({
@@ -153,7 +168,7 @@ export function ListingCard({ listing, owner, compact = false }: ListingCardProp
         ]}>
         {photo && (
           <View>
-            <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+            <ListingPhoto url={photo} style={styles.photo} />
             <View style={styles.tagOnPhoto}>
               <ListingTypeTag type={listing.type} onPhoto />
             </View>
@@ -330,7 +345,7 @@ export function ListingMiniCard({ listing, onClose }: { listing: Listing; onClos
         onPress={() => router.push({ pathname: '/listing/[id]', params: { id: listing.id } })}
         style={[miniStyles.link]}>
         {photo ? (
-          <Image source={{ uri: photo }} style={miniStyles.photo} contentFit="cover" />
+          <ListingPhoto url={photo} style={miniStyles.photo} />
         ) : (
           <View
             style={[

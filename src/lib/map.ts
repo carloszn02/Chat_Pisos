@@ -19,8 +19,10 @@ export const MAPLIBRE_CSS = {
   integrity: 'sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK',
 };
 
-/** A light, minimal map style that suits the app's cream palette. */
-export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+/** OpenFreeMap's minimal styles: light, or dark to match the app's dark mode. */
+export function mapStyleUrl(dark: boolean): string {
+  return `https://tiles.openfreemap.org/styles/${dark ? 'dark' : 'positron'}`;
+}
 
 /** Radius of the shaded circle shown for approximate locations. */
 export const APPROXIMATE_RADIUS_M = 300;
@@ -31,6 +33,7 @@ export type MapOptions = {
   exact: boolean;
   editable: boolean;
   color: string;
+  dark: boolean;
 };
 
 export type MapMessage = { type: 'move'; latitude: number; longitude: number };
@@ -53,14 +56,14 @@ export function circlePolygon({ latitude, longitude }: Coordinates, radiusMeters
 }
 
 /** The settings the map code needs, in one plain object (shared by web and phones). */
-export function mapConfig({ center, exact, editable, color }: MapOptions) {
+export function mapConfig({ center, exact, editable, color, dark }: MapOptions) {
   return {
     lat: center.latitude,
     lng: center.longitude,
     showPin: exact || editable,
     editable,
     color,
-    style: MAP_STYLE_URL,
+    style: mapStyleUrl(dark),
     circle: circlePolygon(center, APPROXIMATE_RADIUS_M),
   };
 }
@@ -196,8 +199,8 @@ export function listingPinCss(color: string): string {
  * then calls window.setPins(pins, fit) and window.setSelected(id) as things change, and
  * the page sends back 'ready', 'select' and 'moved' (only when the person moved the map).
  */
-export function buildListingsMapHtml(color: string): string {
-  const config = JSON.stringify({ color, style: MAP_STYLE_URL, center: DEFAULT_MAP_CENTER });
+export function buildListingsMapHtml(color: string, dark: boolean): string {
+  const config = JSON.stringify({ color, style: mapStyleUrl(dark), center: DEFAULT_MAP_CENTER });
   return `<!doctype html>
 <html>
 <head>

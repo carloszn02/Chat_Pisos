@@ -1,16 +1,10 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  type ScrollViewInstance,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FormScrollView } from '@/components/form-scroll-view';
 import { ProfileForm } from '@/components/profile-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -27,7 +21,7 @@ export default function CreateProfileScreen() {
   const theme = useTheme();
   const { session } = useSession();
   const { refresh } = useProfile();
-  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 
   async function save(values: ProfileFormValues) {
     if (!session) return 'generic' as const;
@@ -40,33 +34,29 @@ export default function CreateProfileScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen}>
-        <KeyboardAvoidingView
-          style={styles.screen}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled">
-            <View style={styles.content}>
-              <ProfileForm
-                submitLabel={t('profileSetup.submit')}
-                onSubmit={save}
-                onStepChange={() => scrollRef.current?.scrollTo({ y: 0, animated: false })}
-              />
+        <FormScrollView ref={scrollRef}>
+          <View style={styles.content}>
+            <ProfileForm
+              submitLabel={t('profileSetup.submit')}
+              onSubmit={save}
+              onStepChange={() => scrollRef.current?.scrollTo({ y: 0, animated: false })}
+            />
 
-              <View style={styles.signOutRow}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('profileSetup.wrongAccount')}
+            <View style={styles.signOutRow}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('profileSetup.wrongAccount')}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => supabase.auth.signOut()}
+                hitSlop={12}>
+                <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                  {t('profileSetup.signOut')}
                 </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => supabase.auth.signOut()}
-                  hitSlop={12}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    {t('profileSetup.signOut')}
-                  </ThemedText>
-                </Pressable>
-              </View>
+              </Pressable>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </View>
+        </FormScrollView>
       </SafeAreaView>
     </ThemedView>
   );

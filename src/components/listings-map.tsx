@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   buildListingsMapHtml,
@@ -34,7 +35,8 @@ export function ListingsMap({
   const webViewRef = useRef<WebView<object>>(null);
   const [ready, setReady] = useState(false);
   // The page is made once; pins and the selection are sent to it afterwards.
-  const html = useMemo(() => buildListingsMapHtml(theme.primary), [theme.primary]);
+  const dark = useColorScheme() === 'dark';
+  const html = useMemo(() => buildListingsMapHtml(theme.primary, dark), [theme.primary, dark]);
 
   useEffect(() => {
     if (!ready) return;

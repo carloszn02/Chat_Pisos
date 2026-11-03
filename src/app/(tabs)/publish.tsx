@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FormScrollView } from '@/components/form-scroll-view';
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -43,25 +44,21 @@ export default function PublishScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container} edges={TabScreenEdges}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <View style={styles.content}>
-              <View style={styles.header}>
-                <ThemedText type="subtitle">{t('publish.title')}</ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.intro}>
-                  {t('publish.intro')}
-                </ThemedText>
-              </View>
-              <ListingForm
-                key={formKey}
-                submitLabel={t('listings.form.publish')}
-                onSubmit={publish}
-              />
+        <FormScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <ThemedText type="subtitle">{t('publish.title')}</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.intro}>
+                {t('publish.intro')}
+              </ThemedText>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            <ListingForm
+              key={formKey}
+              submitLabel={t('listings.form.publish')}
+              onSubmit={publish}
+            />
+          </View>
+        </FormScrollView>
       </SafeAreaView>
     </ThemedView>
   );

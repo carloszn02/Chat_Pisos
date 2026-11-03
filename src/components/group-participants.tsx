@@ -19,6 +19,8 @@ import type { PublicProfile } from '@/types/chat';
 
 /** How many people show before "See all". */
 const FIRST_SHOWN = 10;
+// "See more" adds this many at a time, so a group of 300 never builds 300 rows at once.
+const MORE_STEP = 30;
 
 /**
  * The people in a district group who chose to appear, and (for members) the switch to
@@ -39,7 +41,7 @@ export function GroupParticipants({
   const theme = useTheme();
   const [participants, setParticipants] = useState<GroupParticipant[] | null>(null);
   const [people, setPeople] = useState<Map<string, PublicProfile>>(new Map());
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(FIRST_SHOWN);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -91,7 +93,8 @@ export function GroupParticipants({
   }
 
   const list = participants ?? [];
-  const shown = showAll ? list : list.slice(0, FIRST_SHOWN);
+  const shown = list.slice(0, visibleCount);
+  const remaining = list.length - shown.length;
 
   return (
     <View style={styles.section}>
@@ -177,14 +180,14 @@ export function GroupParticipants({
         </View>
       )}
 
-      {!showAll && list.length > FIRST_SHOWN && (
+      {remaining > 0 && (
         <Pressable
           accessibilityRole="button"
-          onPress={() => setShowAll(true)}
+          onPress={() => setVisibleCount((count) => count + MORE_STEP)}
           hitSlop={8}
           style={styles.link}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>
-            {t('participants.seeAll', { count: list.length })}
+            {t('participants.seeMore', { count: remaining })}
           </ThemedText>
         </Pressable>
       )}

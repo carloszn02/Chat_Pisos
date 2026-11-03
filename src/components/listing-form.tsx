@@ -278,7 +278,7 @@ export function ListingForm({ initial, initialContact, submitLabel, onSubmit }: 
 
   const inputStyle = [
     styles.input,
-    { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
+    { borderColor: theme.inputBorder, backgroundColor: theme.backgroundElement, color: theme.text },
   ];
 
   function numberField(

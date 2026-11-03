@@ -6,6 +6,7 @@ import {
   Modal,
   Pressable,
   RefreshControl,
+  FlatList,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -493,32 +494,41 @@ export default function ListingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={TabScreenEdges}>
-        <ScrollView
+        {/* Only the cards near the screen are built, so long lists (up to 200 in a map area)
+            scroll smoothly on any phone. */}
+        <FlatList
+          data={listings ? shown : []}
+          keyExtractor={(listing) => listing.id}
+          extraData={owners}
+          renderItem={({ item }) => (
+            <View style={styles.cell}>
+              <ListingCard listing={item} owner={owners.get(item.user_id)} />
+            </View>
+          )}
+          ItemSeparatorComponent={ListGap}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.primary} />
-          }>
-          <View style={styles.content}>
-            {filtersBlock}
+          }
+          ListHeaderComponent={
+            <View style={[styles.content, styles.listHeader]}>
+              {filtersBlock}
 
-            {!listings && !loadError && <ListingCardsSkeleton />}
+              {!listings && !loadError && <ListingCardsSkeleton />}
 
-            {listings && shown.length === 0 && (
-              <ThemedText themeColor="textSecondary" style={styles.empty}>
-                {savedOnly
-                  ? t('listings.savedEmpty')
-                  : areaBounds
-                    ? t('listings.noneInArea')
-                    : t('listings.empty')}
-              </ThemedText>
-            )}
-
-            {shown.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} owner={owners.get(listing.user_id)} />
-            ))}
-          </View>
-        </ScrollView>
+              {listings && shown.length === 0 && (
+                <ThemedText themeColor="textSecondary" style={styles.empty}>
+                  {savedOnly
+                    ? t('listings.savedEmpty')
+                    : areaBounds
+                      ? t('listings.noneInArea')
+                      : t('listings.empty')}
+                </ThemedText>
+              )}
+            </View>
+          }
+        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -595,7 +605,7 @@ function FiltersPanel({
             style={[
               styles.priceInput,
               {
-                borderColor: theme.border,
+                borderColor: theme.inputBorder,
                 backgroundColor: theme.backgroundElement,
                 color: theme.text,
               },
@@ -628,7 +638,23 @@ function FiltersPanel({
   );
 }
 
+function ListGap() {
+  return <View style={styles.gap} />;
+}
+
 const styles = StyleSheet.create({
+  cell: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+  },
+  gap: {
+    height: Spacing.three,
+  },
+  listHeader: {
+    paddingBottom: Spacing.three,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.35)',

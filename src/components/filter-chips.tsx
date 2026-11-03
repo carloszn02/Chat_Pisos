@@ -28,6 +28,8 @@ function ChipView({ chip }: { chip: Chip }) {
       accessibilityRole="button"
       aria-pressed={chip.selected}
       onPress={chip.onPress}
+      // 36 tall plus this: a 48-point tap area, as Android and iPhone recommend.
+      hitSlop={{ top: 6, bottom: 6 }}
       style={({ pressed }) => [
         styles.chip,
         {
@@ -80,7 +82,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   chip: {
-    height: 36,
+    // Grows with large text sizes instead of cutting the label.
+    minHeight: 36,
+    paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,

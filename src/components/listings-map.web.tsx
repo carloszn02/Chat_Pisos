@@ -5,8 +5,9 @@ import { StyleSheet, View } from 'react-native';
 import type { ListingsMapProps } from '@/components/listings-map';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
-import { DEFAULT_MAP_CENTER, listingPinCss, MAP_STYLE_URL } from '@/lib/map';
+import { DEFAULT_MAP_CENTER, listingPinCss, mapStyleUrl } from '@/lib/map';
 import { loadMapLibre, type MapLibreMap, type MapLibreMarker } from '@/lib/maplibre-web';
 
 const STYLE_ID = 'listing-pin-style';
@@ -23,6 +24,7 @@ export function ListingsMap({
   const { t } = useTranslation();
   const theme = useTheme();
   const color = theme.primary;
+  const dark = useColorScheme() === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [failed, setFailed] = useState(false);
@@ -54,7 +56,7 @@ export function ListingsMap({
         if (cancelled || !containerRef.current) return;
         const map = new maplibregl.Map({
           container: containerRef.current,
-          style: MAP_STYLE_URL,
+          style: mapStyleUrl(dark),
           center: [DEFAULT_MAP_CENTER.longitude, DEFAULT_MAP_CENTER.latitude],
           zoom: 11.5,
           attributionControl: { compact: true },
@@ -89,7 +91,7 @@ export function ListingsMap({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [color]);
+  }, [color, dark]);
 
   // The pins: redrawn when the listings change (e.g. after changing a filter).
   useEffect(() => {

@@ -552,7 +552,7 @@ export default function PrivateGroupScreen() {
             styles.bubble,
             styles.myBubble,
             { backgroundColor: theme.primary },
-            highlightId === item.id && styles.highlight,
+            highlightId === item.id && { boxShadow: `0 0 0 3px ${theme.accent}` },
           ]}>
           {body(theme.onPrimary)}
           <ThemedText style={[styles.time, { color: theme.onPrimary, opacity: 0.75 }]}>
@@ -593,8 +593,8 @@ export default function PrivateGroupScreen() {
           style={[
             styles.bubble,
             styles.theirBubble,
-            { backgroundColor: theme.backgroundElement },
-            highlightId === item.id && styles.highlight,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            highlightId === item.id && { boxShadow: `0 0 0 3px ${theme.accent}` },
           ]}>
           {!continuesPrevious && (
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
@@ -804,10 +804,6 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
-  // The original message, for a moment after tapping its quote.
-  highlight: {
-    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
-  },
   headerButton: {
     paddingHorizontal: Spacing.two,
   },
@@ -889,7 +885,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(120, 100, 85, 0.18)',
   },
   body: {
     fontSize: 15,

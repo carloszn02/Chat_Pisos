@@ -407,7 +407,7 @@ export default function GroupChatScreen() {
           onPress={() => jumpTo(item.reply_to_id ?? '')}
         />
       ) : null;
-    const highlighted = highlightId === item.id && styles.highlight;
+    const highlighted = highlightId === item.id && { boxShadow: `0 0 0 3px ${theme.accent}` };
     const photoUrl = item.image_path ? photoUrls.get(item.image_path) : undefined;
     const photoView =
       !item.deleted_at && item.image_path ? (
@@ -480,7 +480,7 @@ export default function GroupChatScreen() {
           style={[
             styles.bubble,
             styles.theirBubble,
-            { backgroundColor: theme.backgroundElement },
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
             highlighted,
           ]}>
           {!continuesPrevious && (
@@ -815,10 +815,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: 6,
   },
-  // The original message, for a moment after tapping its quote.
-  highlight: {
-    boxShadow: '0 0 0 3px rgba(142, 106, 82, 0.45)',
-  },
   tabs: {
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.one,
@@ -852,7 +848,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(120, 100, 85, 0.18)',
   },
   body: {
     fontSize: 15,
