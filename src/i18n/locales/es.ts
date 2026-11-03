@@ -293,6 +293,37 @@ const es = {
     body: 'Compártelo con amigos o en tus grupos para que lo vea más gente.',
     share: 'Compartir anuncio',
   },
+  listingChats: {
+    send: 'Enviar a un chat',
+    sendIntro: 'Elige dónde enviarlo. Aparecerá como tarjeta, con el precio y la zona.',
+    privateGroups: 'Grupos privados',
+    conversations: 'Chats privados',
+    districtGroups: 'Grupos de barrio',
+    noChats:
+      'Aún no tienes chats. Únete a un grupo de barrio o escribe a alguien para poder enviarle anuncios.',
+    sendError: 'No se pudo enviar. Inténtalo de nuevo.',
+    ask: 'Preguntar con mis compañeros',
+    askTitle: 'Preguntar con tus compañeros',
+    askIntro:
+      'Crea un grupo sobre este anuncio con las personas con las que buscas piso. {{name}} recibirá una invitación y podrá aceptarla o no.',
+    askPeopleLabel: 'Tus compañeros ({{count}} elegidos)',
+    askNoPeople:
+      'Aquí aparecen las personas con las que hablas o con las que estás en un grupo privado. También puedes crear el grupo solo con {{name}}.',
+    askCreate: 'Crear grupo e invitar a {{name}}',
+    errors: {
+      listingUnavailable: 'Este anuncio ya no está disponible.',
+      publisherDeclined: '{{name}} ya rechazó una invitación tuya sobre este anuncio.',
+      notConnected:
+        'Solo puedes añadir a personas con las que hablas o con las que estás en un grupo.',
+      groupFull: 'Puedes añadir hasta {{max}} compañeros.',
+      rateLimit: 'Has creado muchos grupos en poco tiempo. Espera un poco y vuelve a intentarlo.',
+      generic: 'No se pudo crear el grupo. Inténtalo de nuevo.',
+    },
+    invitePublisher:
+      '{{name}} quiere hablar contigo sobre tu anuncio, junto a sus compañeros de piso.',
+    inviteFlatmate: '{{name}} te ha invitado a un grupo para preguntar por este anuncio.',
+    listingGone: 'Este anuncio ya no está publicado.',
+  },
   meta: {
     title: 'Chat Pisos: habitaciones y compañeros de piso en Madrid',
   },

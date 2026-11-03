@@ -86,7 +86,7 @@ export async function markPrivateGroupRead(groupId: string): Promise<void> {
 export async function fetchPrivateGroup(groupId: string): Promise<PrivateGroup | null> {
   const { data, error } = await supabase
     .from('private_groups')
-    .select('id, name, created_by, invite_link_enabled, photo_url')
+    .select('id, name, created_by, invite_link_enabled, photo_url, listing_id')
     .eq('id', groupId)
     .maybeSingle();
   if (error) throw error;

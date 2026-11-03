@@ -474,6 +474,16 @@ export default function ListingDetailScreen() {
                   {t('listings.edit')}
                 </ThemedText>
               </PressableLink>
+              {listing.status === 'active' && (
+                <Button
+                  label={t('listingChats.send')}
+                  variant="secondary"
+                  icon="message"
+                  onPress={() =>
+                    router.push({ pathname: '/share-listing/[id]', params: { id: listing.id } })
+                  }
+                />
+              )}
               <View style={styles.row}>
                 <Pressable
                   accessibilityRole="button"
@@ -522,6 +532,26 @@ export default function ListingDetailScreen() {
                   </ThemedText>
                 )}
               </Pressable>
+              {listing.status === 'active' && (
+                <>
+                  <Button
+                    label={t('listingChats.ask')}
+                    variant="secondary"
+                    icon="users"
+                    onPress={() =>
+                      router.push({ pathname: '/ask-listing/[id]', params: { id: listing.id } })
+                    }
+                  />
+                  <Button
+                    label={t('listingChats.send')}
+                    variant="text"
+                    icon="message"
+                    onPress={() =>
+                      router.push({ pathname: '/share-listing/[id]', params: { id: listing.id } })
+                    }
+                  />
+                </>
+              )}
               <Pressable
                 accessibilityRole="button"
                 onPress={report}

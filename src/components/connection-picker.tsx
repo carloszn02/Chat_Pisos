@@ -20,7 +20,16 @@ type ConnectionPickerProps = {
   excludeIds?: string[];
   /** How many more people can be picked. */
   maxSelected: number;
+  /** Who to list; by default the people you have an accepted private chat with. */
+  loadPeople?: () => Promise<PublicProfile[]>;
+  /** Shown when nobody can be picked. */
+  emptyText?: string;
 };
+
+async function loadConnections(): Promise<PublicProfile[]> {
+  const profiles = await fetchAuthors(await fetchConnections());
+  return [...profiles.values()];
+}
 
 /**
  * Pick people to invite to a group. Only people you have an accepted private
@@ -31,6 +40,8 @@ export function ConnectionPicker({
   onChange,
   excludeIds = [],
   maxSelected,
+  loadPeople = loadConnections,
+  emptyText,
 }: ConnectionPickerProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -42,9 +53,8 @@ export function ConnectionPicker({
     let cancelled = false;
     (async () => {
       try {
-        const ids = await fetchConnections();
-        const profiles = await fetchAuthors(ids);
-        if (!cancelled) setPeople([...profiles.values()]);
+        const found = await loadPeople();
+        if (!cancelled) setPeople(found);
       } catch {
         if (!cancelled) setLoadError(true);
       }
@@ -52,7 +62,7 @@ export function ConnectionPicker({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadPeople]);
 
   const available = (people ?? []).filter(
     (p) => !excludeIds.includes(p.id) && !blockedIds.has(p.id)
@@ -74,7 +84,7 @@ export function ConnectionPicker({
   if (available.length === 0) {
     return (
       <ThemedText themeColor="textSecondary" style={styles.empty}>
-        {t('privateGroups.noConnections')}
+        {emptyText ?? t('privateGroups.noConnections')}
       </ThemedText>
     );
   }

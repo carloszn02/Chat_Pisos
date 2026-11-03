@@ -294,6 +294,36 @@ const en: typeof es = {
     body: 'Share it with friends or in your groups so more people see it.',
     share: 'Share listing',
   },
+  listingChats: {
+    send: 'Send to a chat',
+    sendIntro: 'Choose where to send it. It shows as a card, with the price and the area.',
+    privateGroups: 'Private groups',
+    conversations: 'Private chats',
+    districtGroups: 'Neighbourhood groups',
+    noChats:
+      "You don't have any chats yet. Join a neighbourhood group or message someone to send them listings.",
+    sendError: "Couldn't send it. Please try again.",
+    ask: 'Ask with my flatmates',
+    askTitle: 'Ask with your flatmates',
+    askIntro:
+      "Create a group about this listing with the people you're flat-hunting with. {{name}} gets an invitation and can accept it or not.",
+    askPeopleLabel: 'Your flatmates ({{count}} chosen)',
+    askNoPeople:
+      'People you talk to or share a private group with show up here. You can also create the group with just {{name}}.',
+    askCreate: 'Create group and invite {{name}}',
+    errors: {
+      listingUnavailable: 'This listing is no longer available.',
+      publisherDeclined: '{{name}} already declined an invitation from you about this listing.',
+      notConnected: 'You can only add people you talk to or share a group with.',
+      groupFull: 'You can add up to {{max}} flatmates.',
+      rateLimit: "You've created many groups in a short time. Wait a bit and try again.",
+      generic: "Couldn't create the group. Please try again.",
+    },
+    invitePublisher:
+      '{{name}} wants to talk to you about your listing, together with their flatmates.',
+    inviteFlatmate: '{{name}} invited you to a group to ask about this listing.',
+    listingGone: 'This listing is no longer published.',
+  },
   meta: {
     title: 'Chat Pisos: rooms and flatmates in Madrid',
   },

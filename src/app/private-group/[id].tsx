@@ -17,6 +17,8 @@ import { ChatPhoto, PhotoViewer } from '@/components/chat-photo';
 import { MuteSheet, useMuteLabel } from '@/components/mute-sheet';
 import { Icon } from '@/components/icon';
 import { KeyboardSpacer } from '@/components/keyboard-spacer';
+import { ListingCard } from '@/components/listing-card';
+import { PressableLink } from '@/components/pressable-link';
 import { QuotedMessage, quoteText, useQuotedMessages } from '@/components/message-reply';
 import { PrivateGroupBadge } from '@/components/private-group-row';
 import { ThemedText } from '@/components/themed-text';
@@ -30,7 +32,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { deleteMyMessage, fetchAuthors, MESSAGES_PAGE_SIZE } from '@/lib/chat';
 import { deleteChatPhotos, pickChatPhoto, uploadChatPhoto } from '@/lib/chat-photos';
 import { isRateLimitError } from '@/lib/errors';
-import { formatMessageTime, isSameDay } from '@/lib/format';
+import { formatMessageTime, formatPrice, isSameDay } from '@/lib/format';
+import { fetchListingsByIds } from '@/lib/listings';
 import {
   fetchJoinRequests,
   fetchPrivateGroup,
@@ -53,6 +56,7 @@ import type {
   PrivateGroupMessage,
   PublicProfile,
 } from '@/types/chat';
+import type { Listing } from '@/types/listing';
 
 // Messages from the same person within this time are grouped (name and photo shown once).
 const GROUPING_WINDOW_MS = 5 * 60 * 1000;
@@ -83,6 +87,8 @@ export default function PrivateGroupScreen() {
   const [group, setGroup] = useState<PrivateGroup | null>(null);
   const [members, setMembers] = useState<PrivateGroupMember[]>([]);
   const [people, setPeople] = useState<Map<string, PublicProfile>>(new Map());
+  // Listings shared as cards, and the one the group is about (null: no longer published).
+  const [listings, setListings] = useState<Map<string, Listing | null>>(new Map());
   const [messages, setMessages] = useState<PrivateGroupMessage[]>([]); // newest first
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -126,6 +132,21 @@ export default function PrivateGroupScreen() {
     }
   }, []);
 
+  const addListings = useCallback(async (ids: (string | null | undefined)[]) => {
+    const wanted = [...new Set(ids.filter((listingId): listingId is string => !!listingId))];
+    if (wanted.length === 0) return;
+    try {
+      const found = await fetchListingsByIds(wanted);
+      setListings((current) => {
+        const next = new Map(current);
+        for (const listingId of wanted) next.set(listingId, found.get(listingId) ?? null);
+        return next;
+      });
+    } catch {
+      // Cards are a nice-to-have: the message text (the listing's title) still shows.
+    }
+  }, []);
+
   /** Group details and members; messages only once you're a member. */
   const loadGroup = useCallback(async () => {
     if (!id) return;
@@ -136,11 +157,12 @@ export default function PrivateGroupScreen() {
       fetchJoinRequests(id).catch(() => []),
     ]);
     setGroup(found);
+    if (found?.listing_id) addListings([found.listing_id]);
     setMembers(memberList);
     setPendingRequests(requests.length);
     addPeople(memberList.map((m) => m.user_id));
     return memberList;
-  }, [id, addPeople]);
+  }, [id, addPeople, addListings]);
 
   useEffect(() => {
     if (!id || !userId) return;
@@ -165,6 +187,7 @@ export default function PrivateGroupScreen() {
           setMessages((current) => mergeMessages(current, latest));
           setHasOlder(latest.length === MESSAGES_PAGE_SIZE);
           addPeople(latest.flatMap((m) => (m.subject_id ? [m.subject_id] : [])));
+          addListings(latest.map((m) => m.listing_id));
           markPrivateGroupRead(id);
         }
       } catch {
@@ -176,7 +199,7 @@ export default function PrivateGroupScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id, userId, loadGroup, addPeople]);
+  }, [id, userId, loadGroup, addPeople, addListings]);
 
   // Live updates: new or deleted messages, and people joining or leaving.
   useEffect(() => {
@@ -197,6 +220,7 @@ export default function PrivateGroupScreen() {
           // Someone changed the group photo: show the new one at the top.
           if (message.event === 'photo') loadGroup().catch(() => {});
           addPeople([message.sender_id, ...(message.subject_id ? [message.subject_id] : [])]);
+          addListings([message.listing_id]);
           markPrivateGroupRead(id);
         }
       )
@@ -236,7 +260,7 @@ export default function PrivateGroupScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, addPeople, loadGroup]);
+  }, [id, addPeople, addListings, loadGroup]);
 
   // Leaving the screen counts as having read everything so far.
   useEffect(() => {
@@ -254,6 +278,7 @@ export default function PrivateGroupScreen() {
       setMessages((current) => mergeMessages(current, older));
       setHasOlder(older.length === MESSAGES_PAGE_SIZE);
       addPeople(older.map((m) => m.sender_id));
+      addListings(older.map((m) => m.listing_id));
     } catch {
       // Scrolling up again will retry.
     } finally {
@@ -436,6 +461,12 @@ export default function PrivateGroupScreen() {
   // Invitation not yet answered: show who's inside and Accept / Decline.
   if (!isMember) {
     const inviter = people.get(me.invited_by ?? '');
+    const about = group.listing_id ? listings.get(group.listing_id) : undefined;
+    const inviteText = about
+      ? about.user_id === userId
+        ? t('listingChats.invitePublisher', { name: inviter?.first_name ?? '' })
+        : t('listingChats.inviteFlatmate', { name: inviter?.first_name ?? '' })
+      : t('privateGroups.inviteBody', { name: inviter?.first_name ?? '' });
     return (
       <ThemedView style={[styles.screen, styles.centered]}>
         {header}
@@ -443,8 +474,13 @@ export default function PrivateGroupScreen() {
           <ThemedText type="subtitle" style={styles.inviteTitle}>
             {group.name}
           </ThemedText>
+          {about && (
+            <View style={styles.inviteListing}>
+              <ListingCard listing={about} compact />
+            </View>
+          )}
           <ThemedText themeColor="textSecondary" style={styles.centerText}>
-            {t('privateGroups.inviteBody', { name: inviter?.first_name ?? '' })}
+            {inviteText}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
             {t('privateGroups.whoIsIn', { names: memberNames })}
@@ -514,6 +550,7 @@ export default function PrivateGroupScreen() {
     const isMine = item.sender_id === userId;
     const time = formatMessageTime(item.created_at, i18n.language);
     const photoUrl = item.image_path ? photoUrls.get(item.image_path) : undefined;
+    const sharedListing = item.listing_id ? listings.get(item.listing_id) : undefined;
     // The photo (if any) above the text; a photo alone has no text line.
     const body = (color: string) =>
       item.deleted_at ? (
@@ -542,7 +579,13 @@ export default function PrivateGroupScreen() {
               onPress={() => setViewerUrl(photoUrl ?? null)}
             />
           )}
-          {item.body ? <ThemedText style={[styles.body, { color }]}>{item.body}</ThemedText> : null}
+          {sharedListing ? (
+            <View style={styles.listingInBubble}>
+              <ListingCard listing={sharedListing} compact />
+            </View>
+          ) : item.body ? (
+            <ThemedText style={[styles.body, { color }]}>{item.body}</ThemedText>
+          ) : null}
         </>
       );
 
@@ -638,6 +681,10 @@ export default function PrivateGroupScreen() {
             </ThemedText>
             <Icon name="chevron-right" size={16} color={theme.textSecondary} />
           </Pressable>
+        )}
+
+        {group.listing_id && listings.has(group.listing_id) && (
+          <PinnedListing listing={listings.get(group.listing_id) ?? null} />
         )}
 
         {chatHint.visible && (
@@ -813,7 +860,63 @@ export default function PrivateGroupScreen() {
   );
 }
 
+/** The listing a group is about, at the top of the chat. Tapping it opens the listing. */
+function PinnedListing({ listing }: { listing: Listing | null }) {
+  const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const strip = [
+    styles.pinned,
+    { backgroundColor: theme.backgroundElement, borderBottomColor: theme.border },
+  ];
+  if (!listing) {
+    return (
+      <View style={strip}>
+        <Icon name="house" size={18} color={theme.textSecondary} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.pinnedText}>
+          {t('listingChats.listingGone')}
+        </ThemedText>
+      </View>
+    );
+  }
+  return (
+    <PressableLink
+      href={{ pathname: '/listing/[id]', params: { id: listing.id } }}
+      accessibilityRole="link"
+      style={strip}>
+      <Icon name="house" size={18} color={theme.primary} />
+      <View style={styles.pinnedText}>
+        <ThemedText type="smallBold" numberOfLines={1}>
+          {listing.title}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          {formatPrice(listing.price_eur, i18n.language)}
+        </ThemedText>
+      </View>
+      <Icon name="chevron-right" size={16} color={theme.textSecondary} />
+    </PressableLink>
+  );
+}
+
 const styles = StyleSheet.create({
+  listingInBubble: {
+    width: 260,
+    maxWidth: '100%',
+  },
+  inviteListing: {
+    width: '100%',
+  },
+  pinned: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+  },
+  pinnedText: {
+    flex: 1,
+    minWidth: 0,
+  },
   hintWrap: {
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.two,

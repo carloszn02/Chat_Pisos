@@ -122,6 +122,8 @@ export type PrivateGroup = {
   created_by: string;
   invite_link_enabled: boolean;
   photo_url: string | null;
+  /** Set for groups made to ask about a listing (shown pinned at the top). */
+  listing_id: string | null;
 };
 
 /** What someone sees when they open a private group's invite link. */

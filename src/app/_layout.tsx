@@ -169,6 +169,8 @@ function RootNavigator() {
         <Stack.Screen name="blocked-users" options={headerOptions} />
         <Stack.Screen name="settings" options={headerOptions} />
         <Stack.Screen name="listing/[id]" options={headerOptions} />
+        <Stack.Screen name="share-listing/[id]" options={headerOptions} />
+        <Stack.Screen name="ask-listing/[id]" options={headerOptions} />
         <Stack.Screen name="edit-listing/[id]" options={headerOptions} />
         <Stack.Screen name="delete-account" options={headerOptions} />
         <Stack.Screen name="suggest-area" options={headerOptions} />
