@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { AddressInput } from '@/components/address-input';
 import { DateInput } from '@/components/date-input';
 import { Icon } from '@/components/icon';
 import { AreaPicker } from '@/components/area-picker';
@@ -524,16 +525,18 @@ export function ListingForm({
                 </ThemedText>
               </ThemedText>
               <View style={styles.row}>
-                <TextInput
-                  style={[inputStyle, styles.flex]}
+                <AddressInput
                   value={addressText}
                   onChangeText={setAddressText}
-                  onSubmitEditing={findAddress}
+                  onPick={(suggestion) => {
+                    setAddressText(suggestion.label);
+                    setSearchMessage(null);
+                    placePin(suggestion.coordinates);
+                  }}
+                  onSubmit={findAddress}
+                  inputStyle={inputStyle}
                   placeholder={t('listings.form.addressPlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  returnKeyType="search"
-                  maxLength={200}
-                  accessibilityLabel={t('listings.form.location')}
+                  label={t('listings.form.location')}
                 />
                 <Pressable
                   accessibilityRole="button"
@@ -541,6 +544,8 @@ export function ListingForm({
                   onPress={findAddress}
                   style={({ pressed }) => [
                     styles.searchButton,
+                    // Level with the box, not stretched down to the suggestions.
+                    styles.alignTop,
                     { borderColor: theme.primary },
                     (pressed || searching) && styles.pressed,
                   ]}>
@@ -746,6 +751,9 @@ export function ListingForm({
 }
 
 const styles = StyleSheet.create({
+  alignTop: {
+    alignSelf: 'flex-start',
+  },
   form: {
     gap: Spacing.four,
   },

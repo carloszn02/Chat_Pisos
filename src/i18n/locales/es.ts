@@ -628,6 +628,7 @@ const es = {
       },
       location: 'Ubicación',
       addressPlaceholder: 'Ej.: Calle del Pez 12, Madrid',
+      addressSuggestionsHint: 'Al escribir aparecen direcciones sugeridas',
       searchAddress: 'Buscar',
       searchNotFound:
         'No hemos encontrado esa dirección en Madrid. Prueba a escribirla de otra forma o coloca el punto a mano.',

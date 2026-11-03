@@ -630,6 +630,7 @@ const en: typeof es = {
       },
       location: 'Location',
       addressPlaceholder: 'E.g. Calle del Pez 12, Madrid',
+      addressSuggestionsHint: 'Suggested addresses appear as you type',
       searchAddress: 'Search',
       searchNotFound:
         "We couldn't find that address in Madrid. Try writing it differently or place the pin by hand.",
