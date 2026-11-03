@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ListingForm, type ListingFormResult } from '@/components/listing-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
 import { isRateLimitError } from '@/lib/errors';
 import { createListing, shareListingInGroups } from '@/lib/listings';
@@ -42,7 +42,7 @@ export default function PublishScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={TabScreenEdges}>
         <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

@@ -770,6 +770,8 @@ const es = {
     checkEmailTitle: 'Revisa tu email',
     checkEmailBody:
       'Te hemos enviado un enlace a {{email}}. Ábrelo para confirmar tu cuenta y luego inicia sesión.',
+    showPassword: 'Mostrar contraseña',
+    hidePassword: 'Ocultar contraseña',
     checkEmailExisting:
       'Si ya tenías una cuenta con este email, no hace falta: inicia sesión directamente.',
     backToSignIn: 'Volver a iniciar sesión',

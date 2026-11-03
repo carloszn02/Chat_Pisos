@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -7,12 +7,15 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  type ScrollViewInstance,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { KeyboardSpacer } from '@/components/keyboard-spacer';
+import { PasswordInput } from '@/components/password-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -152,6 +155,12 @@ export default function SignInScreen() {
     changeMode(isSignUp ? 'signIn' : 'signUp');
   }
 
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  // Once the keyboard is up, bring the password box and the button into view.
+  function scrollToFormEnd() {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+  }
+
   const inputStyle = [
     styles.input,
     { borderColor: theme.border, backgroundColor: theme.backgroundElement, color: theme.text },
@@ -200,7 +209,10 @@ export default function SignInScreen() {
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled">
             <View style={styles.content}>
               <View style={styles.languageRow}>
                 <View
@@ -272,16 +284,16 @@ export default function SignInScreen() {
               {!isForgot && (
                 <View style={styles.field}>
                   <ThemedText type="smallBold">{t('auth.password')}</ThemedText>
-                  <TextInput
+                  <PasswordInput
                     style={inputStyle}
                     value={password}
                     onChangeText={setPassword}
                     placeholder={t('auth.passwordPlaceholder')}
                     placeholderTextColor={theme.textSecondary}
-                    secureTextEntry
                     autoComplete={isSignUp ? 'new-password' : 'current-password'}
                     accessibilityLabel={t('auth.password')}
                     onSubmitEditing={submit}
+                    onFocus={scrollToFormEnd}
                   />
                   {mode === 'signIn' && (
                     <Pressable
@@ -386,6 +398,8 @@ export default function SignInScreen() {
               )}
             </View>
           </ScrollView>
+          {/* On Android the screen doesn't shrink for the keyboard by itself. */}
+          {Platform.OS === 'android' && <KeyboardSpacer />}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>

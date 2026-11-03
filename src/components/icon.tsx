@@ -7,6 +7,10 @@
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import ArrowUpDown from 'lucide-react-native/icons/arrow-up-down';
+import Eye from 'lucide-react-native/icons/eye';
+import Mail from 'lucide-react-native/icons/mail';
+import User from 'lucide-react-native/icons/user';
+import EyeOff from 'lucide-react-native/icons/eye-off';
 import BellOff from 'lucide-react-native/icons/bell-off';
 import AtSign from 'lucide-react-native/icons/at-sign';
 import Briefcase from 'lucide-react-native/icons/briefcase';
@@ -46,6 +50,8 @@ const ICONS = {
   briefcase: Briefcase,
   camera: Camera,
   check: Check,
+  eye: Eye,
+  'eye-off': EyeOff,
   'chevron-down': ChevronDown,
   'chevron-right': ChevronRight,
   close: X,
@@ -53,6 +59,7 @@ const ICONS = {
   house: House,
   image: ImageIcon,
   link: Link,
+  mail: Mail,
   list: List,
   map: MapIcon,
   'map-pin': MapPin,
@@ -66,6 +73,7 @@ const ICONS = {
   shield: ShieldCheck,
   sort: ArrowUpDown,
   sparkles: Sparkles,
+  user: User,
   users: Users,
   filters: SlidersHorizontal,
 } as const;

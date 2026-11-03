@@ -771,6 +771,8 @@ const en: typeof es = {
     switchToSignUp: 'Sign up',
     checkEmailTitle: 'Check your email',
     checkEmailBody: 'We sent a link to {{email}}. Open it to confirm your account, then log in.',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     checkEmailExisting:
       'If you already had an account with this email, there is no need: just log in.',
     backToSignIn: 'Back to log in',

@@ -15,7 +15,7 @@ import { PrivateGroupRow } from '@/components/private-group-row';
 import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
 import { useInbox } from '@/hooks/use-inbox';
 import { useMutes } from '@/hooks/use-mutes';
 import { useSession } from '@/hooks/use-session';
@@ -73,7 +73,7 @@ export default function MessagesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={TabScreenEdges}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={

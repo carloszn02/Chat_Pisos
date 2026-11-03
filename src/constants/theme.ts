@@ -105,5 +105,13 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+// The phone tab bar sits below the screens (it no longer floats over them), so tab screens
+// only need their normal bottom spacing.
+export const BottomTabInset = 0;
+
+/**
+ * Safe-area edges for the tab screens: the tab bar below already keeps clear of the phone's
+ * own bottom bar, so the screens only avoid the top (status bar, notch) and the sides.
+ */
+export const TabScreenEdges = ['top', 'left', 'right'] as const;
 export const MaxContentWidth = 800;

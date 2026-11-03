@@ -7,11 +7,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardSpacer } from '@/components/keyboard-spacer';
+import { PasswordInput } from '@/components/password-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts, Spacing } from '@/constants/theme';
@@ -72,13 +73,12 @@ export default function ResetPasswordScreen() {
 
               <View style={styles.field}>
                 <ThemedText type="smallBold">{t('auth.newPassword')}</ThemedText>
-                <TextInput
+                <PasswordInput
                   style={inputStyle}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t('auth.passwordPlaceholder')}
                   placeholderTextColor={theme.textSecondary}
-                  secureTextEntry
                   autoComplete="new-password"
                   accessibilityLabel={t('auth.newPassword')}
                 />
@@ -86,11 +86,10 @@ export default function ResetPasswordScreen() {
 
               <View style={styles.field}>
                 <ThemedText type="smallBold">{t('auth.repeatPassword')}</ThemedText>
-                <TextInput
+                <PasswordInput
                   style={inputStyle}
                   value={confirmation}
                   onChangeText={setConfirmation}
-                  secureTextEntry
                   autoComplete="new-password"
                   accessibilityLabel={t('auth.repeatPassword')}
                   onSubmitEditing={save}
@@ -135,6 +134,8 @@ export default function ResetPasswordScreen() {
               </Pressable>
             </View>
           </ScrollView>
+          {/* On Android the screen doesn't shrink for the keyboard by itself. */}
+          {Platform.OS === 'android' && <KeyboardSpacer />}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>

@@ -16,7 +16,7 @@ import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabScreenEdges } from '@/constants/theme';
 import { useMutes } from '@/hooks/use-mutes';
 import { usePlaces } from '@/hooks/use-places';
 import { useSession } from '@/hooks/use-session';
@@ -124,7 +124,7 @@ export default function ChatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={TabScreenEdges}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={

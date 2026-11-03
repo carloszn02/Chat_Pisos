@@ -23,8 +23,15 @@ import { SortSheet } from '@/components/sort-sheet';
 import { metroLineLabel, MetroLinePicker } from '@/components/metro-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppFonts, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import {
+  AppFonts,
+  BottomTabInset,
+  MaxContentWidth,
+  Spacing,
+  TabScreenEdges,
+} from '@/constants/theme';
 import { usePlaces } from '@/hooks/use-places';
+import { useTabSwipe } from '@/hooks/use-tab-swipe';
 import { useProfile } from '@/hooks/use-profile';
 import { useSaved } from '@/hooks/use-saved';
 import { useTheme } from '@/hooks/use-theme';
@@ -47,6 +54,8 @@ export default function ListingsScreen() {
   const cityId = city?.id ?? null;
 
   const [view, setView] = useState<'list' | 'map'>('list');
+  // On the map, dragging moves the map instead of switching tabs.
+  useTabSwipe(view !== 'map');
   // The panel with districts, neighbourhoods and price.
   const [filtersOpen, setFiltersOpen] = useState(false);
   // "Saved" shows only the listings you gave a heart (the other filters are hidden).
@@ -424,7 +433,7 @@ export default function ListingsScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={TabScreenEdges}>
           <View style={styles.mapScreen}>
             <View style={[styles.content, styles.mapFilters]}>{filtersBlock}</View>
             <View style={styles.mapArea}>
@@ -483,7 +492,7 @@ export default function ListingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={TabScreenEdges}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
